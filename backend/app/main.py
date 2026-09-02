@@ -1,13 +1,26 @@
 from fastapi import FastAPI
-from app.core.database import engine, Base
+from fastapi.middleware.cors import CORSMiddleware
 from app.controllers import auth_controller
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="ERP System API")
 
-app = FastAPI(title="ERP System API", version="1.0.0")
+# CORS (Tarayıcı Güvenlik İzinleri) Yapılandırması
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST, OPTIONS vb. tüm metodlara izin ver
+    allow_headers=["*"],  # Tüm başlık bilgilerine izin ver
+)
+
+# Rotaları Ekleme (prefix auth_controller içinde zaten tanımlı)
 app.include_router(auth_controller.router)
 
 @app.get("/")
-def root():
+def read_root():
     return {"message": "ERP Backend API çalışıyor!"}
