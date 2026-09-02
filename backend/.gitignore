@@ -1,0 +1,19 @@
+# Sanal Ortam
+venv/
+ENV/
+env/
+
+# Ortam Değişkenleri (Şifreler ve Gizli Anahtarlar)
+.env
+
+# Python Önbellek Dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code Ayarları
+.vscode/
+
+# İşletim Sistemi Geçici Dosyaları
+.DS_Store
+Thumbs.db
