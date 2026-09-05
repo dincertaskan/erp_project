@@ -13,7 +13,7 @@ class UserRepository:
         db_user = User(
             full_name=user.full_name,
             email=user.email,
-            hashed_password=hashed_password
+            password_hash=hashed_password
         )
         self.db.add(db_user)
         self.db.commit()

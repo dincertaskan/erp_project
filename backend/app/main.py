@@ -1,10 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.controllers import auth_controller
+from app.core.database import Base, engine
+
+# Model dosyasını doğrudan import ederek Base'e yüklüyoruz (Tablonun otomatik oluşmasını sağlar)
+from app.models.user import User
+
+# Veritabanı tablosu yoksa otomatik oluşturur
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ERP System API")
 
-# CORS (Tarayıcı Güvenlik İzinleri) Yapılandırması
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -14,11 +20,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, OPTIONS vb. tüm metodlara izin ver
-    allow_headers=["*"],  # Tüm başlık bilgilerine izin ver
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Rotaları Ekleme (prefix auth_controller içinde zaten tanımlı)
 app.include_router(auth_controller.router)
 
 @app.get("/")

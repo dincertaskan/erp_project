@@ -12,11 +12,28 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      await api.post('/auth/register', { full_name: fullName, email, password });
+      await api.post('/auth/register', {
+        full_name: fullName,
+        email,
+        password,
+      });
+
+      alert('Kayıt başarılı! Lütfen giriş yapınız.');
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Kayıt başarısız.');
+      console.error("Kayıt Detaylı Hata Yanıtı:", err.response);
+      
+      const serverDetail = err.response?.data?.detail;
+      
+      if (typeof serverDetail === 'string') {
+        setError(serverDetail);
+      } else if (Array.isArray(serverDetail)) {
+        setError(serverDetail[0]?.msg || 'Form verileri geçersiz.');
+      } else {
+        setError(err.message || 'Sunucuyla iletişim kurulamadı.');
+      }
     }
   };
 
@@ -26,14 +43,20 @@ export default function Register() {
         <div className="flex items-center gap-2 justify-center text-indigo-600 font-bold text-2xl mb-2">
           <UserPlus size={28} /> Kayıt Ol
         </div>
-        {error && <div className="bg-red-100 text-red-600 p-2 rounded text-sm text-center">{error}</div>}
+
+        {error && (
+          <div className="bg-red-100 text-red-600 p-2.5 rounded-lg text-sm text-center font-medium border border-red-200 break-words">
+            {error}
+          </div>
+        )}
+
         <input 
           type="text" 
           placeholder="Ad Soyad" 
           value={fullName} 
           onChange={(e) => setFullName(e.target.value)} 
           required 
-          className="border p-2 rounded focus:outline-indigo-500" 
+          className="border p-2.5 rounded-lg focus:outline-indigo-500 text-sm" 
         />
         <input 
           type="email" 
@@ -41,7 +64,7 @@ export default function Register() {
           value={email} 
           onChange={(e) => setEmail(e.target.value)} 
           required 
-          className="border p-2 rounded focus:outline-indigo-500" 
+          className="border p-2.5 rounded-lg focus:outline-indigo-500 text-sm" 
         />
         <input 
           type="password" 
@@ -49,9 +72,12 @@ export default function Register() {
           value={password} 
           onChange={(e) => setPassword(e.target.value)} 
           required 
-          className="border p-2 rounded focus:outline-indigo-500" 
+          className="border p-2.5 rounded-lg focus:outline-indigo-500 text-sm" 
         />
-        <button type="submit" className="bg-indigo-600 text-white p-2 rounded font-semibold hover:bg-indigo-700 transition">
+        <button 
+          type="submit" 
+          className="bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-sm"
+        >
           Hesap Oluştur
         </button>
         <p className="text-xs text-center text-gray-500 mt-2">
