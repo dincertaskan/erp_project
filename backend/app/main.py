@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.controllers import auth_controller
+from app.controllers import auth_controller,dashboard_controller
 from app.core.database import Base, engine
 
 # Model dosyasını doğrudan import ederek Base'e yüklüyoruz (Tablonun otomatik oluşmasını sağlar)
 from app.models.user import User
+from app.models.erp import Category, Product, Sale
 
 # Veritabanı tablosu yoksa otomatik oluşturur
 Base.metadata.create_all(bind=engine)
@@ -25,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_controller.router)
+app.include_router(dashboard_controller.router)
 
 @app.get("/")
 def read_root():

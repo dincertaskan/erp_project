@@ -40,9 +40,9 @@ export default function Navbar({ notifications, setNotifications }) {
   };
 
   return (
-    <nav className="h-16 bg-white border-b border-gray-200 px-8 flex justify-between items-center shadow-xs relative">
+    <nav className="h-16 bg-white border-b border-gray-200 px-8 flex justify-between items-center shrink-0 relative">
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold text-gray-800">Hoş Geldiniz 👋</h1>
+        <h1 className="text-xl font-bold text-gray-800">Hoş Geldiniz</h1>
       </div>
       
       <div className="flex items-center gap-4">

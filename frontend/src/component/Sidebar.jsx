@@ -22,8 +22,8 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col border-r border-slate-800">
-      {/* Navbar ile hizanin kusursuz olmasi icin h-16 yapildi */}
-      <div className="h-16 px-5 border-b border-slate-800 flex items-center gap-2.5">
+      
+      <div className="h-16 px-5 border-b border-slate-800 flex items-center gap-2.5 shrink-0">
         <div className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white text-xs font-extrabold tracking-wider">
           ERP
         </div>
