@@ -17,3 +17,6 @@ __pycache__/
 # İşletim Sistemi Geçici Dosyaları
 .DS_Store
 Thumbs.db
+
+# Yüklenen avatar ve medya dosyalarını yoksay
+uploads/

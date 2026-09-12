@@ -1,22 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, LogOut, Bell, Check, ExternalLink } from 'lucide-react';
+import api from '../api/axios';
 
 export default function Navbar({ notifications, setNotifications }) {
   const navigate = useNavigate();
   const userName = localStorage.getItem('user_name') || 'Kullanıcı';
 
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
 
-  // Yeniden eskiye sıralama yapıyoruz
   const sortedNotifications = [...notifications].sort((a, b) => new Date(b.date) - new Date(a.date));
   const recentNotifications = sortedNotifications.slice(0, 5);
 
   useEffect(() => {
+    // Sayfa açıldığında veritabanından avatar bilgisini getirme
+    const fetchAvatar = async () => {
+      try {
+        const res = await api.get(`/auth/me?user_name=${userName}`);
+        if (res.data.avatar_url) {
+          setAvatarUrl(`http://localhost:8000${res.data.avatar_url}`);
+        }
+      } catch (err) {
+        console.error("Navbar profil resmi verisi çekilemedi:", err);
+      }
+    };
+    fetchAvatar();
+
     function handleClickOutside(event) {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setShowNotifications(false);
@@ -25,9 +39,20 @@ export default function Navbar({ notifications, setNotifications }) {
         setShowProfileMenu(false);
       }
     }
+
+    // Profil resmindeki canlı güncellemeleri dinleyici
+    function handleAvatarUpdate(event) {
+      setAvatarUrl(event.detail);
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('profile_avatar_updated', handleAvatarUpdate);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('profile_avatar_updated', handleAvatarUpdate);
+    };
+  }, [userName]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -46,7 +71,6 @@ export default function Navbar({ notifications, setNotifications }) {
       </div>
       
       <div className="flex items-center gap-4">
-        
         {/* BİLDİRİMLER ALANI */}
         <div className="relative" ref={notifRef}>
           <button 
@@ -121,17 +145,30 @@ export default function Navbar({ notifications, setNotifications }) {
             }}
             className="flex items-center gap-2 text-gray-700 text-sm font-semibold bg-indigo-50/60 hover:bg-indigo-100/80 px-3.5 py-1.5 rounded-full transition cursor-pointer"
           >
-            <div className="bg-indigo-100 p-1 rounded-full text-indigo-600">
-              <User size={18} />
+            <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center overflow-hidden font-bold text-xs shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User size={16} />
+              )}
             </div>
             <span>{userName}</span>
           </button>
 
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <p className="text-sm font-bold text-gray-800 leading-tight">{userName}</p>
-                <p className="text-xs text-gray-400">Sistem Yöneticisi</p>
+              <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center overflow-hidden font-bold text-xs shrink-0">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{userName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-800 leading-tight">{userName}</p>
+                  <p className="text-xs text-gray-400">Sistem Yöneticisi</p>
+                </div>
               </div>
 
               <div className="pt-1">

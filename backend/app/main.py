@@ -1,13 +1,18 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.controllers import auth_controller,dashboard_controller,inventory_controller
+from fastapi.staticfiles import StaticFiles
+from app.controllers import auth_controller, dashboard_controller, inventory_controller
 from app.core.database import Base, engine
 
-# Model dosyasını doğrudan import ederek Base'e yüklüyoruz (Tablonun otomatik oluşmasını sağlar)
+# Model dosyalarını yüklüyoruz
 from app.models.user import User
 from app.models.erp import Category, Product, Sale, StockMovement
 
-# Veritabanı tablosu yoksa otomatik oluşturur
+# Yüklemelerin yapılacağı dizini otomatik oluşturur
+os.makedirs("uploads/avatars", exist_ok=True)
+
+# Veritabanı tablolarını oluşturur
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ERP System API")
@@ -24,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# YENİ EKLENDİ: Statik görsel dosyalarını dışarı sunma
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_controller.router)
 app.include_router(dashboard_controller.router)
