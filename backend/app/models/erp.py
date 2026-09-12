@@ -24,7 +24,7 @@ class Product(Base):
 
     category = relationship("Category", back_populates="products")
     sales = relationship("Sale", back_populates="product")
-
+    movements = relationship("StockMovement", back_populates="product", cascade="all, delete-orphan")
 class Sale(Base):
     __tablename__ = "sales"
 
@@ -35,3 +35,16 @@ class Sale(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="sales")
+
+class StockMovement(Base):
+    __tablename__ = "stock_movements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    user_name = Column(String, nullable=False)
+    action_type = Column(String, nullable=False)  # "ARTTIR" veya "AZALT"
+    quantity = Column(Integer, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    product = relationship("Product", back_populates="movements")

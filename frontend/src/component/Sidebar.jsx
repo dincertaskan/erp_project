@@ -5,7 +5,8 @@ import {
   Package, 
   ShoppingCart, 
   TrendingUp, 
-  Settings 
+  Settings,
+  Tag
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -13,6 +14,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Ana Sayfa', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Ürünler', path: '/products', icon: Tag },
     { name: 'Stok Yönetimi', path: '/inventory', icon: Package },
     { name: 'Satış & Sipariş', path: '/sales', icon: ShoppingCart },
     { name: 'Müşteriler', path: '/customers', icon: Users },
@@ -21,7 +23,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col border-r border-slate-800">
+    <aside className="w-48 bg-slate-900 text-slate-300 min-h-screen flex flex-col border-r border-slate-800">
       
       <div className="h-16 px-5 border-b border-slate-800 flex items-center gap-2.5 shrink-0">
         <div className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white text-xs font-extrabold tracking-wider">

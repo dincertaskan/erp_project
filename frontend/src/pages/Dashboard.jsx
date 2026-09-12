@@ -305,7 +305,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KRİTİK STOK TABLOSU */}
+      {/* KRİTİK STOK TABLOSU (Hizalama & Çoklu Satır İyileştirmesi Yapıldı) */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-5 space-y-4">
         <div className="flex justify-between items-center border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2">
@@ -320,23 +320,27 @@ export default function Dashboard() {
               Kritik seviyede ürün bulunmamaktadır. Tüm stoklar yeterli!
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3">Ürün Adı</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Kalan Stok</th>
-                  <th className="pb-3 text-right">Durum</th>
+                  <th className="pb-3 w-1/2">Ürün Adı</th>
+                  <th className="pb-3 w-1/6">Kategori</th>
+                  <th className="pb-3 w-1/6 text-center">Kalan Stok</th>
+                  <th className="pb-3 w-1/6 text-center">Durum</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
                 {data.critical_stock.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition">
-                    <td className="py-3 font-medium text-gray-800">{item.name}</td>
-                    <td className="py-3 text-gray-500">{item.category}</td>
-                    <td className="py-3 font-bold text-amber-600">{item.stock} Adet</td>
-                    <td className="py-3 text-right">
-                      <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold text-[10px]">
+                    <td className="py-3 pr-4 font-medium text-gray-800">
+                      <p className="line-clamp-2 leading-relaxed" title={item.name}>
+                        {item.name}
+                      </p>
+                    </td>
+                    <td className="py-3 text-gray-500 truncate">{item.category}</td>
+                    <td className="py-3 font-bold text-amber-600 text-center whitespace-nowrap">{item.stock} Adet</td>
+                    <td className="py-3 text-center whitespace-nowrap">
+                      <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold text-[12px] inline-block">
                         Kritik Seviye (Min: {item.min_stock})
                       </span>
                     </td>

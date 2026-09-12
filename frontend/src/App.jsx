@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Inventory from './pages/Inventory'; // <-- YENİ EKLENDİ
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Layout from './component/Layout';
@@ -16,7 +17,6 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default function App() {
-  // Örnek Test Bildirim Verileri (Tarihe göre yeniden eskiye sıralanacaktır)
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Sisteme yeni giriş tespit edildi.', date: '2026-09-05 10:30' },
     { id: 2, text: 'Stok seviyesi kritik sınırın altına düştü (Ürün #12).', date: '2026-09-05 11:15' },
@@ -38,6 +38,18 @@ export default function App() {
             <ProtectedRoute>
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* YENİ STOK YÖNETİMİ ROTASI */}
+        <Route 
+          path="/inventory" 
+          element={
+            <ProtectedRoute>
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <Inventory />
               </Layout>
             </ProtectedRoute>
           } 
@@ -65,7 +77,7 @@ export default function App() {
           } 
         />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
