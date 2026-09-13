@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class MonthlySale(BaseModel):
     month: str
@@ -16,6 +16,7 @@ class CriticalStockItem(BaseModel):
     category: str
     stock: int
     min_stock: int
+    image_url: Optional[str] = None
 
 class RecentActivityItem(BaseModel):
     id: int

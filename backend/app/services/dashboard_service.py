@@ -20,19 +20,20 @@ class DashboardService:
         sales_data = [
             {
                 "month": month_names[int(m.month_num) - 1], 
-                "ciro": float(m.ciro) if m.ciro is not None else 0.0 # <--- Sayıya dönüştürüldü
+                "ciro": float(m.ciro) if m.ciro is not None else 0.0
             } 
             for m in sales_by_month
         ]
 
-        # Kritik stok listesi
+        # Kritik stok listesi (Görsel URL'i eklendi)
         critical_stock_list = [
             {
                 "id": p.id,
                 "name": p.name,
                 "category": p.category.name if p.category else "Genel",
                 "stock": p.stock,
-                "min_stock": p.min_stock
+                "min_stock": p.min_stock,
+                "image_url": p.image_url
             }
             for p in critical_products
         ]

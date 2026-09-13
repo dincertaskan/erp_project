@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { 
   Search, AlertTriangle, RefreshCw, CheckCircle2, 
-  Loader2, Edit3, History, X 
+  Loader2, Edit3, History, X, Package 
 } from 'lucide-react';
 import SearchableSelect from '../component/SearchableSelect';
 
@@ -25,7 +25,7 @@ export default function Inventory() {
   // Giriş yapan kullanıcı bilgisi
   const loggedUser = localStorage.getItem('user_name') || 'Dinçer Taşkan';
 
-  // Durum Seçenekleri (SearchableSelect ile %100 Birebir Eşleşen ID Yapısı)
+  // Durum Seçenekleri
   const statusOptions = [
     { id: '', name: 'Tüm Durumlar' },
     { id: 'critical', name: 'Kritik Stok' },
@@ -149,7 +149,7 @@ export default function Inventory() {
             />
           </div>
 
-          {/* DURUM FİLTRESİ (Tasarımı Birebir Aynı, Seçili Metni Gösteren Yapı) */}
+          {/* Durum Filtresi */}
           <div className="w-48">
             <SearchableSelect 
               options={statusOptions}
@@ -198,14 +198,34 @@ export default function Inventory() {
               <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
                 {products.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50/80 transition">
-                    <td className="p-4 text-center font-bold text-indigo-600 hover:underline">
-                      <Link to={`/inventory/${p.id}`}>#{p.id}</Link>
+                    {/* ÜRÜN DETAY SAYFASINA YÖNLENDİREN LİNK DÜZELTİLDİ */}
+                    <td className="p-4 text-center font-bold text-indigo-600">
+                      <Link 
+                        to={`/products/${p.id}`}
+                        className="hover:underline hover:text-indigo-800 transition cursor-pointer"
+                      >
+                        #{p.id}
+                      </Link>
                     </td>
 
                     <td className="p-4 text-left font-semibold text-gray-800">
-                      <p className="line-clamp-2 leading-relaxed" title={p.name}>
-                        {p.name}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        {p.image_url ? (
+                          <img 
+                            src={p.image_url} 
+                            alt={p.name} 
+                            className="w-9 h-9 rounded-lg object-cover border border-gray-200 shrink-0" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/36?text=Ürün'; }}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <Package size={18} />
+                          </div>
+                        )}
+                        <span className="line-clamp-2 leading-relaxed" title={p.name}>
+                          {p.name}
+                        </span>
+                      </div>
                     </td>
 
                     <td className="p-4 text-center text-gray-500 truncate">{p.category_name}</td>

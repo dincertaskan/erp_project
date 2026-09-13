@@ -1,85 +1,83 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional
 from app.core.database import get_db
-from app.models.erp import Product, StockMovement
-from app.schemas.inventory_schema import StockAdjustmentCreate, StockMovementResponse
+from app.schemas.inventory_schema import (
+    StockAdjustmentCreate, 
+    ProductCreate, 
+    ProductUpdate, 
+    ProductDetailResponse
+)
+from app.repositories.inventory_repository import InventoryRepository
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
-# 1. Ürün Listesi (Durum Filtrelemeli)
-@router.get("/products")
+# 1. Ürün Listesi (Filtrelemeli)
+@router.get("/products", response_model=List[ProductDetailResponse])
 def get_products(
     search: Optional[str] = Query(None),
     category_id: Optional[int] = Query(None),
-    status_filter: Optional[str] = Query(None), # <-- DURUM FİLTRESİ EKLENDİ
+    status_filter: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Product)
-    if category_id:
-        query = query.filter(Product.category_id == category_id)
-    if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
-        
-    # Duruma Göre Filtreleme
-    if status_filter == "critical":
-        query = query.filter(Product.stock <= Product.min_stock)
-    elif status_filter == "normal":
-        query = query.filter(Product.stock > Product.min_stock)
-        
-    products = query.order_by(Product.id.desc()).all()
-    return [
-        {
-            "id": p.id,
-            "name": p.name,
-            "category_name": p.category.name if p.category else "Genel",
-            "stock": p.stock,
-            "min_stock": p.min_stock,
-            "price": p.price,
-            "is_critical": p.stock <= p.min_stock
-        }
-        for p in products
-    ]
+    repo = InventoryRepository(db)
+    return repo.get_all_products(search=search, category_id=category_id, status_filter=status_filter)
 
-# 2. Stok Düzenleme ve Log Kaydetme
+# 2. Tekil Ürün Detayı (YENİ EKLENDİ)
+@router.get("/products/{product_id}", response_model=ProductDetailResponse)
+def get_product_detail(product_id: int, db: Session = Depends(get_db)):
+    repo = InventoryRepository(db)
+    product = repo.get_product_by_id(product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Aradığınız ürün bulunamadı.")
+    return product
+
+# 3. Yeni Ürün Ekle
+@router.post("/products", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
+def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
+    repo = InventoryRepository(db)
+    return repo.create_product(product_data)
+
+# 4. Ürün Güncelle
+@router.put("/products/{product_id}", response_model=ProductDetailResponse)
+def update_product(product_id: int, product_data: ProductUpdate, db: Session = Depends(get_db)):
+    repo = InventoryRepository(db)
+    product = repo.update_product(product_id, product_data)
+    if not product:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    return product
+
+# 5. Ürün Sil
+@router.delete("/products/{product_id}")
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    repo = InventoryRepository(db)
+    success = repo.delete_product(product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Silinecek ürün bulunamadı.")
+    return {"message": "Ürün başarıyla silindi."}
+
+# 6. Stok Düzenleme ve Log Kaydetme
 @router.post("/products/{product_id}/adjust-stock")
 def adjust_stock(
     product_id: int, 
     data: StockAdjustmentCreate, 
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
-
-    if data.action_type == "ARTTIR":
-        product.stock += data.quantity
-    elif data.action_type == "AZALT":
-        if product.stock < data.quantity:
-            raise HTTPException(status_code=400, detail="Mevcut stoktan daha fazla azaltma yapılamaz!")
-        product.stock -= data.quantity
-    else:
-        raise HTTPException(status_code=400, detail="Geçersiz işlem tipi.")
-
-    movement = StockMovement(
-        product_id=product.id,
-        user_name=data.user_name,
-        action_type=data.action_type,
-        quantity=data.quantity,
-        description=data.description
-    )
-    db.add(movement)
-    db.commit()
-    db.refresh(product)
+    repo = InventoryRepository(db)
+    product, error = repo.adjust_stock(product_id, data)
+    if error:
+        raise HTTPException(status_code=400 if "stok" in error or "işlem" in error else 404, detail=error)
     
-    return {"message": "Stok başarıyla güncellendi.", "new_stock": product.stock}
+    return {
+        "message": "Stok başarıyla güncellendi.", 
+        "new_stock": product.stock
+    }
 
-# 3. Ürünün Hareket Loglarını Getirme
+# 7. Ürünün Stok Hareket Loglarını Getirme
 @router.get("/products/{product_id}/logs")
 def get_product_logs(product_id: int, db: Session = Depends(get_db)):
-    movements = db.query(StockMovement).filter(
-        StockMovement.product_id == product_id
-    ).order_by(StockMovement.created_at.desc()).all()
+    repo = InventoryRepository(db)
+    movements = repo.get_product_logs(product_id)
     
     return [
         {
@@ -87,18 +85,10 @@ def get_product_logs(product_id: int, db: Session = Depends(get_db)):
             "user_name": m.user_name,
             "action_type": m.action_type,
             "quantity": m.quantity,
+            "previous_stock": m.previous_stock,
+            "new_stock": m.new_stock,
             "description": m.description or "Açıklama belirtilmedi.",
             "created_at": m.created_at.strftime("%Y-%m-%d %H:%M:%S") if m.created_at else ""
         }
         for m in movements
     ]
-
-# 4. Ürün Silme
-@router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
-    db.delete(product)
-    db.commit()
-    return {"message": "Ürün başarıyla silindi."}

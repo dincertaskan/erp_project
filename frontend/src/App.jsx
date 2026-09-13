@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Inventory from './pages/Inventory'; // <-- YENİ EKLENDİ
+import Inventory from './pages/Inventory';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail'; // YENİ EKLENDİ
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Layout from './component/Layout';
@@ -43,7 +45,29 @@ export default function App() {
           } 
         />
 
-        {/* YENİ STOK YÖNETİMİ ROTASI */}
+        <Route 
+          path="/products" 
+          element={
+            <ProtectedRoute>
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <Products />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* YENİ ÜRÜN DETAY ROTASI */}
+        <Route 
+          path="/products/:id" 
+          element={
+            <ProtectedRoute>
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <ProductDetail />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
         <Route 
           path="/inventory" 
           element={

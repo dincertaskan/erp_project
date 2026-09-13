@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
 from app.models.erp import Product, Category, Sale
 from app.models.user import User
@@ -17,7 +17,12 @@ class DashboardRepository:
         return self.db.query(func.count(User.id)).filter(User.is_active == True).scalar()
 
     def get_critical_products(self):
-        return self.db.query(Product).filter(Product.stock <= Product.min_stock).all()
+        return (
+            self.db.query(Product)
+            .options(joinedload(Product.category))
+            .filter(Product.stock <= Product.min_stock, Product.is_active == True)
+            .all()
+        )
 
     def get_category_distribution(self):
         return (
@@ -47,36 +52,3 @@ class DashboardRepository:
 
     def get_all_products(self):
         return self.db.query(Product).all()
-
-    def get_product_by_id(self, product_id: int):
-        return self.db.query(Product).filter(Product.id == product_id).first()
-
-    def create_product(self, product_data):
-        new_product = Product(
-            name=product_data.name,
-            category_id=product_data.category_id,
-            stock=product_data.stock,
-            min_stock=product_data.min_stock,
-            price=product_data.price
-        )
-        self.db.add(new_product)
-        self.db.commit()
-        self.db.refresh(new_product)
-        return new_product
-
-    def create_sale(self, product, quantity: int):
-        total_amount = product.price * quantity
-        
-        # Stoktan düş
-        product.stock -= quantity
-        
-        # Satış kaydı oluştur
-        new_sale = Sale(
-            product_id=product.id,
-            quantity=quantity,
-            total_amount=total_amount
-        )
-        self.db.add(new_sale)
-        self.db.commit()
-        self.db.refresh(new_sale)
-        return new_sale

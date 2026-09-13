@@ -1,45 +1,17 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { 
-  Package, DollarSign, Users, AlertTriangle, Plus, 
-  ShoppingCart, ArrowUpRight, Loader2, X 
+  Package, DollarSign, Users, AlertTriangle, Loader2 
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
-import SearchableSelect from '../component/SearchableSelect';
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Modal Durumları
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
-
-  // Form Seçenekleri
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-
-  // Ürün Ekleme Form State
-  const [productForm, setProductForm] = useState({
-    name: '',
-    category_id: '',
-    stock: '',
-    min_stock: '5',
-    price: ''
-  });
-
-  // Sipariş Oluşturma Form State
-  const [saleForm, setSaleForm] = useState({
-    product_id: '',
-    quantity: '1'
-  });
-
-  const [formError, setFormError] = useState('');
-  const [formSubmitting, setFormSubmitting] = useState(false);
 
   const fetchDashboardStats = async () => {
     try {
@@ -56,82 +28,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardStats();
   }, []);
-
-  // Modal Açma Fonksiyonları
-  const handleOpenProductModal = async () => {
-    setFormError('');
-    try {
-      const res = await api.get('/dashboard/categories');
-      setCategories(res.data);
-      if (res.data.length > 0) {
-        setProductForm(prev => ({ ...prev, category_id: res.data[0].id }));
-      }
-      setIsProductModalOpen(true);
-    } catch (err) {
-      alert("Kategoriler yüklenirken hata oluştu.");
-    }
-  };
-
-  const handleOpenSaleModal = async () => {
-    setFormError('');
-    try {
-      const res = await api.get('/dashboard/products');
-      setProducts(res.data);
-      if (res.data.length > 0) {
-        setSaleForm(prev => ({ ...prev, product_id: res.data[0].id }));
-      }
-      setIsSaleModalOpen(true);
-    } catch (err) {
-      alert("Ürünler yüklenirken hata oluştu.");
-    }
-  };
-
-  // Ürün Kaydetme İşlemi
-  const handleCreateProduct = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setFormSubmitting(true);
-
-    try {
-      await api.post('/dashboard/products', {
-        name: productForm.name,
-        category_id: parseInt(productForm.category_id),
-        stock: parseInt(productForm.stock),
-        min_stock: parseInt(productForm.min_stock),
-        price: parseFloat(productForm.price)
-      });
-
-      setIsProductModalOpen(false);
-      setProductForm({ name: '', category_id: '', stock: '', min_stock: '5', price: '' });
-      fetchDashboardStats();
-    } catch (err) {
-      setFormError(err.response?.data?.detail || "Ürün eklenirken bir hata oluştu.");
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
-
-  // Sipariş Kaydetme İşlemi
-  const handleCreateSale = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setFormSubmitting(true);
-
-    try {
-      await api.post('/dashboard/sales', {
-        product_id: parseInt(saleForm.product_id),
-        quantity: parseInt(saleForm.quantity)
-      });
-
-      setIsSaleModalOpen(false);
-      setSaleForm({ product_id: '', quantity: '1' });
-      fetchDashboardStats();
-    } catch (err) {
-      setFormError(err.response?.data?.detail || "Sipariş oluşturulurken bir hata oluştu.");
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -152,25 +48,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* BAŞLIK VE POP-UP BUTONLARI */}
+      {/* BAŞLIK ALANI */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Genel Bakış</h1>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleOpenProductModal}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-xs transition cursor-pointer"
-          >
-            <Plus size={16} /> Ürün Ekle
-          </button>
-          <button 
-            onClick={handleOpenSaleModal}
-            className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold px-3.5 py-2 rounded-lg shadow-xs transition cursor-pointer"
-          >
-            <ShoppingCart size={16} className="text-indigo-600" /> Sipariş Oluştur
-          </button>
         </div>
       </div>
 
@@ -251,7 +132,6 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   
-                  {/* YENİLENEN SAYISAL ODAKLI Y-EKSENİ */}
                   <YAxis 
                     type="number"
                     domain={[0, 'auto']}
@@ -271,6 +151,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Stok Dağılımı (Pie Chart) */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4 flex flex-col justify-between">
           <div className="border-b border-gray-100 pb-3">
             <h2 className="text-base font-bold text-gray-800">Stok Dağılımı</h2>
@@ -305,7 +186,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KRİTİK STOK TABLOSU (Hizalama & Çoklu Satır İyileştirmesi Yapıldı) */}
+      {/* KRİTİK STOK TABLOSU */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-5 space-y-4">
         <div className="flex justify-between items-center border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2">
@@ -333,9 +214,26 @@ export default function Dashboard() {
                 {data.critical_stock.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition">
                     <td className="py-3 pr-4 font-medium text-gray-800">
-                      <p className="line-clamp-2 leading-relaxed" title={item.name}>
-                        {item.name}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="w-8 h-8 rounded-lg object-cover border border-gray-200 shrink-0" 
+                            onError={(e) => { 
+                              e.target.onerror = null; 
+                              e.target.src = 'https://via.placeholder.com/32?text=Ürün'; 
+                            }}
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <Package size={16} />
+                          </div>
+                        )}
+                        <span className="line-clamp-2 leading-relaxed" title={item.name}>
+                          {item.name}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-3 text-gray-500 truncate">{item.category}</td>
                     <td className="py-3 font-bold text-amber-600 text-center whitespace-nowrap">{item.stock} Adet</td>
@@ -351,136 +249,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* POP-UP 1: YENİ ÜRÜN EKLE MODAL (Sabit h-[460px] Boyutu) */}
-      {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[460px] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-gray-800 text-base">Yeni Ürün Ekle</h3>
-              <button onClick={() => setIsProductModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProduct} className="p-6 flex-1 flex flex-col justify-between overflow-y-auto">
-              <div className="space-y-4">
-                {formError && <div className="bg-red-50 text-red-600 p-2.5 rounded-lg text-xs font-medium">{formError}</div>}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Ürün Adı</label>
-                  <input 
-                    type="text" required value={productForm.name}
-                    onChange={e => setProductForm({...productForm, name: e.target.value})}
-                    placeholder="Örn: Kablosuz Klavye" 
-                    className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500" 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Kategori</label>
-                  <SearchableSelect 
-                    options={categories}
-                    selectedValue={productForm.category_id}
-                    onSelect={(catId) => setProductForm({...productForm, category_id: catId})}
-                    placeholder="Kategori ara veya seç..."
-                    type="category"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Stok Miktarı</label>
-                    <input 
-                      type="number" required min="0" value={productForm.stock}
-                      onChange={e => setProductForm({...productForm, stock: e.target.value})}
-                      placeholder="100" 
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Minimum Stok (Sınır)</label>
-                    <input 
-                      type="number" required min="1" value={productForm.min_stock}
-                      onChange={e => setProductForm({...productForm, min_stock: e.target.value})}
-                      placeholder="5" 
-                      className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500" 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Birim Fiyat (₺)</label>
-                  <input 
-                    type="number" step="0.01" required value={productForm.price}
-                    onChange={e => setProductForm({...productForm, price: e.target.value})}
-                    placeholder="1250.00" 
-                    className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500" 
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 mt-4 shrink-0">
-                <button type="button" onClick={() => setIsProductModalOpen(false)} className="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
-                  İptal
-                </button>
-                <button type="submit" disabled={formSubmitting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer">
-                  {formSubmitting ? "Kaydediliyor..." : "Kaydet"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* POP-UP 2: YENİ SİPARİŞ OLUŞTUR MODAL (Sabit h-[460px] Boyutuyla EŞİTLENDİ) */}
-      {isSaleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[460px] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-gray-800 text-base">Yeni Sipariş Oluştur</h3>
-              <button onClick={() => setIsSaleModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateSale} className="p-6 flex-1 flex flex-col justify-between overflow-y-auto">
-              <div className="space-y-4">
-                {formError && <div className="bg-red-50 text-red-600 p-2.5 rounded-lg text-xs font-medium">{formError}</div>}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Satılacak Ürün</label>
-                  <SearchableSelect 
-                    options={products}
-                    selectedValue={saleForm.product_id}
-                    onSelect={(prodId) => setSaleForm({...saleForm, product_id: prodId})}
-                    placeholder="Ürün adı yazarak arayın..."
-                    type="product"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Satış Adedi</label>
-                  <input 
-                    type="number" required min="1" value={saleForm.quantity}
-                    onChange={e => setSaleForm({...saleForm, quantity: e.target.value})}
-                    className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500" 
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 shrink-0">
-                <button type="button" onClick={() => setIsSaleModalOpen(false)} className="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
-                  İptal
-                </button>
-                <button type="submit" disabled={formSubmitting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer">
-                  {formSubmitting ? "Sipariş İşleniyor..." : "Sipariş Oluştur"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

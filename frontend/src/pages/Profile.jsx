@@ -53,7 +53,6 @@ export default function Profile() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-2xl font-bold text-gray-800">Profil Detayları</h1>
-        <p className="text-sm text-gray-500">Hesap bilgilerinizi ve yetkilerinizi inceleyin.</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 space-y-6">
