@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail'; // YENİ EKLENDİ
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Layout from './component/Layout';
+import Orders from './pages/Orders';
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -96,6 +97,17 @@ export default function App() {
             <ProtectedRoute>
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Notifications notifications={notifications} setNotifications={setNotifications} />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/orders" 
+          element={
+            <ProtectedRoute>
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <Orders />
               </Layout>
             </ProtectedRoute>
           } 

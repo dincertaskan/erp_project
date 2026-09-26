@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { 
-  Package, DollarSign, Users, AlertTriangle, Loader2 
+  Package, DollarSign, Users, AlertTriangle, Loader2, ArrowRight 
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -38,217 +39,222 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center text-sm font-medium">
-        {error}
+        {error || "Veriler yüklenemedi."}
       </div>
     );
   }
 
+  const revenueValue = data.monthly_revenue ?? data.monthly_sales_total ?? 0;
+
+  // Grafikte tek bir nokta kalmaması için 12 aylık omurga oluşturulup gelen ciro verisi oturtuluyor
+  const monthNames = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Ekim", "Kas", "Ara"];
+  const salesMap = new Map((data.sales_data || []).map(item => [item.month, item.ciro]));
+
+  const salesChartData = monthNames.map(month => ({
+    month,
+    ciro: salesMap.has(month) ? salesMap.get(month) : 0
+  }));
+
+  const categoryChartData = data.category_data || [];
+  const criticalStockList = data.critical_stock || [];
+
   return (
     <div className="space-y-6 pb-8">
-      {/* BAŞLIK ALANI */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Genel Bakış</h1>
-        </div>
+      {/* BAŞLIK */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">Genel Bakış</h1>
       </div>
 
-      {/* KPI İSTATİSTİK KARTLARI */}
+      {/* KPI ÖZET KARTLARI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* TOPLAM STOK */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Toplam Stok</p>
-            <h3 className="text-2xl font-bold text-gray-800 mt-1">{data?.total_stock?.toLocaleString()}</h3>
-            <br />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">TOPLAM STOK</span>
+            <p className="text-2xl font-extrabold text-gray-800 mt-1">{data.total_stock ?? 0}</p>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Package size={24} />
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Package size={20} />
           </div>
         </div>
 
+        {/* AYLIK CİRO */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Aylık Ciro</p>
-            <h3 className="text-2xl font-bold text-gray-800 mt-1">{data?.monthly_sales_total?.toLocaleString()}</h3>
-            <br />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">AYLIK CİRO</span>
+            <p className="text-2xl font-extrabold text-emerald-600 mt-1">
+              ₺{Number(revenueValue).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <DollarSign size={24} />
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <DollarSign size={20} />
           </div>
         </div>
 
+        {/* AKTİF MÜŞTERİ */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Aktif Müşteri</p>
-            <h3 className="text-2xl font-bold text-gray-800 mt-1">{data?.active_customers}</h3>
-            <br />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">AKTİF MÜŞTERİ</span>
+            <p className="text-2xl font-extrabold text-gray-800 mt-1">{data.active_customers ?? 0}</p>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Users size={24} />
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Users size={20} />
           </div>
         </div>
 
+        {/* KRİTİK STOK */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Kritik Stok</p>
-            <h3 className="text-2xl font-bold text-amber-600 mt-1">{data?.critical_stock_count} Ürün</h3>
-            <br />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">KRİTİK STOK</span>
+            <p className="text-2xl font-extrabold text-amber-600 mt-1">{data.critical_stock_count ?? 0} Ürün</p>
           </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertTriangle size={24} />
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <AlertTriangle size={20} />
           </div>
         </div>
       </div>
 
-      {/* GRAFİKLER */}
+      {/* GRAFİKLER ALANI */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ciro Performansı (Area Chart) */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4">
-          <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-            <div>
-              <h2 className="text-base font-bold text-gray-800">Ciro Performansı</h2>
-            </div>
-          </div>
-          
-          <div className="h-64">
-            {!data?.sales_data || data.sales_data.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-xs text-gray-400">
-                Henüz satış kaydı bulunmamaktadır.
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart 
-                  data={data.sales_data.map(item => ({ ...item, ciro: Number(item.ciro) }))} 
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorCiro" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  
-                  <YAxis 
-                    type="number"
-                    domain={[0, 'auto']}
-                    tickLine={false} 
-                    axisLine={false} 
-                    tick={{ fontSize: 12, fill: '#64748b' }} 
-                    tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-                  />
-                  
-                  <Tooltip 
-                    formatter={(value) => [`₺${Number(value).toLocaleString('tr-TR')}`, 'Ciro']} 
-                  />
-                  <Area type="monotone" dataKey="ciro" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorCiro)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+        
+        {/* CİRO PERFORMANSI */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
+          <h2 className="text-base font-bold text-gray-800">Ciro Performansı</h2>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={salesChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCiro" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tick={{ fontSize: 11, fill: '#94a3b8' }}
+                  tickFormatter={(val) => `₺${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                />
+                <Tooltip 
+                  formatter={(val) => [`₺${Number(val).toLocaleString('tr-TR')}`, 'Ciro']}
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', borderColor: '#e2e8f0', fontSize: '12px' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="ciro" 
+                  stroke="#6366f1" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorCiro)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Stok Dağılımı (Pie Chart) */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4 flex flex-col justify-between">
-          <div className="border-b border-gray-100 pb-3">
+        {/* STOK DAĞILIMI */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-4">
+          <div>
             <h2 className="text-base font-bold text-gray-800">Stok Dağılımı</h2>
             <p className="text-xs text-gray-400">Kategorilere göre ürün miktarı</p>
           </div>
-
-          <div className="h-48 flex items-center justify-center">
-            {!data?.category_data || data.category_data.length === 0 ? (
-              <div className="text-xs text-gray-400">Kategori verisi bulunamadı.</div>
-            ) : (
+          <div className="h-60 w-full flex items-center justify-center">
+            {categoryChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.category_data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
-                    {data.category_data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Pie
+                    data={categoryChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {categoryChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || '#6366f1'} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} Adet`, 'Miktar']} />
+                  <Tooltip formatter={(val) => [`${val} Adet`, 'Miktar']} />
                 </PieChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="text-xs text-gray-400">Kategori verisi bulunamadı.</div>
             )}
           </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-            {data?.category_data?.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></span>
-                <span className="text-xs text-gray-600 truncate">{item.name}</span>
-              </div>
-            ))}
-          </div>
         </div>
+
       </div>
 
-      {/* KRİTİK STOK TABLOSU */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-5 space-y-4">
-        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="text-amber-500" size={18} />
-            <h2 className="text-base font-bold text-gray-800">Tedarik Gereken Ürünler</h2>
-          </div>
+      {/* TEDARİK GEREKEN ÜRÜNLER (DÜZELTİLEN TAM GENİŞLİK TABLO KARTI) */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-xs p-6 space-y-4 w-full">
+        <div className="flex justify-between items-center">
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <AlertTriangle size={18} className="text-amber-500" />
+            Tedarik Gereken Ürünler
+          </h2>
+          <Link to="/inventory" className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1">
+            Tümünü Gör <ArrowRight size={14} />
+          </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          {!data?.critical_stock || data.critical_stock.length === 0 ? (
-            <div className="py-6 text-center text-xs text-gray-400">
-              Kritik seviyede ürün bulunmamaktadır. Tüm stoklar yeterli!
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse table-fixed">
+        {criticalStockList.length === 0 ? (
+          <div className="text-center py-8 text-xs text-gray-400">
+            Harika! Kritik stok seviyesinde ürün bulunmamaktadır.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3 w-1/2">Ürün Adı</th>
-                  <th className="pb-3 w-1/6">Kategori</th>
-                  <th className="pb-3 w-1/6 text-center">Kalan Stok</th>
-                  <th className="pb-3 w-1/6 text-center">Durum</th>
+                <tr className="border-b border-gray-100 bg-gray-50/50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="p-3">ÜRÜN ADI</th>
+                  <th className="p-3">KATEGORİ</th>
+                  <th className="p-3 text-center">KALAN STOK</th>
+                  <th className="p-3 text-center">MIN. STOK</th>
+                  <th className="p-3 text-center">DURUM</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 text-xs">
-                {data.critical_stock.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition">
-                    <td className="py-3 pr-4 font-medium text-gray-800">
+              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+                {criticalStockList.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/80 transition">
+                    <td className="p-3 font-semibold text-gray-800">
                       <div className="flex items-center gap-3">
                         {item.image_url ? (
                           <img 
                             src={item.image_url} 
                             alt={item.name} 
-                            className="w-8 h-8 rounded-lg object-cover border border-gray-200 shrink-0" 
-                            onError={(e) => { 
-                              e.target.onerror = null; 
-                              e.target.src = 'https://via.placeholder.com/32?text=Ürün'; 
-                            }}
+                            className="w-8 h-8 rounded-lg object-cover border border-gray-200 shrink-0"
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/32?text=Ürün'; }}
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                             <Package size={16} />
                           </div>
                         )}
-                        <span className="line-clamp-2 leading-relaxed" title={item.name}>
-                          {item.name}
-                        </span>
+                        <span>{item.name}</span>
                       </div>
                     </td>
-                    <td className="py-3 text-gray-500 truncate">{item.category}</td>
-                    <td className="py-3 font-bold text-amber-600 text-center whitespace-nowrap">{item.stock} Adet</td>
-                    <td className="py-3 text-center whitespace-nowrap">
-                      <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold text-[12px] inline-block">
-                        Kritik Seviye (Min: {item.min_stock})
+                    <td className="p-3 text-gray-500">{item.category}</td>
+                    <td className="p-3 text-center font-bold text-amber-600">{item.stock} Adet</td>
+                    <td className="p-3 text-center text-gray-500">{item.min_stock} Adet</td>
+                    <td className="p-3 text-center">
+                      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                        Kritik Stok
                       </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
     </div>
   );
 }

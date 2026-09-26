@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from datetime import datetime
 
 class Category(Base):
     __tablename__ = "categories"
@@ -79,3 +80,34 @@ class StockMovement(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="movements")
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_python=True, primary_key=True, index=True)
+    order_code = Column(String(50), unique=True, nullable=False, index=True)
+    customer_name = Column(String(100), nullable=False, default="Misafir Müşteri")
+    total_price = Column(Numeric(10, 2), nullable=False)
+    payment_method = Column(String(50), default="Kredi Kartı")
+    payment_status = Column(String(30), default="Ödendi")
+    order_status = Column(String(30), default="Onay Bekliyor")  # "Ona Bekleniyor", "Hazırlanıyor", "Tamamlandı", "İptal"
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.now())
+
+    # İlişki
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit_price = Column(Numeric(10, 2), nullable=False)
+    total_price = Column(Numeric(10, 2), nullable=False)
+
+    # İlişkiler
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")

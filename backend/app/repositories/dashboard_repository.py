@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
-from app.models.erp import Product, Category, Sale
+from app.models.erp import Product, Category, Order
 from app.models.user import User
 
 class DashboardRepository:
@@ -11,7 +11,10 @@ class DashboardRepository:
         return self.db.query(func.coalesce(func.sum(Product.stock), 0)).scalar()
 
     def get_total_revenue(self) -> float:
-        return self.db.query(func.coalesce(func.sum(Sale.total_amount), 0.0)).scalar()
+        total = self.db.query(func.sum(Order.total_price))\
+            .filter(Order.payment_status == "Ödendi")\
+            .scalar()
+        return float(total) if total else 0.0
 
     def get_active_users_count(self) -> int:
         return self.db.query(func.count(User.id)).filter(User.is_active == True).scalar()
@@ -37,13 +40,14 @@ class DashboardRepository:
         )
 
     def get_sales_by_month(self):
+        month_expr = extract('month', Order.created_at)
         return (
             self.db.query(
-                extract('month', Sale.created_at).label("month_num"),
-                func.sum(Sale.total_amount).label("ciro")
+                month_expr.label("month_num"),
+                func.sum(Order.total_price).label("ciro")
             )
-            .group_by("month_num")
-            .order_by("month_num")
+            .group_by(month_expr)
+            .order_by(month_expr)
             .all()
         )
 

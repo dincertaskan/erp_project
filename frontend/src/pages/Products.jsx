@@ -264,11 +264,11 @@ export default function Products() {
                       <td className="p-4 text-center text-gray-500 truncate">{p.category_name}</td>
                       <td className="p-4 text-center font-bold whitespace-nowrap">
                         <span className={isLoss ? 'text-red-600' : 'text-emerald-600'}>
-                          ₺{p.unit_price ? Number(p.unit_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
+                          ${p.unit_price ? Number(p.unit_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
                         </span>
                       </td>
                       <td className="p-4 text-center text-gray-500 whitespace-nowrap">
-                        ₺{p.cost_price ? Number(p.cost_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
+                        ${p.cost_price ? Number(p.cost_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
                       </td>
                       <td className="p-4 text-center font-semibold text-gray-800">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] ${p.stock <= p.min_stock ? 'bg-amber-50 text-amber-700 font-bold' : 'bg-gray-100 text-gray-700'}`}>
@@ -367,7 +367,7 @@ export default function Products() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Satış Fiyatı (₺)</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Satış Fiyatı ($)</label>
                   <input 
                     type="number" 
                     step="0.01"
@@ -380,7 +380,7 @@ export default function Products() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Maliyet (₺)</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Maliyet ($)</label>
                   <input 
                     type="number" 
                     step="0.01"

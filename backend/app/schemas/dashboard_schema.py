@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class MonthlySale(BaseModel):
+class SalesDataPoint(BaseModel):
     month: str
     ciro: float
 
-class CategoryDistribution(BaseModel):
+class CategoryDataPoint(BaseModel):
     name: str
     value: int
     color: str
@@ -18,29 +18,15 @@ class CriticalStockItem(BaseModel):
     min_stock: int
     image_url: Optional[str] = None
 
-class RecentActivityItem(BaseModel):
-    id: int
-    text: str
-    amount: str
-    date: str
-
 class DashboardDataResponse(BaseModel):
     total_stock: int
-    monthly_sales_total: float
+    monthly_revenue: float
     active_customers: int
     critical_stock_count: int
-    sales_data: List[MonthlySale]
-    category_data: List[CategoryDistribution]
-    critical_stock: List[CriticalStockItem]
-    recent_activities: List[RecentActivityItem]
+    sales_data: List[SalesDataPoint] = []
+    category_data: List[CategoryDataPoint] = []
+    critical_stock: List[CriticalStockItem] = []
+    recent_activities: List[dict] = []
 
-class ProductCreate(BaseModel):
-    name: str
-    category_id: int
-    stock: int
-    min_stock: int
-    price: float
-
-class SaleCreate(BaseModel):
-    product_id: int
-    quantity: int
+    class Config:
+        from_attributes = True
