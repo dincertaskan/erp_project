@@ -16,7 +16,7 @@ export default function Sidebar() {
     { name: 'Ana Sayfa', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Ürünler', path: '/products', icon: Tag },
     { name: 'Stok Yönetimi', path: '/inventory', icon: Package },
-    { name: 'Satış & Sipariş', path: '/sales', icon: ShoppingCart },
+    { name: 'Satış & Sipariş', path: '/orders', icon: ShoppingCart },
     { name: 'Müşteriler', path: '/customers', icon: Users },
     { name: 'Raporlar', path: '/reports', icon: TrendingUp },
     { name: 'Ayarlar', path: '/settings', icon: Settings },

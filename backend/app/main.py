@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.controllers import auth_controller, dashboard_controller, inventory_controller
+from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller
 from app.core.database import Base, engine
 
 # Model dosyalarını yüklüyoruz
@@ -36,6 +36,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth_controller.router)
 app.include_router(dashboard_controller.router)
 app.include_router(inventory_controller.router)
+app.include_router(order_controller.router)
 
 @app.get("/")
 def read_root():

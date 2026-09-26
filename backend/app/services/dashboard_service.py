@@ -10,22 +10,29 @@ class DashboardService:
         active_customers = self.repo.get_active_users_count()
         critical_products = self.repo.get_critical_products()
 
-        # Kategorilere göre stok dağılımı
         category_stats = self.repo.get_category_distribution()
-        category_data = [{"name": c.name, "value": c.value, "color": c.color} for c in category_stats]
-
-        # Aylara göre satış trendi
-        sales_by_month = self.repo.get_sales_by_month()
-        month_names = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Ekim", "Kas", "Ara"]
-        sales_data = [
+        category_data = [
             {
-                "month": month_names[int(m.month_num) - 1], 
-                "ciro": float(m.ciro) if m.ciro is not None else 0.0
+                "name": c.name, 
+                "value": int(c.value), 
+                "color": getattr(c, "color", "#6366f1") or "#6366f1"
             } 
-            for m in sales_by_month
+            for c in category_stats
         ]
 
-        # Kritik stok listesi (Görsel URL'i eklendi)
+        sales_by_month = self.repo.get_sales_by_month()
+        month_names = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Ekim", "Kas", "Ara"]
+        
+        sales_data = []
+        for m in sales_by_month:
+            if m.month_num is not None:
+                month_idx = int(m.month_num) - 1
+                if 0 <= month_idx < 12:
+                    sales_data.append({
+                        "month": month_names[month_idx],
+                        "ciro": float(m.ciro) if m.ciro is not None else 0.0
+                    })
+
         critical_stock_list = [
             {
                 "id": p.id,
@@ -39,9 +46,9 @@ class DashboardService:
         ]
 
         return {
-            "total_stock": total_stock,
-            "monthly_sales_total": total_revenue,
-            "active_customers": active_customers,
+            "total_stock": int(total_stock),
+            "monthly_revenue": float(total_revenue),
+            "active_customers": int(active_customers),
             "critical_stock_count": len(critical_products),
             "sales_data": sales_data,
             "category_data": category_data,

@@ -121,14 +121,14 @@ export default function ProductDetail() {
               <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Satış Fiyatı</span>
                 <p className={`text-base font-bold mt-1 ${isLoss ? 'text-red-600' : 'text-emerald-600'}`}>
-                  ₺{product.unit_price ? Number(product.unit_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
+                  ${product.unit_price ? Number(product.unit_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
                 </p>
               </div>
 
               <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Maliyet</span>
                 <p className="text-base font-bold text-gray-700 mt-1">
-                  ₺{product.cost_price ? Number(product.cost_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
+                  ${product.cost_price ? Number(product.cost_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '0.00'}
                 </p>
               </div>
 
