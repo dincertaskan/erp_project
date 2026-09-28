@@ -16,8 +16,12 @@ class DashboardRepository:
             .scalar()
         return float(total) if total else 0.0
 
+    # YENİ DÜZELTME: Sadece 'customer' rolündeki aktif kullanıcıları sayar (Admin hariç)
     def get_active_users_count(self) -> int:
-        return self.db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+        return self.db.query(func.count(User.id)).filter(
+            User.is_active == True,
+            User.role == "customer"
+        ).scalar()
 
     def get_critical_products(self):
         return (

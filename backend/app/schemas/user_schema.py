@@ -6,6 +6,7 @@ class UserCreate(BaseModel):
     full_name: str
     email: EmailStr
     password: str
+    role: Optional[str] = "admin"  # Kayıt sırasında seçilebilir ('admin' veya 'customer')
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -15,8 +16,9 @@ class UserResponse(BaseModel):
     id: int
     full_name: str
     email: EmailStr
+    role: str
     is_active: bool
-    avatar_url: Optional[str] = None  # YENİ EKLENDİ
+    avatar_url: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -26,4 +28,5 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     full_name: str
-    avatar_url: Optional[str] = None  # YENİ EKLENDİ
+    role: str
+    avatar_url: Optional[str] = None

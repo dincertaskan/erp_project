@@ -15,12 +15,24 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', { email, password });
       
+      // Token ve Kullanıcı Bilgilerini Kaydetme
       localStorage.setItem('token', res.data.access_token);
+      
       if (res.data.full_name) {
         localStorage.setItem('user_name', res.data.full_name);
       }
+      
+      // Rol bilgisini kaydediyoruz ('admin' veya 'customer')
+      const userRole = res.data.role || 'customer';
+      localStorage.setItem('user_role', userRole);
 
-      navigate('/dashboard');
+      // Role göre dinamik yönlendirme
+      if (userRole === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/portal/products');
+      }
+
     } catch (err) {
       console.error("Giriş Hatası:", err.response);
       if (typeof err.response?.data?.detail === 'string') {
@@ -64,7 +76,7 @@ export default function Login() {
         />
         <button 
           type="submit" 
-          className="bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-sm"
+          className="bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-sm cursor-pointer"
         >
           Giriş Yap
         </button>

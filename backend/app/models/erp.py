@@ -39,7 +39,7 @@ class Product(Base):
     min_stock = Column(Integer, default=5)
     unit_price = Column(Float, default=0.0)
     cost_price = Column(Float, default=0.0)
-    image_url = Column(String, nullable=True)  # YENİ EKLENDİ
+    image_url = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -56,9 +56,9 @@ class Sale(Base):
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     quantity = Column(Integer, nullable=False)
-    unit_price = Column(Float, nullable=False)    # Satış anındaki birim fiyat
-    total_amount = Column(Float, nullable=False)  # quantity * unit_price
-    status = Column(String, default="Tamamlandı") # "Hazırlanıyor", "Tamamlandı", "İptal"
+    unit_price = Column(Float, nullable=False)
+    total_amount = Column(Float, nullable=False)
+    status = Column(String, default="Tamamlandı")
     note = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -81,20 +81,20 @@ class StockMovement(Base):
 
     product = relationship("Product", back_populates="movements")
 
+
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_python=True, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True) # Düzeltildi
     order_code = Column(String(50), unique=True, nullable=False, index=True)
     customer_name = Column(String(100), nullable=False, default="Misafir Müşteri")
     total_price = Column(Numeric(10, 2), nullable=False)
     payment_method = Column(String(50), default="Kredi Kartı")
     payment_status = Column(String(30), default="Ödendi")
-    order_status = Column(String(30), default="Onay Bekliyor")  # "Ona Bekleniyor", "Hazırlanıyor", "Tamamlandı", "İptal"
+    order_status = Column(String(30), default="Onay Bekliyor")  # "Onay Bekliyor", "Hazırlanıyor", "Kargolandı", "Tamamlandı", "İptal"
     note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.now())
+    created_at = Column(DateTime, default=datetime.now)
 
-    # İlişki
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
 
 
@@ -108,6 +108,5 @@ class OrderItem(Base):
     unit_price = Column(Numeric(10, 2), nullable=False)
     total_price = Column(Numeric(10, 2), nullable=False)
 
-    # İlişkiler
     order = relationship("Order", back_populates="items")
     product = relationship("Product")

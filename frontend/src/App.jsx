@@ -5,21 +5,34 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail'; // YENİ EKLENDİ
+import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Layout from './component/Layout';
 import Orders from './pages/Orders';
+import CustomerPortal from './pages/CustomerPortal';
+import Customers from './pages/Customers';
 
-const ProtectedRoute = ({ children }) => {
+// Rol Kontrollü Korumalı Rota Bileşeni
+const ProtectedRoute = ({ children, allowedRole = 'admin' }) => {
   const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('user_role') || 'admin';
+
   if (!token) {
     return <Navigate to="/login" replace />;
   }
+
+  if (userRole !== allowedRole) {
+    // Admin harici kullanıcı yetkisiz bir URL'e girmeye çalışırsa müşteri portalına atar
+    return <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/products"} replace />;
+  }
+
   return children;
 };
 
 export default function App() {
+  const userRole = localStorage.getItem('user_role') || 'admin';
+
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Sisteme yeni giriş tespit edildi.', date: '2026-09-05 10:30' },
     { id: 2, text: 'Stok seviyesi kritik sınırın altına düştü (Ürün #12).', date: '2026-09-05 11:15' },
@@ -35,10 +48,11 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* ADMIN ROTALARI */}
         <Route 
           path="/dashboard" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="admin">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Dashboard />
               </Layout>
@@ -49,7 +63,7 @@ export default function App() {
         <Route 
           path="/products" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="admin">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Products />
               </Layout>
@@ -57,11 +71,10 @@ export default function App() {
           } 
         />
 
-        {/* YENİ ÜRÜN DETAY ROTASI */}
         <Route 
           path="/products/:id" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="admin">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <ProductDetail />
               </Layout>
@@ -72,7 +85,7 @@ export default function App() {
         <Route 
           path="/inventory" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="admin">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Inventory />
               </Layout>
@@ -81,31 +94,9 @@ export default function App() {
         />
 
         <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Layout notifications={notifications} setNotifications={setNotifications}>
-                <Profile />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/notifications" 
-          element={
-            <ProtectedRoute>
-              <Layout notifications={notifications} setNotifications={setNotifications}>
-                <Notifications notifications={notifications} setNotifications={setNotifications} />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
           path="/orders" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="admin">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <Orders />
               </Layout>
@@ -113,7 +104,55 @@ export default function App() {
           } 
         />
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* MÜŞTERİ ROTALARI */}
+        <Route 
+          path="/portal/products" 
+          element={
+            <ProtectedRoute allowedRole="customer">
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <CustomerPortal />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* ORTAK KULLANILABİLİR ROTALAR */}
+        <Route 
+          path="/profile" 
+          element={
+            <Layout notifications={notifications} setNotifications={setNotifications}>
+              <Profile />
+            </Layout>
+          } 
+        />
+
+        <Route 
+          path="/notifications" 
+          element={
+            <Layout notifications={notifications} setNotifications={setNotifications}>
+              <Notifications notifications={notifications} setNotifications={setNotifications} />
+            </Layout>
+          } 
+        />
+
+        {/* ROL BAZLI JOKER YÖNLENDİRME */}
+        <Route 
+          path="*" 
+          element={
+            <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/products"} replace />
+          } 
+        />
+
+        <Route 
+          path="/customers" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <Customers />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );
