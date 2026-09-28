@@ -8,7 +8,11 @@ class OrderRepository:
         self.db = db
 
     def get_all_orders(self):
-        orders = self.db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product)).order_by(Order.id.desc()).all()
+        """Tüm siparişleri ürün detaylarıyla birlikte en yeniden en eskiye sıralayarak getirir."""
+        orders = self.db.query(Order).options(
+            joinedload(Order.items).joinedload(OrderItem.product)
+        ).order_by(Order.id.desc()).all()
+
         result = []
         for o in orders:
             items_payload = []
@@ -38,7 +42,8 @@ class OrderRepository:
             })
         return result
 
-    def create_order(self, data: OrderCreate, user_name: str = "Sistem"):
+    def create_order(self, data: OrderCreate, user_name: str = "Dinçer Taşkan"):
+        """Yeni sipariş oluşturur, stok miktarını düşer ve log kaydı oluşturur."""
         if not data.items:
             raise ValueError("Sipariş için en az 1 ürün seçilmelidir.")
 
@@ -57,7 +62,7 @@ class OrderRepository:
             item_total = float(product.unit_price) * item_data.quantity
             grand_total += item_total
 
-            # Stok Düşürme ve Loglama
+            # Stok Düşürme ve Stok Hareketi Loglama
             prev_stock = product.stock
             product.stock -= item_data.quantity
             
@@ -68,7 +73,7 @@ class OrderRepository:
                 quantity=item_data.quantity,
                 previous_stock=prev_stock,
                 new_stock=product.stock,
-                description=f"Sipariş satışı yapıldı (Sipariş Kodu Otomatik Oluşturuluyor)"
+                description="Yeni sipariş oluşturuldu."
             )
             self.db.add(movement)
 
@@ -79,22 +84,22 @@ class OrderRepository:
                 "total_price": item_total
             })
 
-        # 2. Ana Siparişi Oluştur
-        unique_code = f"{uuid.uuid4().hex[:6].upper()}"
+        # 2. Ana Sipariş Kaydı (Varsayılan durum: Onay Bekliyor)
+        unique_code = f"#ORD-{uuid.uuid4().hex[:6].upper()}"
         new_order = Order(
             order_code=unique_code,
             customer_name=data.customer_name or "Misafir Müşteri",
             total_price=grand_total,
             payment_method=data.payment_method,
             payment_status="Ödendi",
-            order_status="Hazırlanıyor",
+            order_status="Onay Bekliyor",
             note=data.note
         )
         self.db.add(new_order)
         self.db.commit()
         self.db.refresh(new_order)
 
-        # 3. Sipariş Kalemlerini Ekle
+        # 3. Sipariş Kalemleri Kaydı
         for item in order_items_to_add:
             order_item = OrderItem(
                 order_id=new_order.id,
@@ -106,34 +111,36 @@ class OrderRepository:
             self.db.add(order_item)
 
         self.db.commit()
-        return self.get_all_orders()[0] # En son oluşturulanı döndür
+        return self.get_all_orders()[0]
 
-    def update_order_status(self, order_id: int, new_status: str, user_name: str = "Sistem"):
+    def update_order_status(self, order_id: int, new_status: str, user_name: str = "Dinçer Taşkan"):
+        """
+        Sipariş durumunu günceller.
+        'İptal' veya 'Tamamlandı' olan siparişlerin durumunun tekrar değiştirilmesini engeller.
+        'İptal' edildiğinde stoku otomatik iade eder ve ödeme durumunu 'İade Edildi' yapar.
+        """
         order = self.db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise ValueError("Sipariş bulunamadı.")
 
         old_status = order.order_status
 
-        # Kilitli durum kontrolü: İptal edilmiş veya Tamamlanmış siparişler değiştirilemez
+        # Kilit Durumu Kontrolü (Tamamlanan veya İptal edilen siparişler kilitlenir)
         if old_status in ["İptal", "Tamamlandı"]:
             raise ValueError(f"'{old_status}' durumundaki bir siparişin durumu daha sonra değiştirilemez.")
 
-        # Sipariş Durumunu Güncelle
         order.order_status = new_status
 
-        # İPTAL EDİLME DURUMU SENARYOSU (Para İadesi & Stok Geri Yükleme)
+        # İPTAL SENARYOSU (Para İadesi & Stok Geri Yükleme)
         if new_status == "İptal":
-            order.payment_status = "İade Edildi"  # Para İadesi Kaydı (Cirodan Düşer)
+            order.payment_status = "İade Edildi"
 
-            # Siparişteki ürünlerin stoklarını geri iade et
             for item in order.items:
                 product = self.db.query(Product).filter(Product.id == item.product_id).first()
                 if product:
                     prev_stock = product.stock
-                    product.stock += item.quantity  # Stok Geri Eklendi
+                    product.stock += item.quantity
 
-                    # Stok Hareket Notu/Logu Oluştur
                     movement = StockMovement(
                         product_id=product.id,
                         user_name=user_name,

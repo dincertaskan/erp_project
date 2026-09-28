@@ -2,50 +2,27 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { 
   ShoppingBag, Clock, CheckCircle2, DollarSign, 
-  Search, Plus, RefreshCw, Loader2, X, AlertCircle, Eye, FileText 
+  Search, RefreshCw, Loader2, X, Eye, Printer 
 } from 'lucide-react';
-import SearchableSelect from '../component/SearchableSelect';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filtreler
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Modal State'leri
-  const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
+  // Modal State
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Form State
-  const [orderForm, setOrderForm] = useState({
-    customer_name: '',
-    product_id: '',
-    quantity: 1,
-    payment_method: 'Kredi Kartı',
-    note: ''
-  });
-
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
-
-  // Veritabanından Veri Çekme İşlemi
+  // SİPARİŞ VERİLERİNİ ÇEKME (Sadece Siparişler)
   const fetchOrdersData = async () => {
     setLoading(true);
     try {
-      const [prodRes, ordersRes, custRes] = await Promise.all([
-        api.get('/inventory/products'),
-        api.get('/orders').catch(() => ({ data: [] })),
-        api.get('/customers').catch(() => ({ data: [] }))
-      ]);
-
-      setProducts(prodRes.data || []);
-      setOrders(ordersRes.data || []);
-      setCustomers(custRes.data || []);
+      const res = await api.get('/orders');
+      setOrders(res.data || []);
     } catch (err) {
       console.error("Sipariş verileri alınamadı:", err);
     } finally {
@@ -57,80 +34,86 @@ export default function Orders() {
     fetchOrdersData();
   }, []);
 
-  // SİPARİŞ DURUMU GÜNCELLEME İŞLEMİ (İptal ve Para İadesi Dahil)
+  // DURUM GÜNCELLEME VE İPTAL/İADE MANTIĞI
   const handleStatusChange = async (orderId, newStatus) => {
     if (newStatus === 'İptal') {
-      if (!window.confirm("Bu siparişi iptal etmek istediğinize emin misiniz? Satılan ürün stoka geri yüklenecek ve ödeme 'İade Edildi' olarak işaretlenecektir.")) {
+      if (!window.confirm("Bu siparişi iptal etmek istediğinize emin misiniz? Satılan ürün stoku geri yüklenecek ve ödeme 'İade Edildi' olarak işaretlenecektir.")) {
         return;
       }
     }
 
     try {
       await api.patch(`/orders/${orderId}/status`, { order_status: newStatus });
-      fetchOrdersData(); // Tüm tabloyu, ciro ve stokları güncel verilerle yenile
+      fetchOrdersData();
     } catch (err) {
       alert(err.response?.data?.detail || "Sipariş durumu güncellenirken bir hata oluştu.");
     }
   };
 
-  // SearchableSelect için Formatlanmış Ürün Seçenekleri
-  const formattedProductOptions = products.map(p => ({
-    id: p.id,
-    name: `${p.name} (Stok: ${p.stock} | ₺${Number(p.unit_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })})`
-  }));
+  // FATURA YAZDIRMA / GÖRÜNTÜLEME
+  const handlePrintInvoice = (order) => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Fatura - ${order.order_code}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 30px; font-size: 14px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #6366f1; padding-bottom: 15px; }
+            .title { font-size: 20px; font-weight: bold; color: #4f46e5; }
+            .info-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
+            .info-table th, .info-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+            .info-table th { background-color: #f8fafc; font-size: 12px; }
+            .total { text-align: right; margin-top: 20px; font-size: 16px; font-weight: bold; color: #059669; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">ERP YÖNETİM SİSTEMİ - RESMİ FATURA</div>
+              <p style="margin-top: 5px; color: #64748b;">Tarih: ${new Date(order.created_at || Date.now()).toLocaleDateString('tr-TR')}</p>
+            </div>
+            <div>
+              <h3 style="margin:0;">Sipariş No: ${order.order_code}</h3>
+            </div>
+          </div>
+          
+          <div style="margin-top: 20px; line-height: 1.6;">
+            <strong>Müşteri Adı:</strong> ${order.customer_name}<br/>
+            <strong>Ödeme Yöntemi:</strong> ${order.payment_method}<br/>
+            <strong>Ödeme Durumu:</strong> ${order.payment_status}
+          </div>
 
-  // SearchableSelect için Müşteri Seçenekleri
-  const formattedCustomerOptions = [
-    { id: 'Misafir Müşteri', name: 'Misafir Müşteri' },
-    ...customers.map(c => ({ id: c.name || c.full_name, name: c.name || c.full_name }))
-  ];
+          <table class="info-table">
+            <thead>
+              <tr>
+                <th>Ürün</th>
+                <th>Miktar</th>
+                <th>Birim Fiyat</th>
+                <th>Toplam</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${order.product_name}</td>
+                <td>${order.quantity} Adet</td>
+                <td>$${(order.total_price / order.quantity).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                <td>$${Number(order.total_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            </tbody>
+          </table>
 
-  // Seçilen Ürüne Göre Toplam Hesaplama
-  const selectedProductObj = products.find(p => p.id === parseInt(orderForm.product_id));
-  const calculatedTotal = selectedProductObj ? (selectedProductObj.unit_price * orderForm.quantity) : 0;
-
-  // Yeni Sipariş Kaydetme
-  const handleCreateOrder = async (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (!orderForm.product_id) {
-      setFormError('Lütfen bir ürün seçiniz.');
-      return;
-    }
-
-    if (selectedProductObj && selectedProductObj.stock < orderForm.quantity) {
-      setFormError(`Yetersiz Stok! Mevcut stok: ${selectedProductObj.stock} Adet`);
-      return;
-    }
-
-    setFormSubmitting(true);
-    try {
-      const payload = {
-        customer_name: orderForm.customer_name || 'Misafir Müşteri',
-        payment_method: orderForm.payment_method,
-        note: orderForm.note,
-        items: [
-          {
-            product_id: parseInt(orderForm.product_id),
-            quantity: parseInt(orderForm.quantity)
-          }
-        ]
-      };
-
-      await api.post('/orders', payload);
-
-      setIsNewOrderModalOpen(false);
-      setOrderForm({ customer_name: '', product_id: '', quantity: 1, payment_method: 'Kredi Kartı', note: '' });
-      fetchOrdersData();
-    } catch (err) {
-      setFormError(err.response?.data?.detail || "Sipariş oluşturulurken bir hata oluştu.");
-    } finally {
-      setFormSubmitting(false);
-    }
+          <div class="total">
+            Genel Toplam: $${Number(order.total_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
-  // İstatistikler (Sadece İade Edilmeyen ve İptal Olmayan Siparişlerin Cirosu Hesaplanır)
+  // KPI HESAPLAMALARI
   const totalOrdersCount = orders.length;
   const pendingOrdersCount = orders.filter(o => o.order_status !== 'Tamamlandı' && o.order_status !== 'İptal').length;
   const completedOrdersCount = orders.filter(o => o.order_status === 'Tamamlandı').length;
@@ -138,6 +121,7 @@ export default function Orders() {
     .filter(o => o.payment_status !== 'İade Edildi' && o.order_status !== 'İptal')
     .reduce((acc, o) => acc + (Number(o.total_price) || 0), 0);
 
+  // FİLTRELEME
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.order_code?.toLowerCase().includes(search.toLowerCase()) || 
                           o.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,20 +132,12 @@ export default function Orders() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* BAŞLIK VE YENİ SİPARİŞ BUTONU */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Satış & Sipariş Yönetimi</h1>
-        </div>
-        <button
-          onClick={() => setIsNewOrderModalOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer"
-        >
-          <Plus size={16} /> Yeni Sipariş Oluştur
-        </button>
+      {/* BAŞLIK */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">Sipariş Yönetimi</h1>
       </div>
 
-      {/* KPI ÖZET İSTATİSTİK KARTLARI */}
+      {/* KPI KARTLARI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
           <div>
@@ -197,7 +173,7 @@ export default function Orders() {
           <div>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM SATIŞ CIROSU</span>
             <p className="text-2xl font-extrabold text-emerald-600 mt-1">
-              ₺{totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+              ${totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -206,7 +182,7 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* ARAMA VE FİLTRE BARI */}
+      {/* FİLTRE BARI */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="relative w-full md:w-80">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -228,6 +204,7 @@ export default function Orders() {
             <option value="">Tüm Durumlar</option>
             <option value="Onay Bekliyor">Onay Bekliyor</option>
             <option value="Hazırlanıyor">Hazırlanıyor</option>
+            <option value="Kargolandı">Kargolandı</option>
             <option value="Tamamlandı">Tamamlandı</option>
             <option value="İptal">İptal</option>
           </select>
@@ -251,11 +228,11 @@ export default function Orders() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-xs">
-            Kayıtlı sipariş bulunamadı.
+            Henüz müşterilerden gelen bir sipariş bulunmuyor.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse table-fixed min-w-[950px]">
+            <table className="w-full text-left border-collapse table-fixed min-w-[980px]">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                   <th className="p-4 text-center w-[110px]">SİPARİŞ NO</th>
@@ -264,8 +241,8 @@ export default function Orders() {
                   <th className="p-4 text-center w-[90px]">MİKTAR</th>
                   <th className="p-4 text-center w-[120px]">TOPLAM TUTAR</th>
                   <th className="p-4 text-center w-[120px]">ÖDEME</th>
-                  <th className="p-4 text-center w-[140px]">DURUM</th>
-                  <th className="p-4 text-center w-[100px]">İŞLEMLER</th>
+                  <th className="p-4 text-center w-[150px]">DURUM</th>
+                  <th className="p-4 text-center w-[110px]">İŞLEMLER</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
@@ -276,7 +253,7 @@ export default function Orders() {
                     <td className="p-4 text-gray-600 truncate">{o.product_name}</td>
                     <td className="p-4 text-center font-bold">{o.quantity} Adet</td>
                     <td className="p-4 text-center font-bold text-emerald-600 whitespace-nowrap">
-                      ₺{Number(o.total_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                      ${Number(o.total_price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
@@ -287,7 +264,7 @@ export default function Orders() {
                       </span>
                     </td>
 
-                    {/* DEĞİŞTİRİLEBİLİR DURUM SEÇİM ALANI */}
+                    {/* ADMIN GÜNCELLEME MENÜSÜ */}
                     <td className="p-4 text-center">
                       <select
                         value={o.order_status}
@@ -295,6 +272,7 @@ export default function Orders() {
                         onChange={(e) => handleStatusChange(o.id, e.target.value)}
                         className={`text-[11px] font-bold px-2 py-1 rounded-lg border focus:outline-indigo-500 ${
                           o.order_status === 'Tamamlandı' ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-not-allowed' :
+                          o.order_status === 'Kargolandı' ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-pointer' :
                           o.order_status === 'Hazırlanıyor' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer' :
                           o.order_status === 'İptal' ? 'bg-red-50 text-red-700 border-red-200 cursor-not-allowed' :
                           'bg-amber-50 text-amber-700 border-amber-200 cursor-pointer'
@@ -302,19 +280,30 @@ export default function Orders() {
                       >
                         <option value="Onay Bekliyor">Onay Bekliyor</option>
                         <option value="Hazırlanıyor">Hazırlanıyor</option>
+                        <option value="Kargolandı">Kargolandı</option>
                         <option value="Tamamlandı">Tamamlandı</option>
                         <option value="İptal">İptal Et & İade Et</option>
                       </select>
                     </td>
 
+                    {/* İŞLEMLER (Detay Göster & Fatura Yazdır) */}
                     <td className="p-4 text-center">
-                      <button 
-                        onClick={() => { setSelectedOrder(o); setIsDetailModalOpen(true); }}
-                        className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
-                        title="Detay Göster"
-                      >
-                        <Eye size={16} />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button 
+                          onClick={() => { setSelectedOrder(o); setIsDetailModalOpen(true); }}
+                          className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                          title="Detay Göster"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handlePrintInvoice(o)}
+                          className="p-1.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                          title="Fatura Yazdır"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -324,110 +313,13 @@ export default function Orders() {
         )}
       </div>
 
-      {/* YENİ SİPARİŞ MODAL */}
-      {isNewOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800 text-base">Yeni Sipariş Oluştur</h3>
-              <button onClick={() => setIsNewOrderModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateOrder} className="p-6 space-y-4">
-              {formError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium flex items-center gap-2">
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Müşteri Seçin / Girin</label>
-                <SearchableSelect 
-                  options={formattedCustomerOptions}
-                  selectedValue={orderForm.customer_name}
-                  onSelect={(custName) => setOrderForm({...orderForm, customer_name: custName})}
-                  placeholder="Müşteri Ara veya Seç..."
-                  type="category"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Satılacak Ürün</label>
-                <SearchableSelect 
-                  options={formattedProductOptions}
-                  selectedValue={orderForm.product_id}
-                  onSelect={(prodId) => setOrderForm({...orderForm, product_id: prodId})}
-                  placeholder="Ürün Ara veya Seç..."
-                  type="category"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Adet</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    required 
-                    value={orderForm.quantity}
-                    onChange={e => setOrderForm({...orderForm, quantity: Math.max(1, parseInt(e.target.value) || 1)})}
-                    className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500 font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Ödeme Yöntemi</label>
-                  <select 
-                    value={orderForm.payment_method}
-                    onChange={e => setOrderForm({...orderForm, payment_method: e.target.value})}
-                    className="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-indigo-500 bg-white"
-                  >
-                    <option value="Kredi Kartı">Kredi Kartı</option>
-                    <option value="Havale/EFT">Havale/EFT</option>
-                    <option value="Nakit">Nakit</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-100 flex justify-between items-center">
-                <span className="text-xs font-semibold text-indigo-900">Hesaplanan Toplam:</span>
-                <span className="text-lg font-extrabold text-indigo-600">
-                  ₺{calculatedTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                <button 
-                  type="button" 
-                  onClick={() => setIsNewOrderModalOpen(false)} 
-                  className="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
-                >
-                  İptal
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={formSubmitting} 
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-2"
-                >
-                  {formSubmitting && <Loader2 size={14} className="animate-spin" />}
-                  <span>Siparişi Tamamla</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* SİPARİŞ DETAY MODAL */}
+      {/* DETAY MODAL */}
       {isDetailModalOpen && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                <FileText size={16} className="text-indigo-600" /> Sipariş Detayı: {selectedOrder.order_code}
+                Sipariş Detayı: {selectedOrder.order_code}
               </h3>
               <button onClick={() => setIsDetailModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer">
                 <X size={18} />
@@ -448,7 +340,11 @@ export default function Orders() {
               </div>
               <div className="flex justify-between py-1 border-b border-gray-50">
                 <span className="text-gray-400">Toplam Tutar:</span>
-                <span className="font-extrabold text-emerald-600">₺{Number(selectedOrder.total_price).toLocaleString('tr-TR')}</span>
+                <span className="font-extrabold text-emerald-600">${Number(selectedOrder.total_price).toLocaleString('tr-TR')}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-gray-50">
+                <span className="text-gray-400">Ödeme Yöntemi:</span>
+                <span className="font-semibold text-gray-700">{selectedOrder.payment_method}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-400">Tarih:</span>

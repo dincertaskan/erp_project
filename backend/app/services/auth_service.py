@@ -11,12 +11,10 @@ class AuthService:
         self.user_repo = user_repo
 
     def _prepare_password_bytes(self, password: str) -> bytes:
-        # Şifreyi utf-8 byte dizisine çevirip kesin olarak ilk 72 byte'ını alır
         return password.encode('utf-8')[:72]
 
     def hash_password(self, password: str) -> str:
         pwd_bytes = self._prepare_password_bytes(password)
-        # Salt üretip şifreyi hashler
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(pwd_bytes, salt)
         return hashed.decode('utf-8')
@@ -62,10 +60,12 @@ class AuthService:
                 detail="E-posta veya şifre hatalı."
             )
         
-        access_token = self.create_access_token(data={"sub": user.email})
+        access_token = self.create_access_token(data={"sub": user.email, "role": user.role})
         
         return Token(
             access_token=access_token, 
             token_type="bearer",
-            full_name=user.full_name
+            full_name=user.full_name,
+            role=user.role,
+            avatar_url=user.avatar_url
         )

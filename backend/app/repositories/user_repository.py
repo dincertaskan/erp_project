@@ -10,10 +10,16 @@ class UserRepository:
         return self.db.query(User).filter(User.email == email).first()
 
     def create_user(self, user: UserCreate, hashed_password: str) -> User:
+        # Rol doğrulaması ('admin' veya 'customer')
+        allowed_roles = ["admin", "customer"]
+        selected_role = user.role if user.role in allowed_roles else "admin"
+
         db_user = User(
             full_name=user.full_name,
             email=user.email,
-            password_hash=hashed_password
+            password_hash=hashed_password,
+            role=selected_role,  # Seçilen rol atanıyor
+            is_active=True
         )
         self.db.add(db_user)
         self.db.commit()

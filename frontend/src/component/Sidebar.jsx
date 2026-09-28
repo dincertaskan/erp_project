@@ -6,35 +6,51 @@ import {
   ShoppingCart, 
   TrendingUp, 
   Settings,
-  Tag
+  Tag,
+  Store,
+  UserCheck
 } from 'lucide-react';
 
 export default function Sidebar() {
   const location = useLocation();
+  const userRole = localStorage.getItem('user_role') || 'admin';
 
-  const menuItems = [
+  // Admin İçin Görünür Menü Kalemleri
+  const adminMenuItems = [
     { name: 'Ana Sayfa', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Ürünler', path: '/products', icon: Tag },
     { name: 'Stok Yönetimi', path: '/inventory', icon: Package },
-    { name: 'Satış & Sipariş', path: '/orders', icon: ShoppingCart },
-    { name: 'Müşteriler', path: '/customers', icon: Users },
+    { name: 'Sipariş Yönetimi', path: '/orders', icon: ShoppingCart },
+    { name: 'Müşteri Yönetimi', path: '/customers', icon: Users },
     { name: 'Raporlar', path: '/reports', icon: TrendingUp },
     { name: 'Ayarlar', path: '/settings', icon: Settings },
   ];
 
+  // Müşteri İçin Sadeleştirilmiş Portal Menüsü
+  const customerMenuItems = [
+    { name: 'Ürün Kataloğu', path: '/portal/products', icon: Store },
+    { name: 'Sepetim', path: '/portal/cart', icon: ShoppingCart },
+    { name: 'Siparişlerim', path: '/portal/orders', icon: Tag },
+    { name: 'Hesabım / Profil', path: '/profile', icon: UserCheck },
+  ];
+
+  const currentMenuItems = userRole === 'admin' ? adminMenuItems : customerMenuItems;
+
   return (
-    <aside className="w-48 bg-slate-900 text-slate-300 min-h-screen flex flex-col border-r border-slate-800">
-      <div className="h-16 px-5 border-b border-slate-800 flex items-center gap-2.5 shrink-0">
-        <div className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white text-xs font-extrabold tracking-wider">
-          ERP
+    <aside className="w-48 bg-slate-900 text-slate-300 min-h-screen flex flex-col border-r border-slate-800 shrink-0">
+      <div className="h-16 px-4 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white text-xs font-extrabold tracking-wider">
+            ERP
+          </div>
+          <span className="text-xs font-bold text-white tracking-wide truncate">
+            {userRole === 'admin' ? 'Admin Panel' : 'Müşteri Portal'}
+          </span>
         </div>
-        <span className="text-sm font-bold text-white tracking-wide">
-          Yönetim Paneli
-        </span>
       </div>
 
       <nav className="flex-1 p-3 space-y-1">
-        {menuItems.map((item) => {
+        {currentMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
@@ -42,14 +58,14 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <Icon size={18} />
-              <span>{item.name}</span>
+              <Icon size={16} />
+              <span className="truncate">{item.name}</span>
             </Link>
           );
         })}

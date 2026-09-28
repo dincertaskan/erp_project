@@ -86,7 +86,7 @@ export default function Dashboard() {
           <div>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">AYLIK CİRO</span>
             <p className="text-2xl font-extrabold text-emerald-600 mt-1">
-              ₺{Number(revenueValue).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${Number(revenueValue).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -138,10 +138,10 @@ export default function Dashboard() {
                   tickLine={false} 
                   axisLine={false} 
                   tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  tickFormatter={(val) => `₺${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                  tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
                 />
                 <Tooltip 
-                  formatter={(val) => [`₺${Number(val).toLocaleString('tr-TR')}`, 'Ciro']}
+                  formatter={(val) => [`$${Number(val).toLocaleString('tr-TR')}`, 'Ciro']}
                   contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', borderColor: '#e2e8f0', fontSize: '12px' }}
                 />
                 <Area 
