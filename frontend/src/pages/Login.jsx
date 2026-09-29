@@ -30,7 +30,7 @@ export default function Login() {
       if (userRole === 'admin') {
         navigate('/dashboard');
       } else {
-        navigate('/portal/products');
+        navigate('/portal/anasayfa'); // Müşteri portalına yönlendirme
       }
 
     } catch (err) {

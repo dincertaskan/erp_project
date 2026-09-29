@@ -6,8 +6,21 @@ class InventoryRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    # YENİ EKLENDİ: Tüm kategorileri getiren metod (Müşteri Portalının filtreleme yapabilmesi için)
+    def get_all_categories(self) -> List[Category]:
+        return self.db.query(Category).order_by(Category.id.asc()).all()
+
+    # YENİ EKLENDİ: Yeni kategori oluşturma metodu
+    def create_category(self, name: str, color: str = "#6366f1") -> Category:
+        new_category = Category(name=name, color=color)
+        self.db.add(new_category)
+        self.db.commit()
+        self.db.refresh(new_category)
+        return new_category
+
     def get_all_products(self, search: Optional[str] = None, category_id: Optional[int] = None, status_filter: Optional[str] = None) -> List[Product]:
-        query = self.db.query(Product)
+        # Joinedload eklenerek Category ilişkisi performanslı bir şekilde yüklendi
+        query = self.db.query(Product).options(joinedload(Product.category))
         
         if category_id:
             query = query.filter(Product.category_id == category_id)
@@ -83,7 +96,7 @@ class InventoryRepository:
         self.db.commit()
         return True
 
-    def adjust_stock(self, product_id: int, data) -> tuple[Product, StockMovement]:
+    def adjust_stock(self, product_id: int, data) -> tuple[Product, Optional[str]]:
         product = self.get_product_by_id(product_id)
         if not product:
             return None, "Ürün bulunamadı."

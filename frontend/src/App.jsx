@@ -10,8 +10,9 @@ import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Layout from './component/Layout';
 import Orders from './pages/Orders';
-import CustomerPortal from './pages/CustomerPortal';
+import CustomerDashboard from './pages/CustomerDashboard';
 import Customers from './pages/Customers';
+import CustomerProducts from './pages/CustomerProducts';
 
 // Rol Kontrollü Korumalı Rota Bileşeni
 const ProtectedRoute = ({ children, allowedRole = 'admin' }) => {
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRole = 'admin' }) => {
 
   if (userRole !== allowedRole) {
     // Admin harici kullanıcı yetkisiz bir URL'e girmeye çalışırsa müşteri portalına atar
-    return <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/products"} replace />;
+    return <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/anasayfa"} replace />;
   }
 
   return children;
@@ -106,14 +107,25 @@ export default function App() {
 
         {/* MÜŞTERİ ROTALARI */}
         <Route 
-          path="/portal/products" 
+          path="/portal/anasayfa" 
           element={
             <ProtectedRoute allowedRole="customer">
               <Layout notifications={notifications} setNotifications={setNotifications}>
-                <CustomerPortal />
+                <CustomerDashboard />
               </Layout>
             </ProtectedRoute>
           } 
+        />
+
+        <Route
+          path="/portal/urunler"
+          element={
+            <ProtectedRoute allowedRole="customer">
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <CustomerProducts />
+              </Layout>
+            </ProtectedRoute>
+          }
         />
 
         {/* ORTAK KULLANILABİLİR ROTALAR */}
@@ -139,7 +151,7 @@ export default function App() {
         <Route 
           path="*" 
           element={
-            <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/products"} replace />
+            <Navigate to={userRole === 'admin' ? "/dashboard" : "/portal/anasayfa"} replace />
           } 
         />
 

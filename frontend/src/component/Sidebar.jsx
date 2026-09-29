@@ -8,14 +8,15 @@ import {
   Settings,
   Tag,
   Store,
-  UserCheck
+  UserCheck,
+  Home
 } from 'lucide-react';
 
 export default function Sidebar() {
   const location = useLocation();
   const userRole = localStorage.getItem('user_role') || 'admin';
 
-  // Admin İçin Görünür Menü Kalemleri
+  // Admin Menüsü
   const adminMenuItems = [
     { name: 'Ana Sayfa', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Ürünler', path: '/products', icon: Tag },
@@ -26,9 +27,10 @@ export default function Sidebar() {
     { name: 'Ayarlar', path: '/settings', icon: Settings },
   ];
 
-  // Müşteri İçin Sadeleştirilmiş Portal Menüsü
+  // E-Ticaret Formatında Müşteri Portal Menüsü
   const customerMenuItems = [
-    { name: 'Ürün Kataloğu', path: '/portal/products', icon: Store },
+    { name: 'Anasayfa', path: '/portal/anasayfa', icon: Home },
+    { name: 'Ürünler', path: '/portal/urunler', icon: Store },
     { name: 'Sepetim', path: '/portal/cart', icon: ShoppingCart },
     { name: 'Siparişlerim', path: '/portal/orders', icon: Tag },
     { name: 'Hesabım / Profil', path: '/profile', icon: UserCheck },
@@ -52,6 +54,8 @@ export default function Sidebar() {
       <nav className="flex-1 p-3 space-y-1">
         {currentMenuItems.map((item) => {
           const Icon = item.icon;
+          
+          // NET AKTİFLİK KONTROLÜ
           const isActive = location.pathname === item.path;
 
           return (
@@ -60,7 +64,7 @@ export default function Sidebar() {
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
                   : 'hover:bg-slate-800 hover:text-white'
               }`}
             >
