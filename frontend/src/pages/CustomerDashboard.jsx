@@ -65,7 +65,7 @@ export default function CustomerHome() {
               Ürün Kataloğunu İncele <ArrowRight size={16} />
             </button>
             <button 
-              onClick={() => navigate('/portal/orders')}
+              onClick={() => navigate('/portal/siparisler')}
               className="bg-indigo-500/30 hover:bg-indigo-500/40 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition border border-white/20 cursor-pointer"
             >
               Siparişlerimi Takip Et
@@ -80,7 +80,7 @@ export default function CustomerHome() {
       {/* MÜŞTERİ HIZLI İSTATİSTİK KARTLARI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div 
-          onClick={() => navigate('/portal/orders')}
+          onClick={() => navigate('/portal/siparisler')}
           className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs hover:border-indigo-300 transition cursor-pointer flex items-center justify-between group"
         >
           <div>
@@ -94,7 +94,7 @@ export default function CustomerHome() {
         </div>
 
         <div 
-          onClick={() => navigate('/portal/orders')}
+          onClick={() => navigate('/portal/siparisler')}
           className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs hover:border-indigo-300 transition cursor-pointer flex items-center justify-between group"
         >
           <div>

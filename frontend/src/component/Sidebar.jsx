@@ -31,9 +31,8 @@ export default function Sidebar() {
   const customerMenuItems = [
     { name: 'Anasayfa', path: '/portal/anasayfa', icon: Home },
     { name: 'Ürünler', path: '/portal/urunler', icon: Store },
-    { name: 'Sepetim', path: '/portal/cart', icon: ShoppingCart },
-    { name: 'Siparişlerim', path: '/portal/orders', icon: Tag },
-    { name: 'Hesabım / Profil', path: '/profile', icon: UserCheck },
+    { name: 'Sepetim', path: '/portal/sepet', icon: ShoppingCart },
+    { name: 'Siparişlerim', path: '/portal/siparisler', icon: Tag },
   ];
 
   const currentMenuItems = userRole === 'admin' ? adminMenuItems : customerMenuItems;

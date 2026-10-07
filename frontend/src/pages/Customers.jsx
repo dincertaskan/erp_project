@@ -97,7 +97,7 @@ export default function Customers() {
         </div>
 
         <button 
-          onClick={fetchCustomers}
+          onClick={() => { setSearch(''); fetchCustomers(); }}
           className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer"
           title="Yenile"
         >

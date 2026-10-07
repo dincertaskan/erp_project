@@ -13,6 +13,8 @@ import Orders from './pages/Orders';
 import CustomerDashboard from './pages/CustomerDashboard';
 import Customers from './pages/Customers';
 import CustomerProducts from './pages/CustomerProducts';
+import Cart from './pages/Cart';
+import CustomerOrders from './pages/CustomerOrders';
 
 // Rol Kontrollü Korumalı Rota Bileşeni
 const ProtectedRoute = ({ children, allowedRole = 'admin' }) => {
@@ -123,6 +125,28 @@ export default function App() {
             <ProtectedRoute allowedRole="customer">
               <Layout notifications={notifications} setNotifications={setNotifications}>
                 <CustomerProducts />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/portal/sepet"
+          element={
+            <ProtectedRoute allowedRole="customer">
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <Cart />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/portal/siparisler"
+          element={
+            <ProtectedRoute allowedRole="customer">
+              <Layout notifications={notifications} setNotifications={setNotifications}>
+                <CustomerOrders />
               </Layout>
             </ProtectedRoute>
           }

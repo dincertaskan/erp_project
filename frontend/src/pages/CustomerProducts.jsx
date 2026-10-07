@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { 
   Store, Search, ShoppingCart, Filter, Loader2, 
-  CheckCircle2, Eye, X, ArrowUpDown 
+  CheckCircle2, Eye, RefreshCw, X, ArrowUpDown 
 } from 'lucide-react';
 
 // Resim URL'sini hatasız oluşturan güvenli yardımcı fonksiyon
@@ -133,11 +133,8 @@ export default function CustomerProducts() {
       {/* BAŞLIK */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Store className="text-indigo-600" size={26} /> Ürün Kataloğu & Mağaza
+          Ürün Kataloğu & Mağaza
         </h1>
-        <p className="text-xs text-gray-500 mt-1">
-          Satıştaki en güncel ürünleri listeleyebilir, sepetinize ekleyerek hızlıca sipariş oluşturabilirsiniz.
-        </p>
       </div>
 
       {/* BAŞARILI BİLDİRİM TOAST */}
@@ -197,6 +194,15 @@ export default function CustomerProducts() {
               <option value="price-desc">Fiyat: Yüksekten Düşüğe</option>
             </select>
           </div>
+
+          <button 
+            onClick={() => { setSearch(''); setSelectedCategory(''); setSortOrder(''); fetchPortalData(); }}
+            className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+            title="Yenile"
+          >
+            <RefreshCw size={16} />
+          </button>
+
         </div>
       </div>
 

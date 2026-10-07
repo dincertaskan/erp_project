@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
 from app.models.erp import Product, Category, Order
 from app.models.user import User
+from datetime import datetime
 
 class DashboardRepository:
     def __init__(self, db: Session):
@@ -11,12 +12,15 @@ class DashboardRepository:
         return self.db.query(func.coalesce(func.sum(Product.stock), 0)).scalar()
 
     def get_total_revenue(self) -> float:
-        total = self.db.query(func.sum(Order.total_price))\
-            .filter(Order.payment_status == "Ödendi")\
+        # İptal edilmemiş ve ödenmiş siparişlerin toplam cirosu
+        total = self.db.query(func.coalesce(func.sum(Order.total_price), 0))\
+            .filter(
+                Order.payment_status == "Ödendi",
+                Order.order_status != "İptal"
+            )\
             .scalar()
         return float(total) if total else 0.0
 
-    # YENİ DÜZELTME: Sadece 'customer' rolündeki aktif kullanıcıları sayar (Admin hariç)
     def get_active_users_count(self) -> int:
         return self.db.query(func.count(User.id)).filter(
             User.is_active == True,
@@ -44,16 +48,24 @@ class DashboardRepository:
         )
 
     def get_sales_by_month(self):
+        current_year = datetime.now().year
         month_expr = extract('month', Order.created_at)
-        return (
+        
+        # Sadece iptal edilmemiş siparişlerin aylara göre cirosu hesaplanır
+        sales_data = (
             self.db.query(
                 month_expr.label("month_num"),
-                func.sum(Order.total_price).label("ciro")
+                func.coalesce(func.sum(Order.total_price), 0).label("ciro")
+            )
+            .filter(
+                extract('year', Order.created_at) == current_year,
+                Order.order_status != "İptal"  # İPTAL EDİLEN SİPARİŞLER GRAFİKTEN ÇIKARILDI
             )
             .group_by(month_expr)
             .order_by(month_expr)
             .all()
         )
+        return sales_data
 
     def get_all_categories(self):
         return self.db.query(Category).all()
