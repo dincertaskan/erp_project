@@ -23,7 +23,14 @@ class OrderRepository:
                     "product_name": item.product.name if item.product else "Bilinmeyen Ürün",
                     "quantity": item.quantity,
                     "unit_price": float(item.unit_price),
-                    "total_price": float(item.total_price)
+                    "total_price": float(item.total_price),
+                    "image_url": item.product.image_url if item.product else None,
+                    # Frontend'de item.product.image_url ve item.product.name erişimini desteklemek için:
+                    "product": {
+                        "id": item.product.id if item.product else item.product_id,
+                        "name": item.product.name if item.product else "Bilinmeyen Ürün",
+                        "image_url": item.product.image_url if item.product else None
+                    } if item.product else None
                 })
             
             result.append({
