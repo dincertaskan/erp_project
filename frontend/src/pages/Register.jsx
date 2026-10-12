@@ -7,13 +7,79 @@ export default function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('admin'); // Varsayılan olarak Admin veya Customer seçilebilir
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const validateEmail = (emailStr) => {
+    // İzin verilen e-posta uzantıları
+    const allowedDomains = [
+      'gmail.com', 
+      'hotmail.com', 
+      'outlook.com', 
+      'yahoo.com', 
+      'yandex.com',
+      'icloud.com'
+    ];
+
+    // Genel e-posta formatı kontrolü
+    const basicEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!basicEmailRegex.test(emailStr)) {
+      return "Lütfen geçerli bir e-posta adresi giriniz.";
+    }
+
+    // E-posta uzantısını (domain) ayıklama
+    const domain = emailStr.split('@')[1]?.toLowerCase();
+
+    // Uzantı kontrolü
+    if (!allowedDomains.includes(domain)) {
+      return `Lütfen geçerli bir e-posta adresi giriniz.`;
+    }
+
+    return null;
+  };
+
+  const validatePassword = (pass) => {
+    if (pass.length < 8) {
+      return "Şifre en az 8 karakter olmalıdır.";
+    }
+    if (!/[A-Z]/.test(pass)) {
+      return "Şifre en az bir büyük harf içermelidir (A-Z).";
+    }
+    if (!/[a-z]/.test(pass)) {
+      return "Şifre en az bir küçük harf içermelidir (a-z).";
+    }
+    if (!/[0-9]/.test(pass)) {
+      return "Şifre en az bir rakam içermelidir (0-9).";
+    }
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pass)) {
+      return "Şifre en az bir özel karakter içermelidir (örn: !, @, #, $, %).";
+    }
+    return null;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Girdiğiniz şifreler birbiriyle eşleşmiyor!");
+      return;
+    }
+    
     try {
       await api.post('/auth/register', {
         full_name: fullName,
@@ -98,7 +164,7 @@ export default function Register() {
           <label className="block text-xs font-semibold text-gray-600 mb-1">E-posta Adresi</label>
           <input 
             type="email" 
-            placeholder="ornek@firma.com" 
+            placeholder="ornek@gmail.com" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
@@ -113,6 +179,18 @@ export default function Register() {
             placeholder="••••••••" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
+            required 
+            className="w-full border p-2.5 rounded-lg focus:outline-indigo-500 text-sm" 
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Şifre Tekrarı</label>
+          <input 
+            type="password" 
+            placeholder="Şifrenizi tekrar giriniz" 
+            value={confirmPassword} 
+            onChange={(e) => setConfirmPassword(e.target.value)} 
             required 
             className="w-full border p-2.5 rounded-lg focus:outline-indigo-500 text-sm" 
           />
