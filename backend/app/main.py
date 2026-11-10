@@ -7,13 +7,19 @@ from app.core.database import Base, engine
 
 # Model dosyalarını yüklüyoruz
 from app.models.user import User
-from app.models.erp import Category, Product, Sale, StockMovement
+from app.models.erp import Category, Customer, Product, Sale, StockMovement
+from sqlalchemy import text
 
 # Yüklemelerin yapılacağı dizini otomatik oluşturur
 os.makedirs("uploads/avatars", exist_ok=True)
 
 # Veritabanı tablolarını oluşturur
 Base.metadata.create_all(bind=engine)
+
+# create_all mevcut tablolara yeni sütun eklemez; customers tablosuna giriş için gereken sütunları ekle
+with engine.begin() as conn:
+    conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS password_hash VARCHAR"))
+    conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS avatar_url VARCHAR"))
 
 app = FastAPI(title="ERP System API")
 

@@ -33,16 +33,37 @@ class AuthService:
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
+    @staticmethod
+    def _customer_to_response(customer) -> dict:
+        return {
+            "id": customer.id,
+            "full_name": customer.name,
+            "email": customer.email,
+            "role": "customer",
+            "is_active": customer.is_active if customer.is_active is not None else True,
+            "avatar_url": customer.avatar_url,
+            "created_at": customer.created_at,
+        }
+
     def register_user(self, user_data: UserCreate):
-        existing_user = self.user_repo.get_by_email(user_data.email)
-        if existing_user:
+        if self.user_repo.get_by_email(user_data.email) or self.user_repo.get_customer_by_email(user_data.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bu e-posta adresi zaten kayıtlı."
             )
-        
+
+        role = (user_data.role or "admin").lower()
+        if role not in ("admin", "customer"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz rol. 'admin' veya 'customer' olmalıdır."
+            )
+
         try:
             hashed_pwd = self.hash_password(user_data.password)
+            if role == "customer":
+                customer = self.user_repo.create_customer(user_data, hashed_pwd)
+                return self._customer_to_response(customer)
             return self.user_repo.create_user(user_data, hashed_pwd)
         except Exception as e:
             print("KAYIT SIRASINDA DETAYLI HATA:", str(e))
@@ -53,8 +74,29 @@ class AuthService:
 
     def login_user(self, login_data: UserLogin) -> Token:
         user = self.user_repo.get_by_email(login_data.email)
-        
-        if not user or not self.verify_password(login_data.password, user.password_hash):
+
+        if not user:
+            # users tablosunda yoksa customers tablosunda ara
+            customer = self.user_repo.get_customer_by_email(login_data.email)
+            if (
+                not customer
+                or not customer.password_hash
+                or not self.verify_password(login_data.password, customer.password_hash)
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="E-posta veya şifre hatalı."
+                )
+            access_token = self.create_access_token(data={"sub": customer.email, "role": "customer"})
+            return Token(
+                access_token=access_token,
+                token_type="bearer",
+                full_name=customer.name,
+                role="customer",
+                avatar_url=customer.avatar_url
+            )
+
+        if not self.verify_password(login_data.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="E-posta veya şifre hatalı."

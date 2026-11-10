@@ -80,7 +80,7 @@ export default function CustomerHome() {
       {/* MÜŞTERİ HIZLI İSTATİSTİK KARTLARI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div 
-          onClick={() => navigate('/portal/siparisler')}
+          onClick={() => navigate('/portal/siparisler?durum=devam-eden')}
           className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs hover:border-indigo-300 transition cursor-pointer flex items-center justify-between group"
         >
           <div>
@@ -94,7 +94,7 @@ export default function CustomerHome() {
         </div>
 
         <div 
-          onClick={() => navigate('/portal/siparisler')}
+          onClick={() => navigate('/portal/siparisler?durum=tamamlandi')}
           className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs hover:border-indigo-300 transition cursor-pointer flex items-center justify-between group"
         >
           <div>

@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
+
+// "Devam Eden" sanal filtresi: Tamamlandı ve İptal dışındaki tüm durumlar
+const ACTIVE_STATUS_FILTER = 'Devam Eden';
+
+// Ana sayfa kutucuklarından gelen ?durum= parametresini durum filtresine çevirir
+const statusFromQuery = (durum) => {
+  if (durum === 'devam-eden') return ACTIVE_STATUS_FILTER;
+  if (durum === 'tamamlandi') return 'Tamamlandı';
+  return '';
+};
 import { 
   Package, Clock, CheckCircle2, XCircle, Truck, 
   Eye, Loader2, RefreshCw, Calendar, CreditCard, FileText, X, Search, Filter, ArrowUpDown, RotateCcw
@@ -21,7 +32,19 @@ export default function CustomerOrders() {
 
   // ARAMA VE DETAYLI FİLTRELEME STATE'LERİ
   const [searchCode, setSearchCode] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedStatus, setSelectedStatus] = useState(() => statusFromQuery(searchParams.get('durum')));
+
+  // Sayfa açıkken URL'deki ?durum= değişirse filtreyi güncelle
+  useEffect(() => {
+    setSelectedStatus(statusFromQuery(searchParams.get('durum')));
+  }, [searchParams]);
+
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+    // Elle filtre değiştirildiğinde URL parametresini temizle
+    if (searchParams.has('durum')) setSearchParams({}, { replace: true });
+  };
   const [selectedPayment, setSelectedPayment] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [sortAmount, setSortAmount] = useState(''); // 'asc' | 'desc'
@@ -52,7 +75,7 @@ export default function CustomerOrders() {
   // FİLTRELERİ SIFIRLAMA
   const handleResetFilters = () => {
     setSearchCode('');
-    setSelectedStatus('');
+    handleStatusChange('');
     setSelectedPayment('');
     setFilterDate('');
     setSortAmount('');
@@ -130,7 +153,12 @@ export default function CustomerOrders() {
       const matchesCode = cleanCode.toLowerCase().includes(searchLower);
 
       // 2. Durum Filtresi
-      const matchesStatus = selectedStatus ? order.order_status === selectedStatus : true;
+      let matchesStatus = true;
+      if (selectedStatus === ACTIVE_STATUS_FILTER) {
+        matchesStatus = order.order_status !== 'Tamamlandı' && order.order_status !== 'İptal';
+      } else if (selectedStatus) {
+        matchesStatus = order.order_status === selectedStatus;
+      }
 
       // 3. Ödeme Yöntemi Filtresi
       const matchesPayment = selectedPayment ? order.payment_method === selectedPayment : true;
@@ -183,10 +211,11 @@ export default function CustomerOrders() {
             <Filter size={14} className="text-gray-500 shrink-0" />
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="bg-transparent font-medium text-gray-700 focus:outline-none cursor-pointer w-full"
             >
               <option value="">Tüm Durumlar</option>
+              <option value={ACTIVE_STATUS_FILTER}>Devam Edenler</option>
               <option value="Onay Bekliyor">Onay Bekliyor</option>
               <option value="Hazırlanıyor">Hazırlanıyor</option>
               <option value="Kargolandı">Kargolandı</option>
