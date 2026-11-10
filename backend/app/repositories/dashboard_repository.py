@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
-from app.models.erp import Product, Category, Order
-from app.models.user import User
+from app.models.erp import Product, Category, Order, Customer
 from datetime import datetime
 
 class DashboardRepository:
@@ -22,9 +21,8 @@ class DashboardRepository:
         return float(total) if total else 0.0
 
     def get_active_users_count(self) -> int:
-        return self.db.query(func.count(User.id)).filter(
-            User.is_active == True,
-            User.role == "customer"
+        return self.db.query(func.count(Customer.id)).filter(
+            Customer.is_active == True
         ).scalar()
 
     def get_critical_products(self):

@@ -239,16 +239,6 @@ export default function CustomerProducts() {
                   ) : (
                     <div className="text-gray-300 font-extrabold text-2xl">ERP</div>
                   )}
-
-                  {product.stock > 0 ? (
-                    <span className="absolute top-2.5 right-2.5 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs z-10">
-                      Stokta Var ({product.stock})
-                    </span>
-                  ) : (
-                    <span className="absolute top-2.5 right-2.5 bg-red-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs z-10">
-                      Stok Tükendi
-                    </span>
-                  )}
                 </div>
 
                 <div>

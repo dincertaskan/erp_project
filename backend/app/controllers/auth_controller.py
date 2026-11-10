@@ -7,6 +7,7 @@ from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.models.user import User
+from app.models.erp import Customer
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -25,9 +26,12 @@ def login(login_data: UserLogin, auth_service: AuthService = Depends(get_auth_se
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(user_name: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.full_name == user_name).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
-    return user
+    if user:
+        return user
+    customer = db.query(Customer).filter(Customer.name == user_name).first()
+    if customer:
+        return AuthService._customer_to_response(customer)
+    raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
 
 @router.post("/upload-avatar")
 async def upload_avatar(
@@ -51,6 +55,8 @@ async def upload_avatar(
 
     avatar_url = f"/uploads/avatars/{filename}"
     user = db.query(User).filter(User.full_name == user_name).first()
+    if not user:
+        user = db.query(Customer).filter(Customer.name == user_name).first()
     if not user:
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
 
