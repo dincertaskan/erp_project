@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 
 // "Devam Eden" sanal filtresi: Tamamlandı ve İptal dışındaki tüm durumlar
 const ACTIVE_STATUS_FILTER = 'Devam Eden';
@@ -20,7 +20,7 @@ const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `http://localhost:8000${cleanPath}`;
+  return `${API_URL}${cleanPath}`;
 };
 
 export default function CustomerOrders() {

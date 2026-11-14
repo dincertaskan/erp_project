@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { 
   Users, UserCheck, ShoppingBag, DollarSign, 
   Search, RefreshCw, Loader2, Eye, X, Mail, Calendar
@@ -135,7 +135,7 @@ export default function Customers() {
                     <td className="p-4 font-bold text-gray-800 flex items-center gap-2.5">
                         {c.avatar_url ? (
                             <img 
-                                src={`http://localhost:8000${c.avatar_url}`} 
+                                src={`${API_URL}${c.avatar_url}`} 
                                 alt={c.full_name} 
                                 className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200"
                             />
@@ -191,7 +191,7 @@ export default function Customers() {
               <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
                 {selectedCustomer.avatar_url ? (
                     <img 
-                        src={`http://localhost:8000${selectedCustomer.avatar_url}`} 
+                        src={`${API_URL}${selectedCustomer.avatar_url}`} 
                         alt={selectedCustomer.full_name} 
                         className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-indigo-600"
                     />

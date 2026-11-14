@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, 
   ShoppingBag, CheckCircle2, Loader2, ArrowLeft 
@@ -10,7 +10,7 @@ const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `http://localhost:8000${cleanPath}`;
+  return `${API_URL}${cleanPath}`;
 };
 
 export default function Cart() {
