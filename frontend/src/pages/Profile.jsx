@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { 
   User, Mail, Shield, CheckCircle2, 
   Upload, Camera, Loader2, MapPin, Building2, Phone 
@@ -81,7 +81,7 @@ export default function Profile() {
           <div className="relative group">
             {profile?.avatar_url ? (
               <img 
-                src={`http://localhost:8000${profile.avatar_url}`} 
+                src={`${API_URL}${profile.avatar_url}`} 
                 alt={profile.full_name} 
                 className="w-24 h-24 rounded-full object-cover border-4 border-indigo-50 shadow-xs"
               />

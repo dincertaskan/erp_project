@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { 
   Store, Search, ShoppingCart, Filter, Loader2, 
   CheckCircle2, Eye, RefreshCw, X, ArrowUpDown 
@@ -10,7 +10,7 @@ const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `http://localhost:8000${cleanPath}`;
+  return `${API_URL}${cleanPath}`;
 };
 
 export default function CustomerProducts() {

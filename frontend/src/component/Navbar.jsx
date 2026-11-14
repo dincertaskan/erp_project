@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, LogOut, Bell, Check, ExternalLink } from 'lucide-react';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 
 export default function Navbar({ notifications, setNotifications }) {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function Navbar({ notifications, setNotifications }) {
       try {
         const res = await api.get(`/auth/me?user_name=${userName}`);
         if (res.data.avatar_url) {
-          setAvatarUrl(`http://localhost:8000${res.data.avatar_url}`);
+          setAvatarUrl(`${API_URL}${res.data.avatar_url}`);
         }
       } catch (err) {
         console.error("Navbar profil resmi verisi çekilemedi:", err);

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller, customer_controller
 from app.core.database import Base, engine
+from app.core.config import settings
 
 # Model dosyalarını yüklüyoruz
 from app.models.user import User
@@ -11,7 +12,7 @@ from app.models.erp import Category, Customer, Product, Sale, StockMovement
 from sqlalchemy import text
 
 # Yüklemelerin yapılacağı dizini otomatik oluşturur
-os.makedirs("uploads/avatars", exist_ok=True)
+os.makedirs(settings.UPLOAD_DIR / "avatars", exist_ok=True)
 
 # Veritabanı tablolarını oluşturur
 Base.metadata.create_all(bind=engine)
@@ -23,10 +24,7 @@ with engine.begin() as conn:
 
 app = FastAPI(title="ERP System API")
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+origins = settings.CORS_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +35,7 @@ app.add_middleware(
 )
 
 # Statik görsel dosyalarını dışarı sunma
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Router Bağlantıları
 app.include_router(auth_controller.router)

@@ -3,6 +3,7 @@ import shutil
 from fastapi import APIRouter, Depends, status, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.config import settings
 from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
@@ -43,12 +44,13 @@ async def upload_avatar(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Lütfen sadece JPG, PNG veya WEBP formatında resim yükleyin.")
 
-    os.makedirs("uploads/avatars", exist_ok=True)
+    avatar_dir = settings.UPLOAD_DIR / "avatars"
+    os.makedirs(avatar_dir, exist_ok=True)
 
     file_ext = file.filename.split(".")[-1]
     safe_username = "".join(c for c in user_name if c.isalnum())
     filename = f"avatar_{safe_username}.{file_ext}"
-    file_path = f"uploads/avatars/{filename}"
+    file_path = avatar_dir / filename
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)

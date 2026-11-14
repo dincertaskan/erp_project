@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { 
   ShoppingBag, ArrowRight, Sparkles, ShoppingCart, 
   Loader2, CheckCircle2, Clock, Star, Tag 
@@ -160,7 +160,7 @@ export default function CustomerHome() {
                   <div className="h-40 w-full bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center relative border border-gray-100">
                     {product.image_url ? (
                       <img 
-                        src={`http://localhost:8000${product.image_url}`} 
+                        src={`${API_URL}${product.image_url}`} 
                         alt={product.name} 
                         className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
                       />
