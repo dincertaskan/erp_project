@@ -37,4 +37,6 @@ def require_roles(*roles: UserRole):
             raise ForbiddenError("Bu işlem için yetkiniz yok.")
         return user
 
+    # İzin verilen roller testlerde uç nokta bazında yetki denetimi için okunur.
+    checker.allowed_roles = frozenset(roles)
     return checker
