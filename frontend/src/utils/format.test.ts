@@ -1,4 +1,12 @@
-import { formatCurrency, formatDate, formatDateTime, formatNumber } from './format';
+import dayjs from 'dayjs';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatRelative,
+  formatWithMonthName,
+} from './format';
 import { getStockStatus } from './labels';
 
 describe('formatCurrency', () => {
@@ -30,5 +38,13 @@ describe('getStockStatus', () => {
     expect(getStockStatus(4, 5)).toBe('critical');
     expect(getStockStatus(5, 5)).toBe('sufficient');
     expect(getStockStatus(0, 5)).toBe('out_of_stock');
+  });
+});
+
+describe('locale-sensitive formats', () => {
+  it('stay Turkish even if another library switches the global dayjs locale', () => {
+    dayjs.locale('en');
+    expect(formatWithMonthName('2026-11-21', 'D MMM')).toBe('21 Kas');
+    expect(formatRelative(dayjs().subtract(5, 'minute').toDate())).toBe('5 dakika önce');
   });
 });
