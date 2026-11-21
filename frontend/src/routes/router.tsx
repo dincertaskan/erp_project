@@ -17,6 +17,11 @@ import { RouteError } from '@/pages/errors/RouteError';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
+import { CartPage } from '@/pages/shop/CartPage';
+import { MyOrderDetailPage } from '@/pages/shop/MyOrderDetailPage';
+import { MyOrdersPage } from '@/pages/shop/MyOrdersPage';
+import { ShopCatalogPage } from '@/pages/shop/ShopCatalogPage';
+import { ShopProductPage } from '@/pages/shop/ShopProductPage';
 import { ProductDetailPage } from '@/pages/products/ProductDetailPage';
 import { ProductsPage } from '@/pages/products/ProductsPage';
 import { CriticalStockPage } from '@/pages/stock/CriticalStockPage';
@@ -81,11 +86,11 @@ const appRoutes: RouteObject[] = [
       </RequireAuth>
     ),
     children: [
-      { path: '/shop', element: page('Ürünler') },
-      { path: '/shop/products/:id', element: page('Ürün Detayı') },
-      { path: '/shop/cart', element: page('Sepetim') },
-      { path: '/shop/orders', element: page('Siparişlerim') },
-      { path: '/shop/orders/:id', element: page('Sipariş Detayı') },
+      { path: '/shop', element: <ShopCatalogPage /> },
+      { path: '/shop/products/:id', element: <ShopProductPage /> },
+      { path: '/shop/cart', element: <CartPage /> },
+      { path: '/shop/orders', element: <MyOrdersPage /> },
+      { path: '/shop/orders/:id', element: <MyOrderDetailPage /> },
     ],
   },
   {
