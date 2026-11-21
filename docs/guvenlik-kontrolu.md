@@ -10,7 +10,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 |---|---|---|
 | A01 | Erişim denetimi hataları | Uygun (testlerle doğrulandı) |
 | A02 | Kriptografik hatalar | Düzeltildi |
-| A03 | Enjeksiyon | Uygun; Excel formül enjeksiyonu Açık |
+| A03 | Enjeksiyon | Uygun; Excel formül enjeksiyonu Düzeltildi |
 | A04 | Güvensiz tasarım | Uygun |
 | A05 | Güvenlik yanlış yapılandırması | Düzeltildi |
 | A06 | Zafiyetli ve güncel olmayan bileşenler | Uygun |
@@ -40,7 +40,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 
 - Veritabanı erişimi SQLAlchemy ORM ve parametreli sorgularla yapılır. Ham SQL yalnızca ölçüm betiğinde (`app/benchmarks`) sabit adlarla kullanılır. Sıralama parametreleri desenle sınırlanır.
 - Önyüzde `dangerouslySetInnerHTML` ya da `eval` kullanılmaz; React çıktıyı kaçışlar.
-- **Açık:** Excel dışa aktarımında (`app/services/xlsx.py`) `=`, `+`, `-`, `@` ile başlayan metinler formül olarak yazılır. Müşteri kendi adını kayıtta serbestçe girdiği için sipariş raporunda formül çalıştırılabilir (CSV/Excel formül enjeksiyonu). Öneri: bu karakterlerle başlayan metin hücrelerinin başına `'` eklenmesi ya da hücrenin metin olarak yazılması. Bu dosya bu çalışmanın kapsamı dışında kaldığı için düzeltilmedi.
+- **Düzeltildi:** Excel dışa aktarımında (`app/services/xlsx.py`) `=` ile başlayan metinler formül olarak yazılıyordu; müşteri kendi adını kayıtta serbestçe girdiği için sipariş raporunda formül çalıştırılabilirdi. Raporlar yalnızca veri içerdiğinden tüm hücreler artık metin ya da sayı olarak yazılır, formül olarak yazılmaz (`tests/test_xlsx.py`).
 
 ### A04 – Güvensiz tasarım
 
