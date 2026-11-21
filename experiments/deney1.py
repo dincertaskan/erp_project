@@ -28,10 +28,12 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parent
+PREPARE_PARALLEL = 20
 FIELDS = [
     "timestamp",
     "strategy",
     "workers",
+    "pool",
     "concurrency",
     "initial_stock",
     "repetition",
@@ -93,20 +95,27 @@ class Api:
                 "min_stock": 0,
             },
         )
-        order_ids = [
-            self.request(
-                "POST",
-                "/orders",
-                json={
-                    "customer_id": customer_id,
-                    "items": [{"product_id": product["id"], "quantity": 1}],
-                    "payment_method": "credit_card",
-                    "shipping_address": "Deney adresi",
-                },
-            )["id"]
-            for _ in range(orders)
-        ]
+        order_ids = asyncio.run(self._create_orders(product["id"], customer_id, orders))
         return product["id"], order_ids
+
+    async def _create_orders(self, product_id: int, customer_id: int, count: int) -> list[int]:
+        """Hazırlık: siparişler PREPARE_PARALLEL'lik gruplar halinde paralel açılır (ölçüme dahil değil)."""
+        payload = {
+            "customer_id": customer_id,
+            "items": [{"product_id": product_id, "quantity": 1}],
+            "payment_method": "credit_card",
+            "shipping_address": "Deney adresi",
+        }
+        limit = asyncio.Semaphore(PREPARE_PARALLEL)
+        async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=60) as client:
+
+            async def create() -> int:
+                async with limit:
+                    response = await client.post("/orders", json=payload)
+                    response.raise_for_status()
+                    return response.json()["id"]
+
+            return list(await asyncio.gather(*(create() for _ in range(count))))
 
     async def approve_all(self, order_ids: list[int]) -> list[tuple[int, str, float]]:
         """Tüm onay isteklerini aynı anda gönderir; (durum kodu, hata kodu, süre ms) döner."""
@@ -119,7 +128,12 @@ class Api:
                 began = time.perf_counter()
                 response = await client.post(f"/orders/{order_id}/approve")
                 elapsed = (time.perf_counter() - began) * 1000
-                code = response.json().get("code", "") if response.status_code >= 400 else ""
+                code = ""
+                if response.status_code >= 400:
+                    try:
+                        code = response.json().get("code", "")
+                    except ValueError:  # JSON olmayan hata yanıtı (ör. işlenmemiş sunucu hatası)
+                        code = f"HTTP_{response.status_code}"
                 return response.status_code, code, elapsed
 
             tasks = [asyncio.create_task(approve(order_id)) for order_id in order_ids]
@@ -128,8 +142,20 @@ class Api:
             return await asyncio.gather(*tasks)
 
 
-def restart_backend(strategy: str, workers: int, base_url: str) -> None:
-    env = {**os.environ, "STOCK_STRATEGY": strategy, "UVICORN_WORKERS": str(workers)}
+def restart_backend(
+    strategy: str, workers: int, base_url: str, database: str | None = None, pool: tuple[int, int] = (5, 10)
+) -> None:
+    env = {
+        **os.environ,
+        "STOCK_STRATEGY": strategy,
+        "UVICORN_WORKERS": str(workers),
+        "DB_POOL_SIZE": str(pool[0]),
+        "DB_MAX_OVERFLOW": str(pool[1]),
+    }
+    if database:
+        env["POSTGRES_DB"] = database
+    else:
+        env.pop("POSTGRES_DB", None)
     subprocess.run(["docker", "compose", "up", "-d", "backend"], check=True, env=env, cwd=ROOT.parent)
     for _ in range(60):
         try:
@@ -139,6 +165,32 @@ def restart_backend(strategy: str, workers: int, base_url: str) -> None:
             pass
         time.sleep(1)
     raise SystemExit("Backend 60 saniyede hazır olmadı.")
+
+
+def create_database(database: str) -> None:
+    """Ayrı deney veritabanı yoksa oluşturur; göçleri backend açılışta uygular."""
+    user = os.environ.get("POSTGRES_USER", "erp")
+    query = f"SELECT 1 FROM pg_database WHERE datname = '{database}'"
+    found = subprocess.run(
+        ["docker", "compose", "exec", "-T", "db", "psql", "-U", user, "-d", "postgres", "-tAc", query],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=ROOT.parent,
+    ).stdout.strip()
+    if found != "1":
+        subprocess.run(
+            ["docker", "compose", "exec", "-T", "db", "createdb", "-U", user, database], check=True, cwd=ROOT.parent
+        )
+
+
+def seed(password: str) -> None:
+    """Demo hesaplar ve ürünler (tekrar çalıştırılabilir)."""
+    subprocess.run(
+        ["docker", "compose", "exec", "-T", "-e", f"SEED_PASSWORD={password}", "backend", "python", "-m", "app.seed"],
+        check=True,
+        cwd=ROOT.parent,
+    )
 
 
 def main() -> None:
@@ -152,10 +204,15 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--workers", type=int, default=4, help="--restart ile uvicorn worker sayısı")
     parser.add_argument("--restart", action="store_true", help="her strateji için backend'i yeniden başlat")
+    parser.add_argument("--pool-size", type=int, default=10, help="--restart ile worker başına DB havuzu")
+    parser.add_argument("--max-overflow", type=int, default=12, help="--restart ile worker başına havuz taşması")
+    parser.add_argument("--database", help="--restart ile ayrı deney veritabanı (ör. erp_deney); demo verisi kirlenmez")
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "deney1.csv")
     args = parser.parse_args()
     if not args.password:
         raise SystemExit("Yönetici şifresini --password ya da ERP_PASSWORD ile verin.")
+    if args.database and not args.restart:
+        raise SystemExit("--database yalnızca --restart ile kullanılabilir.")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     new_file = not args.out.exists()
@@ -164,6 +221,8 @@ def main() -> None:
         if new_file:
             writer.writeheader()
         try:
+            if args.database:
+                create_database(args.database)
             run_all(args, writer, handle)
         finally:
             if args.restart:
@@ -174,7 +233,9 @@ def main() -> None:
 def run_all(args, writer, handle) -> None:
     for strategy in args.strategies.split(","):
         if args.restart:
-            restart_backend(strategy, args.workers, args.base_url)
+            restart_backend(strategy, args.workers, args.base_url, args.database, (args.pool_size, args.max_overflow))
+            if args.database:
+                seed(args.password)
         api = Api(args.base_url, args.email, args.password)
         api.login()
         category_id, customer_id = api.category_id(), api.customer_id()
@@ -191,6 +252,7 @@ def run_all(args, writer, handle) -> None:
                     "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
                     "strategy": strategy,
                     "workers": args.workers if args.restart else "",
+                    "pool": f"{args.pool_size}+{args.max_overflow}" if args.restart else "",
                     "concurrency": concurrency,
                     "initial_stock": stock,
                     "repetition": repetition,

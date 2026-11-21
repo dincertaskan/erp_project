@@ -35,6 +35,24 @@ python analyze_deney1.py
 
 Eşzamanlı onay istekleri Locust yerine `httpx` ile aynı anda gönderilir: her koşuda tam N isteğin birlikte başlaması ve koşunun sabit süre beklememesi için. Genel yük testi için Locust senaryosu ayrıca vardır.
 
+## Deney 2: Sorgu indekslerinin etkisi
+
+Anlamlı sonuç için önce Olist verisini yükleyin (ana README, "Olist verisi"). Araç backend konteynerinde çalışır; 0002 göçündeki indeksleri kaldırıp geri ekleyerek dashboard, sipariş listesi, rapor ve ürün geçmişi sorgularını iki koşulda `EXPLAIN (ANALYZE, BUFFERS)` ile ölçer (ilk koşu ısınma, ardından N tekrar):
+
+```bash
+docker compose exec -T backend python -m app.benchmarks.indexes --repetitions 30 > results/deney2.csv
+python analyze_deney2.py
+```
+
+- İndeksler göç geri alınarak değil doğrudan kaldırılır (`alembic downgrade 0001` sipariş kodu dizisini de geri alırdı) ve araç bitince, hata olsa bile, geri eklenir.
+- Sorgu parametreleri verideki en son sipariş tarihine göre seçilir (Olist 2016–2018).
+- `analyze_deney2.py` sorgu başına medyan süreleri, hızlanma oranını ve Wilcoxon işaretli sıralar testini verir.
+- Ölçüm sırasında başka yük çalıştırmayın (Deney 1 ile aynı anda değil).
+
+## Deney 3: SUS
+
+Materyaller ve puanlama `sus/` klasöründe (bkz. `sus/README.md`).
+
 ## Genel yük testi (Locust)
 
 ```bash
