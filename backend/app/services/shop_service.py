@@ -114,9 +114,8 @@ class CatalogService:
         if category_id is not None:
             query = query.where(Product.category_id == category_id)
         # Fiyat aralığı kaydırıcısının sınırları, fiyat filtresi uygulanmadan hesaplanır.
-        bounds = self.db.execute(
-            select(func.min(Product.sale_price), func.max(Product.sale_price)).select_from(query.subquery())
-        ).one()
+        visible = query.subquery()
+        bounds = self.db.execute(select(func.min(visible.c.sale_price), func.max(visible.c.sale_price))).one()
         if min_price is not None:
             query = query.where(Product.sale_price >= min_price)
         if max_price is not None:
