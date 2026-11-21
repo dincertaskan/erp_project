@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     # Virgülle ayrılmış ek frontend adresleri (ör. http://192.168.1.20:5173)
     CORS_ORIGINS: str = ""
-    # Deney 1: stok güncellemelerinde kötümser (SELECT ... FOR UPDATE) ya da iyimser (sürüm numarası) kilit
-    STOCK_STRATEGY: Literal["pessimistic", "optimistic"] = "pessimistic"
+    # Deney 1: stok güncellemelerinde kötümser (SELECT ... FOR UPDATE) ya da iyimser (sürüm numarası) kilit.
+    # "none" yalnızca deneyde referans içindir (kilitsiz oku-kontrol et-yaz; fazla satışa açıktır).
+    STOCK_STRATEGY: Literal["pessimistic", "optimistic", "none"] = "pessimistic"
 
     @field_validator("DATABASE_URL")
     @classmethod

@@ -1,18 +1,21 @@
 """Stok miktarını değiştiren tüm işlemlerin geçtiği tek yer (elle giriş/çıkış, sipariş onayı, iptal iadesi).
 
-İki strateji vardır (Deney 1, ayar: STOCK_STRATEGY):
+Stratejiler (Deney 1, ayar: STOCK_STRATEGY):
 - pessimistic: ürün satırları SELECT ... FOR UPDATE ile kilitlenir; eşzamanlı işlemler sırayla çalışır.
 - optimistic: kilit alınmaz; UPDATE "WHERE version = ?" ile yapılır (Product.version_id_col). Araya başka bir
   yazma girdiyse commit sırasında StockConflictError oluşur ve işlem yeniden denenebilir.
+- none: yalnızca deneyde referans; kilit ve sürüm kontrolü olmadan oku-kontrol et-yaz. Eşzamanlı işlemler
+  birbirinin yazdığını ezebilir (fazla satış). Üretimde kullanılmaz.
 
-Her iki stratejide de stok hiçbir zaman eksiye düşmez. Kilitler kimlik sırasıyla alınır, böylece çok ürünlü
-işlemler birbirini kilitlemez.
+pessimistic ve optimistic stratejilerinde stok hiçbir zaman eksiye düşmez. Kilitler kimlik sırasıyla
+alınır, böylece çok ürünlü işlemler birbirini kilitlemez.
 """
 
 from collections.abc import Callable, Iterable
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.config import settings
@@ -92,7 +95,12 @@ def apply_movement(
         new_stock=new_stock,
         description=description,
     )
-    product.stock = new_stock
+    if settings.STOCK_STRATEGY == "none":
+        # Deney 1 referansı: okunan değer üzerine sürüm kontrolsüz yazılır (kayıp güncelleme mümkündür).
+        db.execute(update(Product).where(Product.id == product.id).values(stock=new_stock))
+        set_committed_value(product, "stock", new_stock)
+    else:
+        product.stock = new_stock
     db.add(movement)
     return movement
 
