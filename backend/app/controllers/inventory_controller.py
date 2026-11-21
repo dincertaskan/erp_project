@@ -1,23 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+
 from app.core.database import get_db
-from app.schemas.inventory_schema import (
-    StockAdjustmentCreate, 
-    ProductCreate, 
-    ProductUpdate, 
-    ProductDetailResponse
-)
 from app.repositories.inventory_repository import InventoryRepository
+from app.schemas.inventory_schema import ProductCreate, ProductDetailResponse, ProductUpdate, StockAdjustmentCreate
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
 # 1. Ürün Listesi (Filtrelemeli)
-@router.get("/products", response_model=List[ProductDetailResponse])
+@router.get("/products", response_model=list[ProductDetailResponse])
 def get_products(
-    search: Optional[str] = Query(None),
-    category_id: Optional[int] = Query(None),
-    status_filter: Optional[str] = Query(None),
+    search: str | None = Query(None),
+    category_id: int | None = Query(None),
+    status_filter: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     repo = InventoryRepository(db)

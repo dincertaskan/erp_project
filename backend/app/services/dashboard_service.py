@@ -1,5 +1,6 @@
 from app.repositories.dashboard_repository import DashboardRepository
 
+
 class DashboardService:
     def __init__(self, dashboard_repo: DashboardRepository):
         self.repo = dashboard_repo

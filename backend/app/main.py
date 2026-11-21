@@ -1,15 +1,22 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller, customer_controller, health_controller
-from app.core.database import Base, engine
+from sqlalchemy import text
+
+from app.controllers import (
+    auth_controller,
+    customer_controller,
+    dashboard_controller,
+    health_controller,
+    inventory_controller,
+    order_controller,
+)
 from app.core.config import settings
+from app.core.database import Base, engine
 
 # Model dosyalarını yüklüyoruz
-from app.models.user import User
-from app.models.erp import Category, Customer, Product, Sale, StockMovement
-from sqlalchemy import text
 
 # Yüklemelerin yapılacağı dizini otomatik oluşturur
 os.makedirs(settings.UPLOAD_DIR / "avatars", exist_ok=True)

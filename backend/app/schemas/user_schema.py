@@ -1,12 +1,13 @@
-from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel, EmailStr
+
 
 class UserCreate(BaseModel):
     full_name: str
     email: EmailStr
     password: str
-    role: Optional[str] = "admin"  # Kayıt sırasında seçilebilir ('admin' veya 'customer')
+    role: str | None = "admin"  # Kayıt sırasında seçilebilir ('admin' veya 'customer')
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -18,7 +19,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     created_at: datetime
 
     class Config:
@@ -29,4 +30,4 @@ class Token(BaseModel):
     token_type: str
     full_name: str
     role: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None

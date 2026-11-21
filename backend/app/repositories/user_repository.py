@@ -1,7 +1,8 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.models.user import User
+
 from app.models.erp import Customer
+from app.models.user import User
 from app.schemas.user_schema import UserCreate
 
 

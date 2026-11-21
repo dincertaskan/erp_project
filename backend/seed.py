@@ -1,4 +1,4 @@
-from app.core.database import SessionLocal, engine, Base
+from app.core.database import Base, SessionLocal, engine
 from app.models.erp import Category, Product, Sale
 
 Base.metadata.create_all(bind=engine)

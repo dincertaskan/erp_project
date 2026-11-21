@@ -1,6 +1,8 @@
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from app.models.erp import Customer, Order
+
 
 class CustomerRepository:
     def __init__(self, db: Session):

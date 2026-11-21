@@ -1,8 +1,11 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text, Numeric
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.core.database import Base
-from datetime import datetime
+
 
 class Category(Base):
     __tablename__ = "categories"
@@ -90,7 +93,8 @@ class Order(Base):
     total_price = Column(Numeric(10, 2), nullable=False)
     payment_method = Column(String(50), default="Kredi Kartı")
     payment_status = Column(String(30), default="Ödendi")
-    order_status = Column(String(30), default="Onay Bekliyor")  # "Onay Bekliyor", "Hazırlanıyor", "Kargolandı", "Tamamlandı", "İptal"
+    # "Onay Bekliyor", "Hazırlanıyor", "Kargolandı", "Tamamlandı", "İptal"
+    order_status = Column(String(30), default="Onay Bekliyor")
     note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
