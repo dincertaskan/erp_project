@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import StockMovementType, User, UserRole
 from app.schemas.catalog import (
     MovementOut,
@@ -20,7 +21,7 @@ from app.schemas.common import Page, PageParams
 from app.schemas.user import StatusUpdateRequest
 from app.services.product_service import ProductService
 
-router = APIRouter(prefix="/products", tags=["Ürünler"])
+router = APIRouter(prefix="/products", tags=["Ürünler"], route_class=SessionReleasingRoute)
 
 staff = require_roles(UserRole.ADMIN, UserRole.WAREHOUSE)
 admin_only = require_roles(UserRole.ADMIN)
@@ -78,14 +79,20 @@ def create_product(data: ProductCreateRequest, actor: User = Depends(admin_only)
 
 @router.put("/{product_id}", response_model=ProductAdminOut)
 def update_product(
-    product_id: int, data: ProductUpdateRequest, actor: User = Depends(admin_only), db: Session = Depends(get_db)
+    product_id: int,
+    data: ProductUpdateRequest,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
 ):
     return ProductService(db).update(actor, product_id, data)
 
 
 @router.patch("/{product_id}/status", response_model=ProductAdminOut)
 def set_product_status(
-    product_id: int, data: StatusUpdateRequest, actor: User = Depends(admin_only), db: Session = Depends(get_db)
+    product_id: int,
+    data: StatusUpdateRequest,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
 ):
     return ProductService(db).set_status(actor, product_id, data.is_active)
 

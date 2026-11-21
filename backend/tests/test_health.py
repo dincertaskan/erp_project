@@ -44,3 +44,15 @@ def test_unexpected_errors_return_json_500(client, monkeypatch):
 
     assert response.status_code == 500
     assert response.json() == {"code": "INTERNAL_ERROR", "message": "Beklenmeyen bir hata oluştu.", "details": None}
+
+
+def test_thread_limit_matches_connection_pool(client):
+    import anyio.to_thread
+
+    from app.core.config import settings
+
+    async def current_limit():
+        return anyio.to_thread.current_default_thread_limiter().total_tokens
+
+    # TestClient lifespan'ı çalıştırdı; aynı olay döngüsünde sınır havuz kapasitesine eşit olmalı.
+    assert client.portal.call(current_limit) == settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW

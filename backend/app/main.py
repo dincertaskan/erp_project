@@ -1,3 +1,7 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import anyio.to_thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,7 +21,16 @@ from app.controllers import (
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 
-app = FastAPI(title="Akıllı ERP API")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Senkron uç noktalar iş parçacığı havuzunda çalışır. İş parçacığı sayısı bağlantı havuzu kapasitesine
+    # eşitlenir; böylece iş parçacıkları bağlantı beklerken bloke olmaz, fazla istekler sırada bekler.
+    anyio.to_thread.current_default_thread_limiter().total_tokens = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
+    yield
+
+
+app = FastAPI(title="Akıllı ERP API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

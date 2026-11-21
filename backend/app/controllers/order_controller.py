@@ -5,13 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
 from app.repositories.order_repository import OrderFilters
 from app.schemas.common import PageParams
 from app.schemas.order import OrderAction, OrderCreateRequest, OrderDetail, OrderPage
 from app.services.order_service import OrderService
 
-router = APIRouter(prefix="/orders", tags=["Siparişler"])
+router = APIRouter(prefix="/orders", tags=["Siparişler"], route_class=SessionReleasingRoute)
 
 staff = require_roles(UserRole.ADMIN, UserRole.WAREHOUSE)
 admin_only = require_roles(UserRole.ADMIN)

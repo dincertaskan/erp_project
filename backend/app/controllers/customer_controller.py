@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
 from app.repositories.customer_repository import CustomerFilters
 from app.repositories.order_repository import OrderFilters
@@ -13,7 +14,7 @@ from app.schemas.customer import CustomerDetail, CustomerListItem, CustomerOrder
 from app.schemas.user import StatusUpdateRequest
 from app.services.customer_service import CustomerService
 
-router = APIRouter(prefix="/customers", tags=["Müşteriler"])
+router = APIRouter(prefix="/customers", tags=["Müşteriler"], route_class=SessionReleasingRoute)
 
 admin_only = require_roles(UserRole.ADMIN)
 
@@ -54,7 +55,10 @@ def get_customer(customer_id: int, _: User = Depends(admin_only), db: Session = 
 
 @router.put("/{customer_id}", response_model=CustomerDetail)
 def update_customer(
-    customer_id: int, data: CustomerRequest, _: User = Depends(admin_only), db: Session = Depends(get_db)
+    customer_id: int,
+    data: CustomerRequest,
+    _: User = Depends(admin_only),
+    db: Session = Depends(get_db),
 ):
     """Giriş hesabı olan müşterinin e-postası değiştirilemez."""
     return CustomerService(db).update(customer_id, data)
@@ -62,7 +66,10 @@ def update_customer(
 
 @router.patch("/{customer_id}/status", response_model=CustomerDetail)
 def set_customer_status(
-    customer_id: int, data: StatusUpdateRequest, _: User = Depends(admin_only), db: Session = Depends(get_db)
+    customer_id: int,
+    data: StatusUpdateRequest,
+    _: User = Depends(admin_only),
+    db: Session = Depends(get_db),
 ):
     return CustomerService(db).set_status(customer_id, data.is_active)
 

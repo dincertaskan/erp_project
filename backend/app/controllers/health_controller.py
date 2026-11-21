@@ -5,8 +5,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.routing import SessionReleasingRoute
 
-router = APIRouter(tags=["Health"])
+router = APIRouter(tags=["Health"], route_class=SessionReleasingRoute)
 
 
 @router.get("/health")

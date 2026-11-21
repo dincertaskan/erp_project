@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.routing import SessionReleasingRoute
 from app.models import User
 from app.schemas.user import (
     CurrentUserOut,
@@ -14,7 +15,7 @@ from app.schemas.user import (
 )
 from app.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Kimlik"])
+router = APIRouter(prefix="/auth", tags=["Kimlik"], route_class=SessionReleasingRoute)
 
 
 @router.post("/register", response_model=CurrentUserOut, status_code=status.HTTP_201_CREATED)

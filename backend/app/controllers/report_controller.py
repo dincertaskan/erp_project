@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
 from app.schemas.report import OrderReport, SalesGroupBy, SalesReport, StockReport
 from app.services.operations_reports import (
@@ -17,7 +18,7 @@ from app.services.operations_reports import (
 )
 from app.services.report_service import ReportService, sales_report_xlsx
 
-router = APIRouter(prefix="/reports", tags=["Raporlar"])
+router = APIRouter(prefix="/reports", tags=["Raporlar"], route_class=SessionReleasingRoute)
 
 admin_only = require_roles(UserRole.ADMIN)
 
