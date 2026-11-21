@@ -9,6 +9,12 @@ Küçük ve orta ölçekli e-ticaret işletmeleri için ürün, stok, sipariş v
 | Veritabanı | PostgreSQL 16 |
 | Altyapı | Docker Compose, GitHub Actions |
 
+## Özellikler
+
+- **Müşteri:** kayıt olma, ürün kataloğunda arama ve filtreleme, sepet, sipariş verme, siparişleri izleme ve onay beklerken iptal etme.
+- **Depo Personeli:** stok girişi ve çıkışı, stok hareketleri, kritik stok listesi, hazırlanan siparişleri kargoya verme.
+- **Yönetici:** dashboard, ürün ve kategori yönetimi, sipariş onayı ve durum takibi, müşteri adına sipariş, müşteri yönetimi, satış/stok/sipariş raporları ve Excel'e aktarma, kullanıcı rolü atama.
+
 ## Gereksinimler
 
 - Docker Desktop (Docker Compose ile)
@@ -109,6 +115,23 @@ npm run typecheck
 npm test
 ```
 
+Kod kapsamı raporu:
+
+```bash
+cd backend
+pytest --cov=app
+
+cd frontend
+npm run test:coverage
+```
+
+## Dokümantasyon
+
+- [API özeti](docs/api.md): uç noktalar, roller ve hata kodları
+- [Kullanıcı kılavuzu](docs/kullanici-kilavuzu.md): rollere göre ekranlar ve adım adım işlemler
+- [Üçüncü taraf lisansları](docs/lisanslar.md)
+- [Deneyler](experiments/README.md) ve [deney sonuçları](experiments/results/README.md)
+
 ## Proje yapısı
 
 ```
@@ -117,8 +140,10 @@ backend/migrations/  Alembic göçleri
 backend/tests/    pytest testleri
 frontend/         React + TypeScript önyüzü (Ant Design, TanStack Query)
 docker/           Docker Compose yardımcı dosyaları
+docs/             Proje dokümantasyonu
+experiments/      Ölçüm deneyleri ve sonuçları
 ```
 
 ## Lisans ve veri
 
-Demo ve ölçümlerde Olist Brazilian E-Commerce Public Dataset kullanılır (kaynak: Kaggle, Olist; lisans: CC BY-NC-SA 4.0). Müşteri adları ve e-postaları anonimleştirilir; gerçek kişisel veri kullanılmaz.
+Demo ve ölçümlerde Olist Brazilian E-Commerce Public Dataset kullanılır (kaynak: Kaggle, Olist; lisans: CC BY-NC-SA 4.0). Müşteri adları ve e-postaları anonimleştirilir; gerçek kişisel veri kullanılmaz. Kullanılan paketlerin lisansları için [docs/lisanslar.md](docs/lisanslar.md) dosyasına bakın.
