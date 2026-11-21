@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.schemas.order_schema import OrderCreate
 from app.repositories.order_repository import OrderRepository
+from app.schemas.order_schema import OrderCreate
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -25,17 +26,17 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
     try:
         return repo.create_order(data, user_name="Dinçer Taşkan")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Sipariş oluşturulurken bir hata meydana geldi.")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception:
+        raise HTTPException(status_code=500, detail="Sipariş oluşturulurken bir hata meydana geldi.") from None
 
 # GÜNCELLENDİ: Hem PUT hem PATCH isteklerini ve hem Body hem Query Parametresini destekler
 @router.patch("/{order_id}/status")
 @router.put("/{order_id}/status")
 def update_order_status(
     order_id: int, 
-    data: Optional[OrderStatusUpdate] = None, 
-    status: Optional[str] = Query(None), 
+    data: OrderStatusUpdate | None = None, 
+    status: str | None = Query(None), 
     db: Session = Depends(get_db)
 ):
     """
@@ -58,6 +59,6 @@ def update_order_status(
     try:
         return repo.update_order_status(order_id, new_status, user_name="Dinçer Taşkan")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Sipariş durumu güncellenirken bir hata oluştu.")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception:
+        raise HTTPException(status_code=500, detail="Sipariş durumu güncellenirken bir hata oluştu.") from None

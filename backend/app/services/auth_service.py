@@ -1,10 +1,13 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 import bcrypt
-from jose import jwt
 from fastapi import HTTPException, status
+from jose import jwt
+
+from app.core.config import settings
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import Token, UserCreate, UserLogin
-from app.core.config import settings
+
 
 class AuthService:
     def __init__(self, user_repo: UserRepository):
@@ -29,7 +32,7 @@ class AuthService:
 
     def create_access_token(self, data: dict) -> str:
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -70,7 +73,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Veritabanı Hatası: {str(e)}"
-            )
+            ) from e
 
     def login_user(self, login_data: UserLogin) -> Token:
         user = self.user_repo.get_by_email(login_data.email)

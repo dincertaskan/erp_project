@@ -1,16 +1,17 @@
-from pydantic import BaseModel
-from typing import List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class OrderItemCreate(BaseModel):
     product_id: int
     quantity: int
 
 class OrderCreate(BaseModel):
-    customer_name: Optional[str] = "Misafir Müşteri"
-    payment_method: Optional[str] = "Kredi Kartı"
-    items: List[OrderItemCreate]
-    note: Optional[str] = None
+    customer_name: str | None = "Misafir Müşteri"
+    payment_method: str | None = "Kredi Kartı"
+    items: list[OrderItemCreate]
+    note: str | None = None
 
 class OrderItemResponse(BaseModel):
     id: int
@@ -31,9 +32,9 @@ class OrderResponse(BaseModel):
     payment_method: str
     payment_status: str
     order_status: str
-    note: Optional[str]
+    note: str | None
     created_at: datetime
-    items: List[OrderItemResponse] = []
+    items: list[OrderItemResponse] = []
 
     class Config:
         from_attributes = True

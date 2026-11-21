@@ -1,7 +1,10 @@
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, extract
-from app.models.erp import Product, Category, Order, Customer
 from datetime import datetime
+
+from sqlalchemy import extract, func
+from sqlalchemy.orm import Session, joinedload
+
+from app.models.erp import Category, Customer, Order, Product
+
 
 class DashboardRepository:
     def __init__(self, db: Session):
@@ -22,14 +25,14 @@ class DashboardRepository:
 
     def get_active_users_count(self) -> int:
         return self.db.query(func.count(Customer.id)).filter(
-            Customer.is_active == True
+            Customer.is_active.is_(True)
         ).scalar()
 
     def get_critical_products(self):
         return (
             self.db.query(Product)
             .options(joinedload(Product.category))
-            .filter(Product.stock <= Product.min_stock, Product.is_active == True)
+            .filter(Product.stock <= Product.min_stock, Product.is_active.is_(True))
             .all()
         )
 

@@ -1,14 +1,16 @@
 import os
 import shutil
-from fastapi import APIRouter, Depends, status, File, UploadFile, HTTPException
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
-from app.core.database import get_db
+
 from app.core.config import settings
-from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
-from app.repositories.user_repository import UserRepository
-from app.services.auth_service import AuthService
-from app.models.user import User
+from app.core.database import get_db
 from app.models.erp import Customer
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+from app.schemas.user_schema import Token, UserCreate, UserLogin, UserResponse
+from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

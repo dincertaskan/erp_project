@@ -1,13 +1,15 @@
+
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
-from app.models.erp import Product, Category, StockMovement
+
+from app.models.erp import Category, Product, StockMovement
+
 
 class InventoryRepository:
     def __init__(self, db: Session):
         self.db = db
 
     # YENİ EKLENDİ: Tüm kategorileri getiren metod (Müşteri Portalının filtreleme yapabilmesi için)
-    def get_all_categories(self) -> List[Category]:
+    def get_all_categories(self) -> list[Category]:
         return self.db.query(Category).order_by(Category.id.asc()).all()
 
     # YENİ EKLENDİ: Yeni kategori oluşturma metodu
@@ -18,7 +20,9 @@ class InventoryRepository:
         self.db.refresh(new_category)
         return new_category
 
-    def get_all_products(self, search: Optional[str] = None, category_id: Optional[int] = None, status_filter: Optional[str] = None) -> List[Product]:
+    def get_all_products(
+        self, search: str | None = None, category_id: int | None = None, status_filter: str | None = None
+    ) -> list[Product]:
         # Joinedload eklenerek Category ilişkisi performanslı bir şekilde yüklendi
         query = self.db.query(Product).options(joinedload(Product.category))
         
@@ -39,7 +43,7 @@ class InventoryRepository:
             p.is_critical = p.stock <= p.min_stock
         return products
 
-    def get_product_by_id(self, product_id: int) -> Optional[Product]:
+    def get_product_by_id(self, product_id: int) -> Product | None:
         product = (
             self.db.query(Product)
             .options(joinedload(Product.category))
@@ -71,7 +75,7 @@ class InventoryRepository:
         new_product.is_critical = new_product.stock <= new_product.min_stock
         return new_product
 
-    def update_product(self, product_id: int, product_data) -> Optional[Product]:
+    def update_product(self, product_id: int, product_data) -> Product | None:
         product = self.get_product_by_id(product_id)
         if not product:
             return None
@@ -96,7 +100,7 @@ class InventoryRepository:
         self.db.commit()
         return True
 
-    def adjust_stock(self, product_id: int, data) -> tuple[Product, Optional[str]]:
+    def adjust_stock(self, product_id: int, data) -> tuple[Product, str | None]:
         product = self.get_product_by_id(product_id)
         if not product:
             return None, "Ürün bulunamadı."
@@ -129,7 +133,7 @@ class InventoryRepository:
         self.db.refresh(product)
         return product, None
 
-    def get_product_logs(self, product_id: int) -> List[StockMovement]:
+    def get_product_logs(self, product_id: int) -> list[StockMovement]:
         return self.db.query(StockMovement).filter(
             StockMovement.product_id == product_id
         ).order_by(StockMovement.created_at.desc()).all()
