@@ -3,9 +3,13 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { vi } from 'vitest';
 import type { CurrentUser } from '@/api/types';
 import type { UserRole } from '@/utils/labels';
-import { RequireAuth } from './guards';
+import { PublicOnly, RequireAuth } from './guards';
+import { safeRedirect } from './roles';
 
-const authState: { user: CurrentUser | null; isLoading: boolean } = { user: null, isLoading: false };
+const authState: { user: CurrentUser | null; isLoading: boolean; signedOut?: boolean } = {
+  user: null,
+  isLoading: false,
+};
 
 vi.mock('./useAuth', () => ({
   useAuth: () => authState,
@@ -54,6 +58,17 @@ describe('RequireAuth', () => {
     expect(router.state.location.search).toBe('?redirect=%2Fusers');
   });
 
+  it('does not add a redirect after the user signs out', () => {
+    authState.user = null;
+    authState.signedOut = true;
+
+    const router = renderAt('/users');
+
+    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.search).toBe('');
+    authState.signedOut = false;
+  });
+
   it('shows the 403 page when the role is not allowed', () => {
     authState.user = userWithRole('warehouse');
 
@@ -68,5 +83,53 @@ describe('RequireAuth', () => {
     renderAt('/users');
 
     expect(screen.getByText('Kullanıcılar sayfası')).toBeInTheDocument();
+  });
+});
+
+describe('PublicOnly', () => {
+  function renderLogin(path: string) {
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/login',
+          element: (
+            <PublicOnly>
+              <p>Giriş sayfası</p>
+            </PublicOnly>
+          ),
+        },
+        { path: '/orders', element: <p>Siparişler</p> },
+        { path: '/dashboard', element: <p>Dashboard</p> },
+      ],
+      { initialEntries: [path] },
+    );
+    render(<RouterProvider router={router} />);
+    return router;
+  }
+
+  it('returns a signed-in user to the page they asked for', () => {
+    authState.user = userWithRole('admin');
+
+    const router = renderLogin('/login?redirect=%2Forders');
+
+    expect(router.state.location.pathname).toBe('/orders');
+  });
+
+  it('ignores redirects that leave the application', () => {
+    authState.user = userWithRole('admin');
+
+    const router = renderLogin('/login?redirect=%2F%2Fexample.org');
+
+    expect(router.state.location.pathname).toBe('/dashboard');
+  });
+});
+
+describe('safeRedirect', () => {
+  it('only accepts in-app paths', () => {
+    expect(safeRedirect('/orders/5?tab=items')).toBe('/orders/5?tab=items');
+    expect(safeRedirect('https://example.org')).toBeNull();
+    expect(safeRedirect('//example.org')).toBeNull();
+    expect(safeRedirect('/login')).toBeNull();
+    expect(safeRedirect(null)).toBeNull();
   });
 });

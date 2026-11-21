@@ -4,7 +4,12 @@ import { ADMIN_ONLY, CUSTOMER_ONLY, STAFF_ROLES } from '@/auth/roles';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { RoleLayout } from '@/layouts/RoleLayout';
 import { ShopLayout } from '@/layouts/ShopLayout';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
+import { ProfilePage } from '@/pages/profile/ProfilePage';
 
 const page = (title: string) => <PlaceholderPage title={title} />;
 
@@ -17,8 +22,8 @@ export const routes: RouteObject[] = [
       </PublicOnly>
     ),
     children: [
-      { path: '/login', element: page('Giriş') },
-      { path: '/register', element: page('Kayıt Ol') },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
     ],
   },
   {
@@ -74,12 +79,12 @@ export const routes: RouteObject[] = [
       </RequireAuth>
     ),
     children: [
-      { path: '/profile', element: page('Profilim') },
-      { path: '/profile/password', element: page('Şifre Değiştir') },
+      { path: '/profile', element: <ProfilePage /> },
+      { path: '/profile/password', element: <ChangePasswordPage /> },
     ],
   },
-  { path: '/403', element: page('Erişim yetkiniz yok') },
-  { path: '*', element: page('Sayfa bulunamadı') },
+  { path: '/403', element: <ErrorPage status={403} /> },
+  { path: '*', element: <ErrorPage status={404} /> },
 ];
 
 export const router = createBrowserRouter(routes);

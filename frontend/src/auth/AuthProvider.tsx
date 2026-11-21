@@ -8,6 +8,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [token, setToken] = useState(() => tokenStorage.get());
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
 
   const meQuery = useQuery({
     queryKey: ME_QUERY_KEY,
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStorage.set(data.access_token);
       queryClient.setQueryData(ME_QUERY_KEY, data.user);
       setSessionExpired(false);
+      setSignedOut(false);
       setToken(data.access_token);
       return data.user;
     },
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setSessionExpired(false);
+    setSignedOut(true);
     clearSession();
   }, [clearSession]);
 
@@ -54,10 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: token ? (meQuery.data ?? null) : null,
       isLoading: Boolean(token) && meQuery.isPending,
       sessionExpired,
+      signedOut,
       login,
       logout,
     }),
-    [token, meQuery.data, meQuery.isPending, sessionExpired, login, logout],
+    [token, meQuery.data, meQuery.isPending, sessionExpired, signedOut, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
