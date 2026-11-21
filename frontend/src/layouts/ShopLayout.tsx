@@ -1,6 +1,7 @@
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import { Badge, Layout, Menu, Space, Typography } from 'antd';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useCart } from '@/cart/useCart';
 import { colors } from '@/theme';
 import { LogoMark } from './Logo';
 import { UserMenu } from './UserMenu';
@@ -11,12 +12,14 @@ const navItems = [
 ];
 
 /** Müşteri arayüzü: sol menü yok, mağaza tipi üst çubuk */
-export function ShopLayout({ cartCount = 0 }: { cartCount?: number }) {
+export function ShopLayout() {
   const location = useLocation();
+  const { count: cartCount } = useCart();
   const { pathname } = location;
+  // Sepet ve profil menüde olmadığı için hiçbir öğe seçili görünmez.
   const selected = pathname.startsWith('/shop/orders')
     ? ['/shop/orders']
-    : pathname.startsWith('/shop')
+    : pathname === '/shop' || pathname.startsWith('/shop/products')
       ? ['/shop']
       : [];
 

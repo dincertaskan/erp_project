@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AUTH_EXPIRED_EVENT, api, tokenStorage } from '@/api/client';
 import type { CurrentUser, TokenResponse } from '@/api/types';
+import { cartStore } from '@/cart/cartStore';
 import { AuthContext, ME_QUERY_KEY, type AuthContextValue } from './context';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setSessionExpired(false);
     setSignedOut(true);
+    cartStore.clearAll();
     clearSession();
   }, [clearSession]);
 
