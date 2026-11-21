@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core import clock
 from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
 from app.models import (
     Customer,
@@ -183,9 +184,8 @@ class OrderService:
                 details={"products": inactive},
             )
 
-        year = datetime.now(UTC).year
         order = Order(
-            order_code=f"SIP-{year}-{self.orders.next_code_number():06d}",
+            order_code=self.orders.next_code(clock.now().year),
             customer=customer,
             status=OrderStatus.PENDING,
             payment_method=data.payment_method,
