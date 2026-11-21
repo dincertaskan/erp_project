@@ -13,7 +13,12 @@ const navItems = [
 /** Müşteri arayüzü: sol menü yok, mağaza tipi üst çubuk */
 export function ShopLayout({ cartCount = 0 }: { cartCount?: number }) {
   const location = useLocation();
-  const selected = location.pathname.startsWith('/shop/orders') ? '/shop/orders' : '/shop';
+  const { pathname } = location;
+  const selected = pathname.startsWith('/shop/orders')
+    ? ['/shop/orders']
+    : pathname.startsWith('/shop')
+      ? ['/shop']
+      : [];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -37,7 +42,7 @@ export function ShopLayout({ cartCount = 0 }: { cartCount?: number }) {
         </Link>
         <Menu
           mode="horizontal"
-          selectedKeys={[selected]}
+          selectedKeys={selected}
           items={navItems}
           style={{ flex: 1, borderBottom: 'none', minWidth: 0 }}
         />
