@@ -75,7 +75,10 @@ const stockStatusStyle: Record<StockStatus, { tone: Tone; icon?: ReactNode }> = 
 };
 
 export function StockStatusTag({ stock, minStock }: { stock: number; minStock: number }) {
-  const status = getStockStatus(stock, minStock);
+  return <StockStatusLabel status={getStockStatus(stock, minStock)} />;
+}
+
+export function StockStatusLabel({ status }: { status: StockStatus }) {
   const { tone, icon } = stockStatusStyle[status];
   return (
     <ToneTag tone={tone} icon={icon}>
