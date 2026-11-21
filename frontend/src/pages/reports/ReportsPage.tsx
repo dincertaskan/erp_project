@@ -3,12 +3,14 @@ import { Column } from '@ant-design/plots';
 import { PageContainer } from '@ant-design/pro-components';
 import { useQuery } from '@tanstack/react-query';
 import { App, Button, Card, Col, DatePicker, Empty, Row, Select, Space, Statistic, Table, Tabs, Tooltip } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 import { useCategories } from '@/api/catalog';
 import { api, errorMessage } from '@/api/client';
 import { colors } from '@/theme';
 import { formatCurrency, formatNumber } from '@/utils/format';
+import { OrderReportTab } from './OrderReportTab';
+import { downloadReport, rangeParams, rangePresets, type DateRange } from './reportShared';
+import { StockReportTab } from './StockReportTab';
 
 type GroupBy = 'day' | 'week' | 'month' | 'product' | 'category';
 
@@ -28,7 +30,7 @@ interface SalesReport {
 }
 
 interface ReportFilters {
-  range: [Dayjs, Dayjs];
+  range: DateRange;
   groupBy: GroupBy;
   categoryId?: number;
 }
@@ -41,30 +43,19 @@ const groupOptions: { value: GroupBy; label: string }[] = [
   { value: 'category', label: 'Kategori' },
 ];
 
-const presets: { label: string; value: [Dayjs, Dayjs] }[] = [
-  { label: 'Bu ay', value: [dayjs().startOf('month'), dayjs()] },
-  {
-    label: 'Geçen ay',
-    value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')],
-  },
-  { label: 'Son 3 ay', value: [dayjs().subtract(3, 'month').startOf('day'), dayjs()] },
-  { label: 'Bu yıl', value: [dayjs().startOf('year'), dayjs()] },
-];
-
 const toParams = (filters: ReportFilters) => ({
-  from: filters.range[0].format('YYYY-MM-DD'),
-  to: filters.range[1].format('YYYY-MM-DD'),
+  ...rangeParams(filters.range),
   group_by: filters.groupBy,
   category_id: filters.categoryId,
 });
 
 const money = (value: string) => <span className="tabular-nums">{formatCurrency(value)}</span>;
 
-/** E-25 Raporlar: bu dönem yalnızca Satış Raporu. Ciro onaylanmış ve iptal edilmemiş siparişlerden hesaplanır. */
+/** E-25 Raporlar: satış, stok ve sipariş raporları. Ciro onaylanmış ve iptal edilmemiş siparişlerden hesaplanır. */
 export function ReportsPage() {
   const { message } = App.useApp();
   const { data: categories = [] } = useCategories();
-  const [draft, setDraft] = useState<ReportFilters>({ range: presets[0].value, groupBy: 'day' });
+  const [draft, setDraft] = useState<ReportFilters>({ range: rangePresets[0].value, groupBy: 'day' });
   const [applied, setApplied] = useState<ReportFilters>(draft);
   const [downloading, setDownloading] = useState(false);
 
@@ -76,16 +67,7 @@ export function ReportsPage() {
   const download = async () => {
     setDownloading(true);
     try {
-      const { data } = await api.get<Blob>('/reports/sales', {
-        params: { ...toParams(applied), format: 'xlsx' },
-        responseType: 'blob',
-      });
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `satis-raporu-${toParams(applied).from}_${toParams(applied).to}.xlsx`;
-      link.click();
-      URL.revokeObjectURL(url);
+      await downloadReport('/reports/sales', toParams(applied), 'satis-raporu.xlsx');
     } catch (err) {
       message.error(errorMessage(err));
     } finally {
@@ -105,9 +87,9 @@ export function ReportsPage() {
           <DatePicker.RangePicker
             allowClear={false}
             value={draft.range}
-            presets={presets}
+            presets={rangePresets}
             format="DD.MM.YYYY"
-            onChange={(value) => value && setDraft((d) => ({ ...d, range: value as [Dayjs, Dayjs] }))}
+            onChange={(value) => value && setDraft((d) => ({ ...d, range: value as DateRange }))}
           />
           <Select
             allowClear
@@ -231,8 +213,8 @@ export function ReportsPage() {
         defaultActiveKey="sales"
         items={[
           { key: 'sales', label: 'Satış Raporu', children: salesTab },
-          { key: 'stock', label: 'Stok Raporu', disabled: true },
-          { key: 'orders', label: 'Sipariş Raporu', disabled: true },
+          { key: 'stock', label: 'Stok Raporu', children: <StockReportTab /> },
+          { key: 'orders', label: 'Sipariş Raporu', children: <OrderReportTab /> },
         ]}
       />
     </PageContainer>
