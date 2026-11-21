@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import User, UserRole
 from app.schemas.common import Page, PageParams
 from app.schemas.shop import (
@@ -24,8 +25,8 @@ from app.services.shop_service import CatalogService, MyOrderService
 
 customer_only = require_roles(UserRole.CUSTOMER)
 
-catalog_router = APIRouter(prefix="/catalog", tags=["Mağaza"])
-me_router = APIRouter(prefix="/me", tags=["Mağaza"])
+catalog_router = APIRouter(prefix="/catalog", tags=["Mağaza"], route_class=SessionReleasingRoute)
+me_router = APIRouter(prefix="/me", tags=["Mağaza"], route_class=SessionReleasingRoute)
 
 
 @catalog_router.get("/categories", response_model=list[CatalogCategory])

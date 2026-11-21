@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import User, UserRole
 from app.schemas.common import Page, PageParams
 from app.schemas.user import RoleUpdateRequest, StatusUpdateRequest, UserOut
 from app.services.user_service import UserService
 
-router = APIRouter(prefix="/users", tags=["Kullanıcılar"])
+router = APIRouter(prefix="/users", tags=["Kullanıcılar"], route_class=SessionReleasingRoute)
 
 admin_only = require_roles(UserRole.ADMIN)
 
@@ -26,12 +27,20 @@ def list_users(
 
 
 @router.patch("/{user_id}/role", response_model=UserOut)
-def set_role(user_id: int, data: RoleUpdateRequest, actor: User = Depends(admin_only), db: Session = Depends(get_db)):
+def set_role(
+    user_id: int,
+    data: RoleUpdateRequest,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
     return UserService(db).set_role(actor, user_id, data.role)
 
 
 @router.patch("/{user_id}/status", response_model=UserOut)
 def set_status(
-    user_id: int, data: StatusUpdateRequest, actor: User = Depends(admin_only), db: Session = Depends(get_db)
+    user_id: int,
+    data: StatusUpdateRequest,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
 ):
     return UserService(db).set_status(actor, user_id, data.is_active)

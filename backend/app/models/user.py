@@ -20,7 +20,8 @@ class User(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    customer: Mapped["Customer | None"] = relationship(back_populates="user")
+    # Kullanıcıyla birlikte yüklenir: oturum yanıt serileştirilmeden kapandığı için sonradan yüklenemez.
+    customer: Mapped["Customer | None"] = relationship(back_populates="user", lazy="joined")
 
 
 class Customer(TimestampMixin, Base):

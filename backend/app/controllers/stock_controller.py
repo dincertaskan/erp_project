@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import require_roles
+from app.core.routing import SessionReleasingRoute
 from app.models import StockMovementType, User, UserRole
 from app.schemas.common import Page, PageParams
 from app.schemas.stock import (
@@ -18,7 +19,7 @@ from app.schemas.stock import (
 )
 from app.services.stock_service import StockService
 
-router = APIRouter(prefix="/stock", tags=["Stok"])
+router = APIRouter(prefix="/stock", tags=["Stok"], route_class=SessionReleasingRoute)
 
 staff = require_roles(UserRole.ADMIN, UserRole.WAREHOUSE)
 

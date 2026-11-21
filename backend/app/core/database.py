@@ -36,7 +36,9 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
-def get_db():
+async def get_db():
+    # Async: kapanış iş parçacığı beklemez. Okuma işlemleri uç nokta dönerken SessionReleasingRoute ile
+    # kapatılır (bkz. app/core/routing.py); burada kalan bağlantı varsa havuza döner.
     db = SessionLocal()
     try:
         yield db
