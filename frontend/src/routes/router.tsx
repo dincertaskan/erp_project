@@ -6,6 +6,9 @@ import { RoleLayout } from '@/layouts/RoleLayout';
 import { ShopLayout } from '@/layouts/ShopLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { CategoriesPage } from '@/pages/categories/CategoriesPage';
+import { NewOrderPage } from '@/pages/orders/NewOrderPage';
+import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
+import { OrdersPage } from '@/pages/orders/OrdersPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -44,8 +47,8 @@ export const routes: RouteObject[] = [
       { path: '/stock', element: <StockPage /> },
       { path: '/stock/movements', element: <StockMovementsPage /> },
       { path: '/stock/critical', element: <CriticalStockPage /> },
-      { path: '/orders', element: page('Siparişler') },
-      { path: '/orders/:id', element: page('Sipariş Detayı') },
+      { path: '/orders', element: <OrdersPage /> },
+      { path: '/orders/:id', element: <OrderDetailPage /> },
       {
         element: (
           <RequireAuth roles={ADMIN_ONLY}>
@@ -55,7 +58,7 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/dashboard', element: page('Dashboard') },
           { path: '/categories', element: <CategoriesPage /> },
-          { path: '/orders/new', element: page('Yeni Sipariş') },
+          { path: '/orders/new', element: <NewOrderPage /> },
           { path: '/customers', element: page('Müşteriler') },
           { path: '/customers/:id', element: page('Müşteri Detayı') },
           { path: '/reports', element: page('Raporlar') },
