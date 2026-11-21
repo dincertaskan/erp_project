@@ -41,3 +41,11 @@ def test_seed_is_idempotent(db):
     seed(db, PASSWORD)
 
     assert counts(db) == first
+
+
+def test_seeded_accounts_can_log_in(client, db):
+    seed(db, PASSWORD)
+
+    for email in ("yonetici@example.com", "depo@example.com", "musteri@example.com"):
+        response = client.post("/auth/login", json={"email": email, "password": PASSWORD})
+        assert response.status_code == 200, email

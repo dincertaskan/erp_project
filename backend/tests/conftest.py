@@ -22,7 +22,10 @@ from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.core.database import engine, get_db  # noqa: E402
+from app.core.login_throttle import login_throttle  # noqa: E402
+from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import Customer, User, UserRole  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -55,3 +58,55 @@ def client(db):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+TEST_PASSWORD = "Test1234"
+
+
+@pytest.fixture(autouse=True)
+def reset_login_throttle():
+    login_throttle.reset()
+    yield
+    login_throttle.reset()
+
+
+@pytest.fixture
+def make_user(db):
+    counter = {"n": 0}
+
+    def factory(role: UserRole = UserRole.CUSTOMER, *, is_active: bool = True, email: str | None = None) -> User:
+        counter["n"] += 1
+        user = User(
+            full_name=f"Test {role.value} {counter['n']}",
+            email=email or f"{role.value}{counter['n']}@example.com",
+            password_hash=hash_password(TEST_PASSWORD),
+            role=role,
+            is_active=is_active,
+        )
+        db.add(user)
+        db.flush()
+        if role == UserRole.CUSTOMER:
+            db.add(Customer(user_id=user.id, full_name=user.full_name, email=user.email))
+            db.flush()
+        return user
+
+    return factory
+
+
+def auth_headers(user: User) -> dict[str, str]:
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.role.value)}"}
+
+
+@pytest.fixture
+def admin(make_user):
+    return make_user(UserRole.ADMIN)
+
+
+@pytest.fixture
+def warehouse(make_user):
+    return make_user(UserRole.WAREHOUSE)
+
+
+@pytest.fixture
+def customer(make_user):
+    return make_user(UserRole.CUSTOMER)
