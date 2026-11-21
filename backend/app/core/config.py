@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         # Eski postgresql+psycopg2:// adresleri de psycopg 3'e yönlendirilir.
         for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
             if url.startswith(prefix):
-                return "postgresql+psycopg://" + url[len(prefix):]
+                return "postgresql+psycopg://" + url[len(prefix) :]
         return url
 
     @property
