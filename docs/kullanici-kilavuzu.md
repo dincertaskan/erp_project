@@ -19,7 +19,7 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 
 ### Profil ve şifre
 
-- Kullanıcı menüsünden "Profilim" ile "Kişisel Bilgiler" (ad soyad, telefon; müşteride firma, şehir ve teslimat adresi) güncellenir ve "Kaydet" ile saklanır.
+- Kullanıcı menüsünden "Profilim" ile "Kişisel Bilgiler" (ad soyad; müşteride ayrıca telefon, firma, şehir ve teslimat adresi) güncellenir ve "Kaydet" ile saklanır.
 - "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır.
 
 ## Müşteri
