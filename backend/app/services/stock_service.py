@@ -1,9 +1,9 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from app.core import clock
 from app.core.errors import AppError
 from app.models import StockMovementType, User
 from app.repositories.stock_repository import StockRepository
@@ -22,8 +22,6 @@ from app.schemas.stock import (
 from app.services.product_service import product_fields
 from app.services.stock_ledger import apply_movement, commit_stock_changes, lock_products, with_retry
 
-# "Bugün" iş yerinin saatine göre hesaplanır.
-BUSINESS_TZ = ZoneInfo("Europe/Istanbul")
 MANUAL_TYPES = {ManualMovementType.IN: StockMovementType.IN, ManualMovementType.OUT: StockMovementType.OUT}
 
 
@@ -90,7 +88,8 @@ class StockService:
         return self.stock.critical_count()
 
     def summary(self) -> StockSummary:
-        start_of_day = datetime.now(BUSINESS_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
+        # "Bugün" iş yerinin saatine göre hesaplanır.
+        start_of_day = clock.start_of_day(clock.now())
         return StockSummary(
             active_products=self.stock.active_product_count(),
             critical_count=self.stock.critical_count(),
