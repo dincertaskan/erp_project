@@ -2,7 +2,8 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import { api, ApiError } from '@/api/client';
 import type { OrderDetail, OrderListItem } from '@/api/orders';
-import type { CurrentUser } from '@/api/types';
+import type { CustomerDetail } from '@/api/customers';
+import type { CurrentUser, Product } from '@/api/types';
 import type { AuthContextValue } from '@/auth/context';
 import { OrderActions } from '@/components/OrderActions';
 import { renderRoutes } from '@/test/render';
@@ -164,5 +165,123 @@ describe('NewOrderPage', () => {
     expect(await screen.findByText('Müşteri seçin.')).toBeInTheDocument();
     expect(screen.getByText('Ödeme yöntemi seçin.')).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
+  });
+});
+
+describe('NewOrderPage flow', () => {
+  const customer: CustomerDetail = {
+    id: 3,
+    full_name: 'Can Demir',
+    email: 'musteri@example.com',
+    phone: null,
+    company_name: null,
+    address: 'Moda Cad. 5',
+    city: 'İstanbul',
+    is_active: true,
+    source: 'app',
+    created_at: '2026-11-01T10:00:00Z',
+    has_account: true,
+    order_count: 0,
+    total_spent: '0',
+    stats: { order_count: 0, revenue_order_count: 0, total_spent: '0', average_basket: '0', last_order_at: null },
+  } as CustomerDetail;
+
+  const mouse = {
+    id: 7,
+    sku: 'ELK-0001',
+    name: 'Kablosuz Mouse',
+    sale_price: '250.00',
+    stock: 2,
+    min_stock: 1,
+  } as Product;
+
+  function mockApi() {
+    vi.spyOn(api, 'get').mockImplementation(async (url: string) => {
+      if (url === '/customers/3') return { data: customer };
+      if (url === '/products') return { data: { items: [mouse], total: 1, page: 1, page_size: 20 } };
+      if (url === '/customers') return { data: { items: [customer], total: 1, page: 1, page_size: 20 } };
+      throw new Error(`unexpected GET ${url}`);
+    });
+  }
+
+  async function pick(combobox: HTMLElement, option: string) {
+    fireEvent.focus(combobox);
+    fireEvent.mouseDown(combobox);
+    fireEvent.click(await screen.findByTitle(option));
+  }
+
+  it('creates an order for a preset customer and merges repeated products', async () => {
+    signIn('admin');
+    mockApi();
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { id: 77, order_code: 'SIP-2026-000077' } });
+    const { router } = renderRoutes(
+      [
+        { path: '/orders/new', element: <NewOrderPage /> },
+        { path: '/orders/:id', element: <p>Sipariş detayı</p> },
+      ],
+      '/orders/new?customer=3',
+    );
+
+    expect(await screen.findByDisplayValue('Moda Cad. 5, İstanbul')).toBeInTheDocument();
+    const [, productSelect, paymentSelect] = screen.getAllByRole('combobox');
+
+    await pick(productSelect, 'ELK-0001 · Kablosuz Mouse · Stok: 2');
+    fireEvent.change(screen.getByLabelText('Adet'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Ekle/ }));
+    await pick(productSelect, 'ELK-0001 · Kablosuz Mouse · Stok: 2');
+    fireEvent.click(screen.getByRole('button', { name: /Ekle/ }));
+
+    expect(await screen.findByText('Stokta 2 var')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kablosuz Mouse adedi')).toHaveValue('3');
+    expect(screen.getAllByText(/750,00/).length).toBeGreaterThan(0);
+
+    await pick(paymentSelect, 'Havale/EFT');
+    fireEvent.change(screen.getByLabelText('Not'), { target: { value: '  Hızlı teslimat  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Siparişi Oluştur' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/orders/77'));
+    expect(post).toHaveBeenCalledWith('/orders', {
+      customer_id: 3,
+      payment_method: 'bank_transfer',
+      shipping_address: 'Moda Cad. 5, İstanbul',
+      note: 'Hızlı teslimat',
+      items: [{ product_id: 7, quantity: 3 }],
+    });
+  });
+
+  it('asks for at least one product before sending', async () => {
+    signIn('admin');
+    mockApi();
+    const post = vi.spyOn(api, 'post');
+    renderRoutes([{ path: '/orders/new', element: <NewOrderPage /> }], '/orders/new?customer=3');
+
+    expect(await screen.findByDisplayValue('Moda Cad. 5, İstanbul')).toBeInTheDocument();
+    await pick(screen.getAllByRole('combobox')[2], 'Kapıda Ödeme');
+    fireEvent.click(screen.getByRole('button', { name: 'Siparişi Oluştur' }));
+
+    expect(await screen.findByText('Siparişe en az bir ürün ekleyin.')).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('removes a product line', async () => {
+    signIn('admin');
+    mockApi();
+    renderRoutes([{ path: '/orders/new', element: <NewOrderPage /> }], '/orders/new');
+
+    await pick(screen.getAllByRole('combobox')[1], 'ELK-0001 · Kablosuz Mouse · Stok: 2');
+    fireEvent.click(screen.getByRole('button', { name: /Ekle/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Kablosuz Mouse kaldır' }));
+
+    expect(await screen.findByText('Henüz ürün eklenmedi.')).toBeInTheDocument();
+  });
+
+  it('fills the saved address when a customer is chosen', async () => {
+    signIn('admin');
+    mockApi();
+    renderRoutes([{ path: '/orders/new', element: <NewOrderPage /> }], '/orders/new');
+
+    await pick(screen.getAllByRole('combobox')[0], 'Can Demir · musteri@example.com');
+
+    expect(await screen.findByDisplayValue('Moda Cad. 5, İstanbul')).toBeInTheDocument();
   });
 });

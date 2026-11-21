@@ -1,11 +1,12 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
-import { api } from '@/api/client';
+import { api, ApiError } from '@/api/client';
 import type { CatalogProduct, MyOrderDetail } from '@/api/shop';
 import type { AuthContextValue } from '@/auth/context';
 import { cartStore } from '@/cart/cartStore';
 import { renderRoutes } from '@/test/render';
 import { CartPage } from './CartPage';
+import { MyOrderCancelButton } from './MyOrderCancelButton';
 import { MyOrderDetailPage } from './MyOrderDetailPage';
 import { ShopProductCard } from './ShopProductCard';
 
@@ -140,6 +141,102 @@ describe('CartPage', () => {
     expect(cartStore.get(9)).toEqual([]);
   });
 
+  it('updates the line total and revalidates when the quantity changes', async () => {
+    cartStore.add(9, mouse, 1);
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { products: [mouse], issues: [] } });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+
+    fireEvent.change(await screen.findByLabelText('Kablosuz Mouse adedi'), { target: { value: '3' } });
+
+    await waitFor(() => expect(cartStore.get(9)[0].quantity).toBe(3));
+    expect(screen.getAllByText(/300,00/).length).toBeGreaterThan(0);
+    await waitFor(() =>
+      expect(post).toHaveBeenLastCalledWith('/me/cart/validate', {
+        items: [{ product_id: 7, quantity: 3, expected_price: '100.00' }],
+      }),
+    );
+  });
+
+  it('does not accept a quantity above the available stock or below one', async () => {
+    cartStore.add(9, mouse, 2);
+    vi.spyOn(api, 'post').mockResolvedValue({ data: { products: [mouse], issues: [] } });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+    const input = await screen.findByLabelText('Kablosuz Mouse adedi');
+
+    fireEvent.change(input, { target: { value: '99' } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(cartStore.get(9)[0].quantity).toBe(3));
+
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(cartStore.get(9)[0].quantity).toBe(1));
+  });
+
+  it('removes a line and falls back to the empty state', async () => {
+    cartStore.add(9, mouse, 1);
+    vi.spyOn(api, 'post').mockResolvedValue({ data: { products: [mouse], issues: [] } });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Kablosuz Mouse sepetten çıkar' }));
+
+    expect(await screen.findByText('Sepetiniz boş')).toBeInTheDocument();
+    expect(cartStore.get(9)).toEqual([]);
+  });
+
+  it('empties the cart after confirmation', async () => {
+    cartStore.add(9, mouse, 1);
+    vi.spyOn(api, 'post').mockResolvedValue({ data: { products: [mouse], issues: [] } });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sepeti Boşalt' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Boşalt' }));
+
+    expect(await screen.findByText('Sepetiniz boş')).toBeInTheDocument();
+  });
+
+  it('locks the quantity of a product that is no longer sold', async () => {
+    cartStore.add(9, mouse, 1);
+    vi.spyOn(api, 'post').mockResolvedValue({
+      data: {
+        products: [],
+        issues: [
+          {
+            product_id: 7,
+            issue: 'not_available',
+            message: 'Bu ürün artık satışta değil.',
+            old_price: null,
+            new_price: null,
+            available_qty: 0,
+          },
+        ],
+      },
+    });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+
+    expect(await screen.findByText('Bu ürün artık satışta değil.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kablosuz Mouse adedi')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Siparişi Tamamla' })).toBeDisabled();
+  });
+
+  it('revalidates the cart when the server says it changed during checkout', async () => {
+    cartStore.add(9, mouse, 1);
+    const post = vi.spyOn(api, 'post').mockImplementation(async (url: string) => {
+      if (url === '/me/cart/validate') return { data: { products: [mouse], issues: [] } };
+      throw new ApiError(409, 'CART_CHANGED', 'Sepetinizdeki ürünler değişti.');
+    });
+    renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
+
+    fireEvent.click(await screen.findByLabelText('Havale/EFT'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Siparişi Tamamla' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Siparişi Tamamla' }));
+
+    expect(await screen.findByText('Sepetinizdeki ürünler değişti.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(post.mock.calls.filter(([url]) => url === '/me/cart/validate').length).toBeGreaterThanOrEqual(2),
+    );
+    expect(cartStore.get(9)).toHaveLength(1);
+  });
+
   it('shows an empty state', () => {
     renderRoutes([{ path: '/shop/cart', element: <CartPage /> }], '/shop/cart');
 
@@ -180,5 +277,47 @@ describe('MyOrderDetailPage', () => {
     expect(await screen.findByText('Siparişiniz alındı!')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'İptal Et' })).toBeInTheDocument();
     expect(screen.getByText('Kapıda Ödeme')).toBeInTheDocument();
+  });
+});
+
+describe('MyOrderCancelButton', () => {
+  const order = { id: 55, order_code: 'SIP-2026-000055', can_cancel: true };
+
+  async function confirmCancel() {
+    fireEvent.click(screen.getByRole('button', { name: 'İptal Et' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('SIP-2026-000055 iptal edilsin mi?');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'İptal Et' }));
+  }
+
+  it('is hidden once the order can no longer be cancelled', () => {
+    renderRoutes([{ path: '/', element: <MyOrderCancelButton order={{ ...order, can_cancel: false }} /> }], '/');
+
+    expect(screen.queryByRole('button', { name: 'İptal Et' })).not.toBeInTheDocument();
+  });
+
+  it('cancels after confirmation and reports back', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { id: 55, status: 'cancelled' } });
+    const onCancelled = vi.fn();
+    renderRoutes([{ path: '/', element: <MyOrderCancelButton order={order} onCancelled={onCancelled} /> }], '/');
+
+    await confirmCancel();
+
+    await waitFor(() => expect(onCancelled).toHaveBeenCalledWith({ id: 55, status: 'cancelled' }));
+    expect(post).toHaveBeenCalledWith('/me/orders/55/cancel');
+    expect(await screen.findByText('Siparişiniz iptal edildi.')).toBeInTheDocument();
+  });
+
+  it('explains why when the order was approved in the meantime', async () => {
+    vi.spyOn(api, 'post').mockRejectedValue(
+      new ApiError(409, 'INVALID_TRANSITION', 'Onaylanan sipariş iptal edilemez.'),
+    );
+    const onCancelled = vi.fn();
+    renderRoutes([{ path: '/', element: <MyOrderCancelButton order={order} onCancelled={onCancelled} /> }], '/');
+
+    await confirmCancel();
+
+    expect(await screen.findByText('Onaylanan sipariş iptal edilemez.')).toBeInTheDocument();
+    expect(onCancelled).not.toHaveBeenCalled();
   });
 });

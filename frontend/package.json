@@ -9,6 +9,7 @@
     "typecheck": "tsc -b",
     "lint": "oxlint --deny-warnings src",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -35,12 +36,13 @@
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.3.0",
+    "@vitest/coverage-v8": "5.1.0",
     "jsdom": "31.0.1",
     "oxlint": "1.94.0",
     "prettier": "3.10.1",
     "typescript": "5.9.3",
     "vite": "8.3.8",
-    "vitest": "5.1.1"
+    "vitest": "5.1.0"
   },
   "overrides": {
     "path-to-regexp": "8.4.2"

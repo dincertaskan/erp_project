@@ -10,3 +10,11 @@ ignore = ["B008"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/benchmarks/*", "app/olist/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
