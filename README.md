@@ -26,6 +26,8 @@ docker compose exec -e SEED_PASSWORD=Demo1234 backend python -m app.seed
 - API: http://localhost:8000 (Swagger: http://localhost:8000/docs)
 - Sağlık kontrolü: http://localhost:8000/health
 
+`package.json` ya da `requirements.txt` değiştiğinde (ör. `git pull` sonrası) imajları yeniden derleyin: `docker compose up -d --build`. Konteynerdeki bağımlılıklar imajın içindedir; yalnızca `frontend/src` klasörü canlı bağlanır.
+
 Bilgisayarınızda 5432, 8000 veya 5173 portu doluysa kök dizindeki `.env.example` dosyasını `.env` olarak kopyalayıp `POSTGRES_PORT`, `BACKEND_PORT` ve `FRONTEND_PORT` değerlerini değiştirin. Veritabanı portunu değiştirirseniz `backend/.env` içindeki adresleri de güncelleyin.
 
 ## Yerel geliştirme (arka uç)

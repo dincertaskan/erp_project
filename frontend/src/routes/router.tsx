@@ -13,6 +13,7 @@ import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
 import { OrdersPage } from '@/pages/orders/OrdersPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { RouteError } from '@/pages/errors/RouteError';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
@@ -24,7 +25,7 @@ import { StockPage } from '@/pages/stock/StockPage';
 
 const page = (title: string) => <PlaceholderPage title={title} />;
 
-export const routes: RouteObject[] = [
+const appRoutes: RouteObject[] = [
   { path: '/', element: <HomeRedirect /> },
   {
     element: (
@@ -58,7 +59,11 @@ export const routes: RouteObject[] = [
           </RequireAuth>
         ),
         children: [
-          { path: '/dashboard', element: page('Dashboard') },
+          {
+            path: '/dashboard',
+            // Grafik kütüphanesi yalnızca dashboard açılınca yüklenir.
+            lazy: async () => ({ Component: (await import('@/pages/dashboard/DashboardPage')).DashboardPage }),
+          },
           { path: '/categories', element: <CategoriesPage /> },
           { path: '/orders/new', element: <NewOrderPage /> },
           { path: '/customers', element: <CustomersPage /> },
@@ -97,5 +102,8 @@ export const routes: RouteObject[] = [
   { path: '/403', element: <ErrorPage status={403} /> },
   { path: '*', element: <ErrorPage status={404} /> },
 ];
+
+// Yüklenemeyen sayfalar (ör. geç yüklenen parça) tek bir Türkçe hata ekranında yakalanır.
+export const routes: RouteObject[] = [{ errorElement: <RouteError />, children: appRoutes }];
 
 export const router = createBrowserRouter(routes);
