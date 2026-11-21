@@ -5,6 +5,7 @@ from app.controllers import (
     auth_controller,
     category_controller,
     customer_controller,
+    dashboard_controller,
     health_controller,
     order_controller,
     product_controller,
@@ -34,3 +35,4 @@ app.include_router(product_controller.router)
 app.include_router(stock_controller.router)
 app.include_router(customer_controller.router)
 app.include_router(order_controller.router)
+app.include_router(dashboard_controller.router)
