@@ -262,3 +262,47 @@ def test_concurrent_stock_outs_never_oversell(committed_product):
         assert session.get(Product, product_id).stock == 2
         movements = session.scalars(select(StockMovement).where(StockMovement.product_id == product_id)).all()
         assert [(m.previous_stock, m.new_stock) for m in movements] == [(5, 2)]
+
+
+def _read_then_write_twice(product_id: int, user_id: int):
+    """İki oturum aynı stoğu okur, sonra sırayla 3'er adet düşer (araya giren yazma)."""
+    from app.services.stock_ledger import apply_movement, commit_stock_changes, lock_products
+
+    first, second = SessionLocal(), SessionLocal()
+    try:
+        product_a = lock_products(first, [product_id])[product_id]
+        product_b = lock_products(second, [product_id])[product_id]
+        apply_movement(first, product_a, movement_type=StockMovementType.OUT, quantity=3, user_id=user_id)
+        commit_stock_changes(first)
+        apply_movement(second, product_b, movement_type=StockMovementType.OUT, quantity=3, user_id=user_id)
+        commit_stock_changes(second)
+        return "ok"
+    except ConflictError as exc:
+        return exc.code
+    finally:
+        first.close()
+        second.close()
+
+
+def test_none_strategy_loses_an_update(committed_product, monkeypatch):
+    """Deney 1 referansı: kilitsiz modda iki çıkış da kabul edilir ama stok yalnızca bir kez düşer."""
+    from app.core.config import settings
+
+    user_id, product_id, _ = committed_product
+    monkeypatch.setattr(settings, "STOCK_STRATEGY", "none")
+
+    assert _read_then_write_twice(product_id, user_id) == "ok"
+    with SessionLocal() as session:
+        assert session.get(Product, product_id).stock == 2  # 6 adet satıldı, stok yalnızca 3 düştü
+        assert len(session.scalars(select(StockMovement).where(StockMovement.product_id == product_id)).all()) == 2
+
+
+def test_optimistic_strategy_rejects_the_stale_write(committed_product, monkeypatch):
+    from app.core.config import settings
+
+    user_id, product_id, _ = committed_product
+    monkeypatch.setattr(settings, "STOCK_STRATEGY", "optimistic")
+
+    assert _read_then_write_twice(product_id, user_id) == "STOCK_CONFLICT"
+    with SessionLocal() as session:
+        assert session.get(Product, product_id).stock == 2
