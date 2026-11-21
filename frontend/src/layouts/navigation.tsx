@@ -40,6 +40,14 @@ export const adminNavigation: NavItem[] = [
   { path: '/users', name: 'Kullanıcılar', icon: <UserOutlined />, roles: ['admin'] },
 ];
 
+/** Adrese en uzun eşleşen menü yolu: /stock/movements için /stock değil /stock/movements seçilir */
+export function selectedMenuKey(items: NavItem[], pathname: string): string | undefined {
+  const paths = items.flatMap((item) => (item.children ? item.children.map((c) => c.path) : [item.path]));
+  return paths
+    .filter((path) => pathname === path || pathname.startsWith(`${path}/`))
+    .sort((a, b) => b.length - a.length)[0];
+}
+
 /** Kullanıcının rolüne göre görebileceği menü öğeleri */
 export function navigationForRole(items: NavItem[], role: UserRole): NavItem[] {
   return items
