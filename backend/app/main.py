@@ -36,7 +36,8 @@ app = FastAPI(title="Akıllı ERP API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    # Kimlik doğrulama Authorization başlığıyla yapılır, çerez kullanılmaz; kimlik bilgili CORS gerekmez.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
