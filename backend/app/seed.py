@@ -18,13 +18,13 @@ from app.core.security import hash_password
 from app.models import Category, Customer, Product, StockMovement, StockMovementType, User, UserRole
 
 USERS = [
-    {"full_name": "Elif Yılmaz", "email": "yonetici@demo.local", "role": UserRole.ADMIN},
-    {"full_name": "Ayşe Kaya", "email": "depo@demo.local", "role": UserRole.WAREHOUSE},
-    {"full_name": "Can Demir", "email": "musteri@demo.local", "role": UserRole.CUSTOMER},
+    {"full_name": "Elif Yılmaz", "email": "yonetici@example.com", "role": UserRole.ADMIN},
+    {"full_name": "Ayşe Kaya", "email": "depo@example.com", "role": UserRole.WAREHOUSE},
+    {"full_name": "Can Demir", "email": "musteri@example.com", "role": UserRole.CUSTOMER},
 ]
 
 CUSTOMER_PROFILE = {
-    "musteri@demo.local": {"phone": "0532 000 00 00", "address": "Örnek Mah. Demo Sok. No: 1", "city": "İstanbul"},
+    "musteri@example.com": {"phone": "0532 000 00 00", "address": "Örnek Mah. Demo Sok. No: 1", "city": "İstanbul"},
 }
 
 CATEGORIES = [
@@ -69,7 +69,7 @@ def seed(db: Session, password: str) -> None:
             db.flush()
         categories[data["name"]] = category
 
-    admin = users["yonetici@demo.local"]
+    admin = users["yonetici@example.com"]
     for sku, name, category_name, sale_price, cost_price, stock, min_stock in PRODUCTS:
         if db.scalar(select(Product).where(Product.sku == sku)) is not None:
             continue

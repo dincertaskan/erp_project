@@ -60,9 +60,9 @@ Seed betiği her rol için bir hesap oluşturur. Şifre seed çalıştırılırk
 
 | Rol | E-posta | Şifre |
 |---|---|---|
-| Yönetici | yonetici@demo.local | Demo1234 |
-| Depo Personeli | depo@demo.local | Demo1234 |
-| Müşteri | musteri@demo.local | Demo1234 |
+| Yönetici | yonetici@example.com | Demo1234 |
+| Depo Personeli | depo@example.com | Demo1234 |
+| Müşteri | musteri@example.com | Demo1234 |
 
 Bu hesaplar yalnızca yerel geliştirme ve demo içindir.
 
