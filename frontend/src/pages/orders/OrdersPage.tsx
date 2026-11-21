@@ -3,7 +3,7 @@ import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-
 import { Badge, Button, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/api/client';
 import type { OrderListItem, OrderPage } from '@/api/orders';
 import { useAuth } from '@/auth/useAuth';
@@ -33,7 +33,10 @@ export function OrdersPage() {
   const navigate = useNavigate();
   const actionRef = useRef<ActionType>(null);
   const tabs = isAdmin ? ADMIN_TABS : WAREHOUSE_TABS;
-  const [tab, setTab] = useState<Tab>(tabs[0]);
+  const [params] = useSearchParams();
+  // Dashboard'dan ?status=pending ile gelinebilir.
+  const requested = params.get('status') as Tab | null;
+  const [tab, setTab] = useState<Tab>(requested && tabs.includes(requested) ? requested : tabs[0]);
   const [counts, setCounts] = useState<OrderPage['counts_by_status']>({});
   const total = Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0);
 
