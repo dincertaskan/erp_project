@@ -63,11 +63,12 @@ Projede doğrudan kullanılan paketlerin ve dış kaynakların lisansları. Sür
 | @types/react-dom | 18.3.7 | MIT |
 | @vitejs/plugin-react | 6.3.0 | MIT |
 | jsdom | 31.0.1 | MIT |
+| @vitest/coverage-v8 | 5.1.0 | MIT |
 | oxlint | 1.94.0 | MIT |
 | prettier | 3.10.1 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |
 | vite | 8.3.8 | MIT |
-| vitest | 5.1.1 | MIT |
+| vitest | 5.1.0 | MIT |
 
 ## Veri ve yazı tipi
 
