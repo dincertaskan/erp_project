@@ -17,6 +17,7 @@ import { RouteError } from '@/pages/errors/RouteError';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
+import { UsersPage } from '@/pages/users/UsersPage';
 import { CartPage } from '@/pages/shop/CartPage';
 import { MyOrderDetailPage } from '@/pages/shop/MyOrderDetailPage';
 import { MyOrdersPage } from '@/pages/shop/MyOrdersPage';
@@ -74,7 +75,7 @@ const appRoutes: RouteObject[] = [
           { path: '/customers', element: <CustomersPage /> },
           { path: '/customers/:id', element: <CustomerDetailPage /> },
           { path: '/reports', element: page('Raporlar') },
-          { path: '/users', element: page('Kullanıcılar') },
+          { path: '/users', element: <UsersPage /> },
         ],
       },
     ],
