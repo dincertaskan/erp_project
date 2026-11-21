@@ -24,8 +24,9 @@ class OrderRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def next_code_number(self) -> int:
-        return self.db.scalar(select(ORDER_CODE_SEQUENCE.next_value()))
+    def next_code(self, year: int) -> str:
+        """SIP-2026-000123: yıl ve veritabanı dizisinden gelen sıra numarası."""
+        return f"SIP-{year}-{self.db.scalar(select(ORDER_CODE_SEQUENCE.next_value())):06d}"
 
     def _filtered(self, query: Select, filters: OrderFilters, *, with_status: bool = True) -> Select:
         if with_status and filters.statuses is not None:
