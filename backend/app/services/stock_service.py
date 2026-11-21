@@ -20,7 +20,7 @@ from app.schemas.stock import (
     StockSummary,
 )
 from app.services.product_service import product_fields
-from app.services.stock_ledger import apply_movement, lock_products
+from app.services.stock_ledger import apply_movement, commit_stock_changes, lock_products, with_retry
 
 # "Bugün" iş yerinin saatine göre hesaplanır.
 BUSINESS_TZ = ZoneInfo("Europe/Istanbul")
@@ -35,6 +35,9 @@ class StockService:
         self.stock = StockRepository(db)
 
     def record(self, actor: User, data: StockMovementRequest) -> StockMovementResult:
+        return with_retry(self.db, lambda: self._record(actor, data))
+
+    def _record(self, actor: User, data: StockMovementRequest) -> StockMovementResult:
         product = lock_products(self.db, [data.product_id])[data.product_id]
         # Hata olursa commit edilmez; oturum kapanınca işlem geri alınır ve kilit bırakılır.
         if not product.is_active:
@@ -47,7 +50,7 @@ class StockService:
             user_id=actor.id,
             description=data.description,
         )
-        self.db.commit()
+        commit_stock_changes(self.db)
         self.db.refresh(movement)
         return StockMovementResult(
             movement=MovementOut.model_validate(movement),

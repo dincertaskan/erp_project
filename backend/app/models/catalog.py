@@ -48,6 +48,10 @@ class Product(TimestampMixin, Base):
 
     category: Mapped[Category] = relationship(back_populates="products")
 
+    # Her UPDATE "WHERE version = ?" ile yapılır ve sürümü artırır; araya başka bir yazma girdiyse
+    # StaleDataError oluşur. İyimser kilit stratejisi bu davranışa dayanır.
+    __mapper_args__ = {"version_id_col": version}
+
     @property
     def is_critical(self) -> bool:
         """Kritik stok: stok, minimum stok seviyesinin altında."""
