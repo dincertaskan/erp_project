@@ -24,7 +24,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
     SECRET_KEY: str = Field(min_length=16)
-    ALGORITHM: str = "HS256"
+    # Yalnızca HMAC algoritmaları; "none" ya da açık anahtar algoritmaları yapılandırmayla seçilemez.
+    ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     # Virgülle ayrılmış ek frontend adresleri (ör. http://192.168.1.20:5173)
