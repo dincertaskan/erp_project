@@ -46,6 +46,13 @@ def build_xlsx(
         for cell in sheet[sheet.max_row]:
             cell.font = Font(bold=True)
 
+    # Raporlar yalnızca veri içerir: "=" ile başlayan metinler (ör. müşterinin kendi girdiği ad) formül olarak
+    # değil düz metin olarak saklanır (Excel formül enjeksiyonu).
+    for row in sheet.iter_rows():
+        for cell in row:
+            if cell.data_type == "f":
+                cell.data_type = "s"
+
     for row in sheet.iter_rows(min_row=header_row + 1):
         for cell in row:
             if cell.column in money_columns:
