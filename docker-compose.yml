@@ -21,6 +21,9 @@ services:
     env_file: ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-erp}:${POSTGRES_PASSWORD:-erp}@db:5432/${POSTGRES_DB:-erp}
+      # Deney 1: STOCK_STRATEGY=pessimistic|optimistic|none, UVICORN_WORKERS=4
+      STOCK_STRATEGY: ${STOCK_STRATEGY:-pessimistic}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
