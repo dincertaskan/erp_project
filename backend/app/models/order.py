@@ -8,6 +8,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    Sequence,
     String,
     Text,
     UniqueConstraint,
@@ -19,6 +20,9 @@ from app.core.database import Base, TimestampMixin
 from app.models.catalog import Product
 from app.models.enums import OrderStatus, PaymentMethod, RecordSource, pg_enum
 from app.models.user import Customer, User
+
+# Sipariş kodundaki sıra numarası (SIP-2026-000123); eşzamanlı oluşturmalarda çakışmaz.
+ORDER_CODE_SEQUENCE = Sequence("order_code_seq", metadata=Base.metadata)
 
 
 class Order(TimestampMixin, Base):
