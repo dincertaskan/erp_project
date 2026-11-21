@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -7,6 +8,9 @@ from app.core.database import Base
 from app.models.catalog import Product
 from app.models.enums import StockMovementType, pg_enum
 from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.order import Order
 
 
 class StockMovement(Base):
@@ -33,3 +37,4 @@ class StockMovement(Base):
 
     product: Mapped[Product] = relationship()
     user: Mapped[User] = relationship()
+    order: Mapped["Order | None"] = relationship()
