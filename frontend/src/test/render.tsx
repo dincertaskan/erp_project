@@ -1,3 +1,4 @@
+import { ProConfigProvider, trTRIntl } from '@ant-design/pro-components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { App as AntApp, ConfigProvider } from 'antd';
@@ -11,9 +12,11 @@ export function renderRoutes(routes: RouteObject[], initialEntry: string | { pat
   const view = render(
     <QueryClientProvider client={queryClient}>
       <ConfigProvider locale={trTR}>
-        <AntApp>
-          <RouterProvider router={router} />
-        </AntApp>
+        <ProConfigProvider intl={trTRIntl}>
+          <AntApp>
+            <RouterProvider router={router} />
+          </AntApp>
+        </ProConfigProvider>
       </ConfigProvider>
     </QueryClientProvider>,
   );
