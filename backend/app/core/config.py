@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,8 @@ class Settings(BaseSettings):
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     # Virgülle ayrılmış ek frontend adresleri (ör. http://192.168.1.20:5173)
     CORS_ORIGINS: str = ""
+    # Deney 1: stok güncellemelerinde kötümser (SELECT ... FOR UPDATE) ya da iyimser (sürüm numarası) kilit
+    STOCK_STRATEGY: Literal["pessimistic", "optimistic"] = "pessimistic"
 
     @field_validator("DATABASE_URL")
     @classmethod

@@ -1,18 +1,26 @@
 """Stok miktarını değiştiren tüm işlemlerin geçtiği tek yer (elle giriş/çıkış, sipariş onayı, iptal iadesi).
 
-Ürün satırları SELECT ... FOR UPDATE ile kilitlenir; aynı ürüne gelen eşzamanlı işlemler sırayla çalışır ve
-stok hiçbir zaman eksiye düşmez. Kilitler kimlik sırasıyla alınır, böylece çok ürünlü işlemler kilitlenmez.
+İki strateji vardır (Deney 1, ayar: STOCK_STRATEGY):
+- pessimistic: ürün satırları SELECT ... FOR UPDATE ile kilitlenir; eşzamanlı işlemler sırayla çalışır.
+- optimistic: kilit alınmaz; UPDATE "WHERE version = ?" ile yapılır (Product.version_id_col). Araya başka bir
+  yazma girdiyse commit sırasında StockConflictError oluşur ve işlem yeniden denenebilir.
+
+Her iki stratejide de stok hiçbir zaman eksiye düşmez. Kilitler kimlik sırasıyla alınır, böylece çok ürünlü
+işlemler birbirini kilitlemez.
 """
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.exc import StaleDataError
 
+from app.core.config import settings
 from app.core.errors import ConflictError, NotFoundError
 from app.models import Product, StockMovement, StockMovementType
 
 DECREASING = {StockMovementType.OUT, StockMovementType.ORDER_OUT}
+OPTIMISTIC_ATTEMPTS = 3
 
 
 class InsufficientStockError(ConflictError):
@@ -26,6 +34,13 @@ class InsufficientStockError(ConflictError):
         super().__init__(message, details=shortages)
 
 
+class StockConflictError(ConflictError):
+    code = "STOCK_CONFLICT"
+
+    def __init__(self):
+        super().__init__("Stok başka bir işlemle değişti. Lütfen tekrar deneyin.")
+
+
 def shortage(product: Product, requested: int) -> dict:
     return {
         "product_id": product.id,
@@ -37,15 +52,14 @@ def shortage(product: Product, requested: int) -> dict:
 
 
 def lock_products(db: Session, product_ids: Iterable[int]) -> dict[int, Product]:
+    """Ürünleri stratejiye göre yükler: kötümser modda satırlar kilitlenir, iyimser modda güncel hali okunur."""
     ids = sorted(set(product_ids))
-    products = db.scalars(
-        select(Product)
-        .options(joinedload(Product.category))
-        .where(Product.id.in_(ids))
-        .order_by(Product.id)
-        .with_for_update(of=Product)
-    ).all()
-    found = {p.id: p for p in products}
+    query = select(Product).options(joinedload(Product.category)).where(Product.id.in_(ids)).order_by(Product.id)
+    if settings.STOCK_STRATEGY == "pessimistic":
+        query = query.with_for_update(of=Product)
+    else:
+        query = query.execution_options(populate_existing=True)
+    found = {p.id: p for p in db.scalars(query).all()}
     missing = [i for i in ids if i not in found]
     if missing:
         raise NotFoundError("Ürün bulunamadı.", details={"product_ids": missing})
@@ -62,7 +76,7 @@ def apply_movement(
     order_id: int | None = None,
     description: str | None = None,
 ) -> StockMovement:
-    """Kilitli ürünün stoğunu değiştirir ve hareketi kaydeder. Commit çağıranın işidir."""
+    """Ürünün stoğunu değiştirir ve hareketi kaydeder. Commit çağıranın işidir (commit_stock_changes)."""
     delta = -quantity if movement_type in DECREASING else quantity
     new_stock = product.stock + delta
     if new_stock < 0:
@@ -79,7 +93,27 @@ def apply_movement(
         description=description,
     )
     product.stock = new_stock
-    # İyimser kilit stratejisi (Deney 1) bu sürüm numarasını karşılaştırır.
-    product.version += 1
     db.add(movement)
     return movement
+
+
+def commit_stock_changes(db: Session) -> None:
+    """İyimser modda araya giren bir yazma StockConflictError'a dönüşür."""
+    try:
+        db.commit()
+    except StaleDataError as exc:
+        db.rollback()
+        raise StockConflictError() from exc
+
+
+def with_retry[T](db: Session, operation: Callable[[], T]) -> T:
+    """İyimser modda çakışan işlemi birkaç kez yeniden dener; kötümser modda tek sefer çalışır."""
+    attempts = OPTIMISTIC_ATTEMPTS if settings.STOCK_STRATEGY == "optimistic" else 1
+    for attempt in range(1, attempts + 1):
+        try:
+            return operation()
+        except StockConflictError:
+            if attempt == attempts:
+                raise
+            db.expire_all()
+    raise AssertionError("unreachable")
