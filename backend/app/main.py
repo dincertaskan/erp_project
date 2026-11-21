@@ -6,6 +6,7 @@ from app.controllers import (
     category_controller,
     health_controller,
     product_controller,
+    stock_controller,
     user_controller,
 )
 from app.core.config import settings
@@ -28,3 +29,4 @@ app.include_router(auth_controller.router)
 app.include_router(user_controller.router)
 app.include_router(category_controller.router)
 app.include_router(product_controller.router)
+app.include_router(stock_controller.router)

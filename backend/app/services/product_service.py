@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import AppError, ConflictError, NotFoundError
 from app.models import Category, Product, StockMovement, StockMovementType, User, UserRole
 from app.repositories.catalog_repository import CategoryRepository, ProductRepository
+from app.repositories.stock_repository import StockRepository
 from app.schemas.catalog import (
     MovementOut,
     ProductAdminDetailOut,
@@ -25,7 +26,7 @@ from app.services.sku import next_sku, sku_prefix
 SKU_TAKEN = "Bu SKU kullanılıyor."
 
 
-def _fields(product: Product) -> dict:
+def product_fields(product: Product) -> dict:
     return {
         "id": product.id,
         "sku": product.sku,
@@ -47,7 +48,7 @@ def _fields(product: Product) -> dict:
 def product_out(product: Product, viewer: User) -> ProductOut:
     """Maliyet yalnızca yöneticiye gösterilir (karar 9)."""
     model = ProductAdminOut if viewer.role == UserRole.ADMIN else ProductOut
-    return model.model_validate(_fields(product))
+    return model.model_validate(product_fields(product))
 
 
 class ProductService:
@@ -83,10 +84,10 @@ class ProductService:
             limit=page.page_size,
         )
         # Sayfa türü de role göre seçilir; aksi halde maliyet alanı serileştirmede düşer.
+        last = StockRepository(self.db).last_movement_at([p.id for p in products])
+        items = [product_out(p, viewer).model_copy(update={"last_movement_at": last.get(p.id)}) for p in products]
         page_model = Page[ProductAdminOut] if viewer.role == UserRole.ADMIN else Page[ProductOut]
-        return page_model(
-            items=[product_out(p, viewer) for p in products], total=total, page=page.page, page_size=page.page_size
-        )
+        return page_model(items=items, total=total, page=page.page, page_size=page.page_size)
 
     def _get(self, product_id: int) -> Product:
         product = self.products.get(product_id)
@@ -101,7 +102,7 @@ class ProductService:
             last_movement_at=self.products.last_movement_at(product.id),
         )
         model = ProductAdminDetailOut if viewer.role == UserRole.ADMIN else ProductDetailOut
-        return model.model_validate({**_fields(product), "stats": stats})
+        return model.model_validate({**product_fields(product), "stats": stats})
 
     def _category_for(self, category_id: int, current: Product | None = None) -> Category:
         category = self.categories.get(category_id)

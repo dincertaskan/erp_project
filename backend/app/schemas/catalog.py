@@ -75,6 +75,7 @@ class ProductOut(ApiModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    last_movement_at: datetime | None = None
 
 
 class ProductAdminOut(ProductOut):
