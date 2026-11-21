@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.controllers import (
     auth_controller,
     category_controller,
+    customer_controller,
     health_controller,
+    order_controller,
     product_controller,
     stock_controller,
     user_controller,
@@ -30,3 +32,5 @@ app.include_router(user_controller.router)
 app.include_router(category_controller.router)
 app.include_router(product_controller.router)
 app.include_router(stock_controller.router)
+app.include_router(customer_controller.router)
+app.include_router(order_controller.router)
