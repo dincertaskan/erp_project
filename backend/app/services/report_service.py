@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from io import BytesIO
 
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -15,6 +11,7 @@ from app.core.errors import AppError
 from app.models import Category, Order, OrderItem, Product
 from app.repositories.customer_repository import REVENUE_STATUSES
 from app.schemas.report import SalesGroupBy, SalesReport, SalesRow, SalesTotals
+from app.services.xlsx import build_xlsx
 
 MAX_RANGE_DAYS = 3 * 366
 MONTHS_TR = [
@@ -33,6 +30,17 @@ MONTHS_TR = [
 ]
 TIME_GROUPS = {SalesGroupBy.DAY, SalesGroupBy.WEEK, SalesGroupBy.MONTH}
 ZERO = Decimal("0")
+
+
+def local_bounds(date_from: date, date_to: date) -> tuple[datetime, datetime]:
+    """İki ucu da dahil tarih aralığı; İstanbul saatine göre [başlangıç, bitiş+1 gün)."""
+    if date_from > date_to:
+        raise AppError("Başlangıç tarihi bitiş tarihinden sonra olamaz.", code="INVALID_RANGE")
+    if (date_to - date_from).days > MAX_RANGE_DAYS:
+        raise AppError("Rapor aralığı en fazla 3 yıl olabilir.", code="INVALID_RANGE")
+    start = datetime.combine(date_from, time.min, tzinfo=clock.BUSINESS_TZ)
+    end = datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=clock.BUSINESS_TZ)
+    return start, end
 
 
 def _period_label(period: date, group_by: SalesGroupBy) -> str:
@@ -73,13 +81,7 @@ class ReportService:
     def sales(
         self, date_from: date, date_to: date, group_by: SalesGroupBy, category_id: int | None = None
     ) -> SalesReport:
-        if date_from > date_to:
-            raise AppError("Başlangıç tarihi bitiş tarihinden sonra olamaz.", code="INVALID_RANGE")
-        if (date_to - date_from).days > MAX_RANGE_DAYS:
-            raise AppError("Rapor aralığı en fazla 3 yıl olabilir.", code="INVALID_RANGE")
-
-        start = datetime.combine(date_from, time.min, tzinfo=clock.BUSINESS_TZ)
-        end = datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=clock.BUSINESS_TZ)
+        start, end = local_bounds(date_from, date_to)
 
         if group_by in TIME_GROUPS:
             local_time = func.timezone(clock.BUSINESS_TZ.key, Order.created_at)
@@ -161,41 +163,17 @@ GROUP_TITLES = {
     SalesGroupBy.PRODUCT: "Ürün",
     SalesGroupBy.CATEGORY: "Kategori",
 }
-MONEY_FORMAT = '#,##0.00 "₺"'
 
 
 def sales_report_xlsx(report: SalesReport) -> bytes:
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Satış Raporu"
-    sheet.append([f"Satış Raporu · {report.date_from:%d.%m.%Y} – {report.date_to:%d.%m.%Y}"])
-    sheet["A1"].font = Font(bold=True, size=13)
-    sheet.append(
-        ["Ciro: onaylanmış ve iptal edilmemiş siparişler. Maliyet ürünlerin güncel maliyetiyle hesaplanmıştır."]
-    )
-    sheet.append([])
-
-    headers = [GROUP_TITLES[report.group_by], "Sipariş Sayısı", "Satılan Adet", "Ciro", "Maliyet", "Brüt Kâr"]
-    sheet.append(headers)
-    header_row = sheet.max_row
-    for cell in sheet[header_row]:
-        cell.font = Font(bold=True)
-        cell.fill = PatternFill("solid", fgColor="F3F4F6")
-
-    for row in report.rows:
-        sheet.append([row.label, row.order_count, row.quantity, row.revenue, row.cost, row.gross_profit])
     t = report.totals
-    sheet.append(["Toplam", t.order_count, t.quantity, t.revenue, t.cost, t.gross_profit])
-    for cell in sheet[sheet.max_row]:
-        cell.font = Font(bold=True)
-
-    for row in sheet.iter_rows(min_row=header_row + 1, min_col=4, max_col=6):
-        for cell in row:
-            cell.number_format = MONEY_FORMAT
-    for index, width in enumerate([34, 16, 14, 18, 18, 18], start=1):
-        sheet.column_dimensions[get_column_letter(index)].width = width
-    sheet.freeze_panes = sheet.cell(row=header_row + 1, column=1)
-
-    buffer = BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
+    return build_xlsx(
+        sheet_title="Satış Raporu",
+        title=f"Satış Raporu · {report.date_from:%d.%m.%Y} – {report.date_to:%d.%m.%Y}",
+        note="Ciro: onaylanmış ve iptal edilmemiş siparişler. Maliyet ürünlerin güncel maliyetiyle hesaplanmıştır.",
+        headers=[GROUP_TITLES[report.group_by], "Sipariş Sayısı", "Satılan Adet", "Ciro", "Maliyet", "Brüt Kâr"],
+        rows=([r.label, r.order_count, r.quantity, r.revenue, r.cost, r.gross_profit] for r in report.rows),
+        total_row=["Toplam", t.order_count, t.quantity, t.revenue, t.cost, t.gross_profit],
+        money_columns={4, 5, 6},
+        widths=[34, 16, 14, 18, 18, 18],
+    )
