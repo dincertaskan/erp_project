@@ -72,7 +72,7 @@ def validate_cart(data: CartValidateRequest, _: User = Depends(customer_only), d
 
 @me_router.post("/orders", response_model=MyOrderDetail, status_code=201)
 def place_order(data: ShopOrderRequest, user: User = Depends(customer_only), db: Session = Depends(get_db)):
-    """Sepet sunucuda yeniden doğrulanır; değişiklik varsa 422 CART_CHANGED ve sorunlu kalemler döner."""
+    """Sepet sunucuda yeniden doğrulanır; değişiklik varsa 409 CART_CHANGED ve sorunlu kalemler döner."""
     return MyOrderService(db, user).create(data)
 
 
