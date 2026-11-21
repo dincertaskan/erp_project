@@ -1,0 +1,90 @@
+"""Olist kategori adlarının (Portekizce kod) Türkçe karşılıkları. Listede olmayan kategori İngilizce adıyla gelir."""
+
+CATEGORY_TR = {
+    "agro_industria_e_comercio": "Tarım ve Ticaret",
+    "alimentos": "Gıda",
+    "alimentos_bebidas": "Gıda ve İçecek",
+    "artes": "Sanat",
+    "artes_e_artesanato": "El Sanatları",
+    "artigos_de_festas": "Parti Malzemeleri",
+    "artigos_de_natal": "Yılbaşı Ürünleri",
+    "audio": "Ses Sistemleri",
+    "automotivo": "Otomotiv",
+    "bebes": "Bebek",
+    "bebidas": "İçecek",
+    "beleza_saude": "Sağlık ve Güzellik",
+    "brinquedos": "Oyuncak",
+    "cama_mesa_banho": "Ev Tekstili",
+    "casa_conforto": "Ev Konforu",
+    "casa_conforto_2": "Ev Konforu 2",
+    "casa_construcao": "Ev ve Yapı",
+    "cds_dvds_musicais": "Müzik CD ve DVD",
+    "cine_foto": "Fotoğraf ve Sinema",
+    "climatizacao": "İklimlendirme",
+    "consoles_games": "Konsol ve Oyun",
+    "construcao_ferramentas_construcao": "Yapı Aletleri",
+    "construcao_ferramentas_ferramentas": "El Aletleri",
+    "construcao_ferramentas_iluminacao": "Aydınlatma",
+    "construcao_ferramentas_jardim": "Bahçe Aletleri",
+    "construcao_ferramentas_seguranca": "İş Güvenliği",
+    "cool_stuff": "İlginç Ürünler",
+    "dvds_blu_ray": "DVD ve Blu-ray",
+    "eletrodomesticos": "Ev Aletleri",
+    "eletrodomesticos_2": "Ev Aletleri 2",
+    "eletronicos": "Elektronik",
+    "eletroportateis": "Küçük Ev Aletleri",
+    "esporte_lazer": "Spor ve Hobi",
+    "fashion_bolsas_e_acessorios": "Çanta ve Aksesuar",
+    "fashion_calcados": "Ayakkabı",
+    "fashion_esporte": "Spor Giyim",
+    "fashion_roupa_feminina": "Kadın Giyim",
+    "fashion_roupa_infanto_juvenil": "Çocuk Giyim",
+    "fashion_roupa_masculina": "Erkek Giyim",
+    "fashion_underwear_e_moda_praia": "İç Giyim ve Plaj",
+    "ferramentas_jardim": "Bahçe",
+    "flores": "Çiçek",
+    "fraldas_higiene": "Bebek Bezi ve Hijyen",
+    "industria_comercio_e_negocios": "Sanayi ve İş Dünyası",
+    "informatica_acessorios": "Bilgisayar Aksesuarları",
+    "instrumentos_musicais": "Müzik Aletleri",
+    "la_cuisine": "Mutfak Gereçleri",
+    "livros_importados": "İthal Kitap",
+    "livros_interesse_geral": "Genel Kitap",
+    "livros_tecnicos": "Teknik Kitap",
+    "malas_acessorios": "Valiz ve Aksesuar",
+    "market_place": "Pazaryeri",
+    "moveis_colchao_e_estofado": "Yatak ve Döşeme",
+    "moveis_cozinha_area_de_servico_jantar_e_jardim": "Mutfak ve Bahçe Mobilyası",
+    "moveis_decoracao": "Mobilya ve Dekorasyon",
+    "moveis_escritorio": "Ofis Mobilyası",
+    "moveis_quarto": "Yatak Odası Mobilyası",
+    "moveis_sala": "Salon Mobilyası",
+    "musica": "Müzik",
+    "papelaria": "Kırtasiye",
+    "pc_gamer": "Oyun Bilgisayarı",
+    "pcs": "Bilgisayar",
+    "perfumaria": "Parfümeri",
+    "pet_shop": "Evcil Hayvan",
+    "portateis_casa_forno_e_cafe": "Fırın ve Kahve Makinesi",
+    "portateis_cozinha_e_preparadores_de_alimentos": "Mutfak Robotları",
+    "relogios_presentes": "Saat ve Hediyelik",
+    "seguros_e_servicos": "Sigorta ve Hizmet",
+    "sinalizacao_e_seguranca": "Güvenlik ve İşaretleme",
+    "tablets_impressao_imagem": "Tablet ve Baskı",
+    "telefonia": "Telefon",
+    "telefonia_fixa": "Sabit Telefon",
+    "utilidades_domesticas": "Ev Gereçleri",
+}
+
+UNKNOWN_CATEGORY = "Diğer"
+
+# Olist'ten gelen kategorilere sırayla atanan renkler (tasarım sistemi tonları)
+PALETTE = ["#4F46E5", "#2563EB", "#0E7490", "#10B981", "#D97706", "#EC4899", "#7C3AED", "#4B5563"]
+
+
+def category_name(code: str | None, english: dict[str, str]) -> str:
+    if not code:
+        return UNKNOWN_CATEGORY
+    if code in CATEGORY_TR:
+        return CATEGORY_TR[code]
+    return english.get(code, code).replace("_", " ").title()[:100]

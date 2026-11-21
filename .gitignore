@@ -27,6 +27,7 @@ htmlcov/
 
 # Uploaded files
 backend/uploads/
+backend/data/
 
 # Local editor and tool settings
 .claude/settings.local.json

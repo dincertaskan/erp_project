@@ -79,6 +79,21 @@ Seed betiği her rol için bir hesap oluşturur. Şifre seed çalıştırılırk
 
 Bu hesaplar yalnızca yerel geliştirme ve demo içindir.
 
+## Olist verisi
+
+Gerçekçi hacimde demo ve ölçüm için Olist açık veri seti aktarılabilir.
+
+1. Kaggle'daki "Brazilian E-Commerce Public Dataset by Olist" veri setini indirin ve CSV dosyalarını `backend/data/olist/` klasörüne çıkarın (klasör git dışındadır).
+2. Aktarımı çalıştırın:
+
+```bash
+docker compose exec backend python -m app.olist --data-dir data/olist            # tamamı (~100 bin sipariş)
+docker compose exec backend python -m app.olist --data-dir data/olist --sample 1000  # küçük örnek
+docker compose exec backend python -m app.olist --data-dir data/olist --reset    # silip yeniden yükle
+```
+
+Aktarım uygulamanın sipariş ve stok mantığını atlayıp verileri toplu yazar; Olist siparişleri için stok hareketi üretilmez. Olist'te olmayan alanlar sentetiktir: ürün adı (kategori + kısa kod), satış fiyatı (satırların medyanı), maliyet (satış fiyatının %60'ı), stok ve minimum stok (sabit tohumlu rastgele), müşteri adı ve e-postası (anonim). Sipariş tutarı kargo ücretini içermez. Olist siparişleri panelde salt okunurdur.
+
 ## Testler ve kod denetimi
 
 Testler `TEST_DATABASE_URL` ile gösterilen ayrı bir veritabanında çalışır. Docker Compose, ilk açılışta `erp_test` veritabanını otomatik oluşturur.
@@ -106,4 +121,4 @@ docker/           Docker Compose yardımcı dosyaları
 
 ## Lisans ve veri
 
-Demo ve testlerde Olist Brazilian E-Commerce Public Dataset kullanılacaktır (kaynak: Kaggle, Olist). Gerçek kişisel veri kullanılmaz.
+Demo ve ölçümlerde Olist Brazilian E-Commerce Public Dataset kullanılır (kaynak: Kaggle, Olist; lisans: CC BY-NC-SA 4.0). Müşteri adları ve e-postaları anonimleştirilir; gerçek kişisel veri kullanılmaz.
