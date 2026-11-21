@@ -1,7 +1,7 @@
 """add query indexes
 
 Liste, dashboard ve rapor sorguları için indeksler. Deney 2'de indekssiz
-durum bu göç geri alınarak ölçülür (alembic downgrade 0001).
+durum bu listedeki indeksler kaldırılarak ölçülür (app/benchmarks/indexes.py).
 
 Revision ID: 0002
 Revises: 0001
