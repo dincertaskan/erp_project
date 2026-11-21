@@ -1,0 +1,26 @@
+@import '@fontsource-variable/inter';
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tablo başlıkları: büyük harf, küçük punto (tasarım sistemi) */
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Sayısal sütunlar aynı genişlikte rakamlarla hizalanır */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

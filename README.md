@@ -22,10 +22,11 @@ docker compose up -d --build            # backend açılırken veritabanı göç
 docker compose exec -e SEED_PASSWORD=Demo1234 backend python -m app.seed
 ```
 
+- Uygulama: http://localhost:5173
 - API: http://localhost:8000 (Swagger: http://localhost:8000/docs)
 - Sağlık kontrolü: http://localhost:8000/health
 
-Bilgisayarınızda 5432 veya 8000 portu doluysa kök dizindeki `.env.example` dosyasını `.env` olarak kopyalayıp `POSTGRES_PORT` ve `BACKEND_PORT` değerlerini değiştirin. Veritabanı portunu değiştirirseniz `backend/.env` içindeki adresleri de güncelleyin.
+Bilgisayarınızda 5432, 8000 veya 5173 portu doluysa kök dizindeki `.env.example` dosyasını `.env` olarak kopyalayıp `POSTGRES_PORT`, `BACKEND_PORT` ve `FRONTEND_PORT` değerlerini değiştirin. Veritabanı portunu değiştirirseniz `backend/.env` içindeki adresleri de güncelleyin.
 
 ## Yerel geliştirme (arka uç)
 
@@ -41,6 +42,16 @@ alembic upgrade head
 SEED_PASSWORD=Demo1234 python -m app.seed     # PowerShell: $env:SEED_PASSWORD="Demo1234"; python -m app.seed
 uvicorn app.main:app --reload
 ```
+
+## Yerel geliştirme (önyüz)
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Geliştirme sunucusu `/api` ile başlayan istekleri arka uca iletir (varsayılan `http://localhost:8000`). Arka uç başka bir portta çalışıyorsa `frontend/.env.example` dosyasını `frontend/.env.local` olarak kopyalayıp `VITE_API_PROXY_TARGET` değerini değiştirin.
 
 ## Veritabanı göçleri
 
@@ -72,8 +83,13 @@ Testler `TEST_DATABASE_URL` ile gösterilen ayrı bir veritabanında çalışır
 
 ```bash
 cd backend
-ruff check .
+ruff check . && ruff format --check .
 pytest
+
+cd frontend
+npm run lint && npm run format:check
+npm run typecheck
+npm test
 ```
 
 ## Proje yapısı
@@ -82,7 +98,7 @@ pytest
 backend/          FastAPI uygulaması (controllers, services, repositories, models, schemas)
 backend/migrations/  Alembic göçleri
 backend/tests/    pytest testleri
-frontend/         React önyüzü
+frontend/         React + TypeScript önyüzü (Ant Design, TanStack Query)
 docker/           Docker Compose yardımcı dosyaları
 ```
 
