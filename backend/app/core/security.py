@@ -38,7 +38,9 @@ def create_access_token(user_id: int, role: str) -> str:
 def decode_access_token(token: str) -> int | None:
     """Geçerli bir token için kullanıcı kimliğini, aksi halde None döndürür."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"require": ["sub"]})
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"require": ["sub", "exp"]}
+        )
         return int(payload["sub"])
     except (jwt.PyJWTError, ValueError):
         return None
