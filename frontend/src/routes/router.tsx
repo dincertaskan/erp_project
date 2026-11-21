@@ -6,6 +6,8 @@ import { RoleLayout } from '@/layouts/RoleLayout';
 import { ShopLayout } from '@/layouts/ShopLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { CategoriesPage } from '@/pages/categories/CategoriesPage';
+import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage';
+import { CustomersPage } from '@/pages/customers/CustomersPage';
 import { NewOrderPage } from '@/pages/orders/NewOrderPage';
 import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
 import { OrdersPage } from '@/pages/orders/OrdersPage';
@@ -59,8 +61,8 @@ export const routes: RouteObject[] = [
           { path: '/dashboard', element: page('Dashboard') },
           { path: '/categories', element: <CategoriesPage /> },
           { path: '/orders/new', element: <NewOrderPage /> },
-          { path: '/customers', element: page('Müşteriler') },
-          { path: '/customers/:id', element: page('Müşteri Detayı') },
+          { path: '/customers', element: <CustomersPage /> },
+          { path: '/customers/:id', element: <CustomerDetailPage /> },
           { path: '/reports', element: page('Raporlar') },
           { path: '/users', element: page('Kullanıcılar') },
         ],

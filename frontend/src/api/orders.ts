@@ -70,16 +70,7 @@ export interface OrderDetail extends OrderListItem {
   shortages: Shortage[];
 }
 
-export interface CustomerListItem {
-  id: number;
-  full_name: string;
-  email: string;
-  phone: string | null;
-  company_name: string | null;
-  address: string | null;
-  city: string | null;
-  is_active: boolean;
-}
+export type { CustomerListItem } from './customers';
 
 /** Eylem başarıyla yapıldığında gösterilen mesaj */
 export const orderActionDoneMessages: Record<OrderAction, string> = {

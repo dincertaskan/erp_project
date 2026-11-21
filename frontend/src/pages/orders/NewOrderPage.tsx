@@ -16,10 +16,13 @@ import {
   Table,
   Typography,
 } from 'antd';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/api/client';
+import type { CustomerDetail } from '@/api/customers';
 import type { CustomerListItem, OrderDetail } from '@/api/orders';
+import { CustomerFormModal } from '@/components/CustomerFormModal';
 import type { Page, Product } from '@/api/types';
 import { applyServerErrors } from '@/utils/forms';
 import { formatCurrency, formatNumber } from '@/utils/format';
@@ -51,6 +54,9 @@ function useRemoteOptions<T>(load: (search: string) => Promise<T[]>) {
   return { options, loading, search };
 }
 
+const addressOf = (customer: Pick<CustomerListItem, 'address' | 'city'>) =>
+  [customer.address, customer.city].filter(Boolean).join(', ');
+
 const loadCustomers = async (search: string) =>
   (
     await api.get<Page<CustomerListItem>>('/customers', {
@@ -76,15 +82,33 @@ export function NewOrderPage() {
   const [linesError, setLinesError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const customers = useRemoteOptions(loadCustomers);
+  const [extraCustomers, setExtraCustomers] = useState<CustomerListItem[]>([]);
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [params] = useSearchParams();
+  const presetId = Number(params.get('customer')) || undefined;
+
+  // Müşteri detayından "Bu müşteri adına sipariş oluştur" ile gelindiyse müşteri seçili açılır.
+  const { data: presetCustomer } = useQuery({
+    queryKey: ['customers', String(presetId)],
+    queryFn: async () => (await api.get<CustomerDetail>(`/customers/${presetId}`)).data,
+    enabled: Boolean(presetId),
+  });
+  useEffect(() => {
+    if (!presetCustomer) return;
+    form.setFieldsValue({ customer_id: presetCustomer.id, shipping_address: addressOf(presetCustomer) });
+  }, [presetCustomer, form]);
+
+  const customerOptions = [...(presetCustomer ? [presetCustomer] : []), ...extraCustomers, ...customers.options].filter(
+    (c, index, all) => all.findIndex((other) => other.id === c.id) === index,
+  );
   const products = useRemoteOptions(loadProducts);
 
   const total = lines.reduce((sum, line) => sum + Number(line.product.sale_price) * line.quantity, 0);
 
   const onCustomerChange = (customerId: number) => {
-    const customer = customers.options.find((c) => c.id === customerId);
-    const address = [customer?.address, customer?.city].filter(Boolean).join(', ');
+    const customer = customerOptions.find((c) => c.id === customerId);
     // Kayıtlı adres varsayılan olarak gelir; değiştirilebilir.
-    form.setFieldValue('shipping_address', address);
+    form.setFieldValue('shipping_address', customer ? addressOf(customer) : '');
   };
 
   const addLine = () => {
@@ -154,12 +178,20 @@ export function NewOrderPage() {
                     onFocus={() => customers.options.length === 0 && void customers.search('')}
                     onChange={onCustomerChange}
                     notFoundContent="Müşteri bulunamadı"
-                    options={customers.options.map((c) => ({
+                    options={customerOptions.map((c) => ({
                       value: c.id,
                       label: `${c.full_name} · ${c.email}${c.company_name ? ` · ${c.company_name}` : ''}`,
                     }))}
                   />
                 </Form.Item>
+                <Button
+                  type="link"
+                  icon={<PlusOutlined />}
+                  style={{ paddingInline: 0, marginTop: 8 }}
+                  onClick={() => setCustomerModalOpen(true)}
+                >
+                  Yeni Müşteri
+                </Button>
               </Card>
 
               <Card title="Ürünler">
@@ -327,6 +359,15 @@ export function NewOrderPage() {
           </Col>
         </Row>
       </Form>
+      <CustomerFormModal
+        open={customerModalOpen}
+        customer={null}
+        onOpenChange={setCustomerModalOpen}
+        onSaved={(created) => {
+          setExtraCustomers((current) => [created, ...current]);
+          form.setFieldsValue({ customer_id: created.id, shipping_address: addressOf(created) });
+        }}
+      />
     </PageContainer>
   );
 }
