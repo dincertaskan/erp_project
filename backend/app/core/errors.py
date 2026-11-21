@@ -1,11 +1,15 @@
 """Ortak hata biçimi: {"code": ..., "message": ..., "details": ...}."""
 
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+logger = logging.getLogger("app.errors")
 
 
 class AppError(Exception):
@@ -85,6 +89,22 @@ def register_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422, content=error_body("VALIDATION_ERROR", "Girilen bilgileri kontrol edin.", details)
         )
+
+    @app.exception_handler(SQLAlchemyTimeoutError)
+    async def handle_pool_timeout(_: Request, exc: SQLAlchemyTimeoutError):
+        # Bağlantı havuzu dolu: istemci kısa süre sonra yeniden deneyebilir.
+        logger.warning("Veritabanı bağlantı havuzu dolu: %s", exc)
+        return JSONResponse(
+            status_code=503,
+            content=error_body("SERVER_BUSY", "Sunucu şu anda yoğun. Lütfen biraz sonra tekrar deneyin."),
+            headers={"Retry-After": "1"},
+        )
+
+    @app.exception_handler(Exception)
+    async def handle_unexpected(_: Request, exc: Exception):
+        # Beklenmeyen hatalar da ortak {code, message} biçiminde döner; ayrıntı yalnızca sunucu logunda.
+        logger.exception("Beklenmeyen hata", exc_info=exc)
+        return JSONResponse(status_code=500, content=error_body("INTERNAL_ERROR", "Beklenmeyen bir hata oluştu."))
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_error(_: Request, exc: StarletteHTTPException):

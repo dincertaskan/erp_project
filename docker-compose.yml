@@ -24,6 +24,9 @@ services:
       # Deney 1: STOCK_STRATEGY=pessimistic|optimistic|none, UVICORN_WORKERS=4
       STOCK_STRATEGY: ${STOCK_STRATEGY:-pessimistic}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
+      # Worker başına bağlantı havuzu; worker × (havuz + taşma) < PostgreSQL max_connections (100)
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:

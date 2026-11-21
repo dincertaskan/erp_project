@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = ""
     # Deney 1: stok güncellemelerinde kötümser (SELECT ... FOR UPDATE) ya da iyimser (sürüm numarası) kilit.
     # "none" yalnızca deneyde referans içindir (kilitsiz oku-kontrol et-yaz; fazla satışa açıktır).
+    # Bağlantı havuzu (worker başına). worker × (havuz + taşma), PostgreSQL max_connections'ın altında kalmalı.
+    DB_POOL_SIZE: int = Field(5, ge=1)
+    DB_MAX_OVERFLOW: int = Field(10, ge=0)
+    DB_POOL_TIMEOUT: int = Field(30, ge=1)
     STOCK_STRATEGY: Literal["pessimistic", "optimistic", "none"] = "pessimistic"
 
     @field_validator("DATABASE_URL")
