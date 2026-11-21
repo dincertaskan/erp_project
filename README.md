@@ -18,7 +18,8 @@ Küçük ve orta ölçekli e-ticaret işletmeleri için ürün, stok, sipariş v
 
 ```bash
 cp backend/.env.example backend/.env    # SECRET_KEY değerini değiştirin
-docker compose up -d --build
+docker compose up -d --build            # backend açılırken veritabanı göçlerini uygular
+docker compose exec -e SEED_PASSWORD=Demo1234 backend python -m app.seed
 ```
 
 - API: http://localhost:8000 (Swagger: http://localhost:8000/docs)
@@ -36,8 +37,34 @@ cd backend
 python -m venv .venv
 .venv/Scripts/activate          # Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt
+alembic upgrade head
+SEED_PASSWORD=Demo1234 python -m app.seed     # PowerShell: $env:SEED_PASSWORD="Demo1234"; python -m app.seed
 uvicorn app.main:app --reload
 ```
+
+## Veritabanı göçleri
+
+Şema değişiklikleri Alembic ile yönetilir. Modelleri değiştirdikten sonra:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "kısa açıklama"   # üretilen dosyayı gözden geçirin
+alembic upgrade head
+```
+
+Sorgu indeksleri ayrı bir göçtedir (`0002`). İndekssiz ölçüm için `alembic downgrade 0001`, geri almak için `alembic upgrade head`.
+
+## Demo hesaplar
+
+Seed betiği her rol için bir hesap oluşturur. Şifre seed çalıştırılırken `SEED_PASSWORD` ile verilir; yukarıdaki komutlarda `Demo1234` kullanılmıştır.
+
+| Rol | E-posta | Şifre |
+|---|---|---|
+| Yönetici | yonetici@demo.local | Demo1234 |
+| Depo Personeli | depo@demo.local | Demo1234 |
+| Müşteri | musteri@demo.local | Demo1234 |
+
+Bu hesaplar yalnızca yerel geliştirme ve demo içindir.
 
 ## Testler ve kod denetimi
 
@@ -53,6 +80,7 @@ pytest
 
 ```
 backend/          FastAPI uygulaması (controllers, services, repositories, models, schemas)
+backend/migrations/  Alembic göçleri
 backend/tests/    pytest testleri
 frontend/         React önyüzü
 docker/           Docker Compose yardımcı dosyaları
