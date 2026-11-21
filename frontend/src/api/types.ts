@@ -63,6 +63,7 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  last_movement_at?: string | null;
 }
 
 export interface ProductDetail extends Product {
@@ -79,4 +80,24 @@ export interface StockMovement {
   created_at: string;
   user: { id: number; full_name: string };
   order: { id: number; order_code: string } | null;
+}
+
+export interface StockMovementListItem extends StockMovement {
+  product: { id: number; sku: string; name: string };
+}
+
+export interface StockMovementResult {
+  movement: StockMovement;
+  product: { id: number; stock: number; stock_status: StockStatus };
+}
+
+export interface CriticalProduct extends Product {
+  shortage: number;
+  sold_last_30_days: number;
+}
+
+export interface StockSummary {
+  active_products: number;
+  critical_count: number;
+  today_movements: number;
 }

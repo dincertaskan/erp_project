@@ -1,0 +1,29 @@
+import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { api } from './client';
+import type { StockSummary } from './types';
+
+export const STOCK_KEY = ['stock'] as const;
+
+/** Menü rozeti ve özet şeridi; stok değişince birlikte yenilenir */
+export function useCriticalCount(enabled = true) {
+  return useQuery({
+    queryKey: [...STOCK_KEY, 'critical-count'],
+    queryFn: async () => (await api.get<{ count: number }>('/stock/critical/count')).data.count,
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useStockSummary() {
+  return useQuery({
+    queryKey: [...STOCK_KEY, 'summary'],
+    queryFn: async () => (await api.get<StockSummary>('/stock/summary')).data,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Stok değiştiren her işlemden sonra: özet, rozet ve ürün detayları yenilenir */
+export function invalidateStock(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: STOCK_KEY });
+  void queryClient.invalidateQueries({ queryKey: ['products'] });
+}
