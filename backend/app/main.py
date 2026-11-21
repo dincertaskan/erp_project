@@ -9,6 +9,7 @@ from app.controllers import (
     health_controller,
     order_controller,
     product_controller,
+    report_controller,
     shop_controller,
     stock_controller,
     user_controller,
@@ -39,3 +40,4 @@ app.include_router(order_controller.router)
 app.include_router(dashboard_controller.router)
 app.include_router(shop_controller.catalog_router)
 app.include_router(shop_controller.me_router)
+app.include_router(report_controller.router)
