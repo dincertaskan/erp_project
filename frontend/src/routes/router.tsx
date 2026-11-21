@@ -5,11 +5,14 @@ import { AdminLayout } from '@/layouts/AdminLayout';
 import { RoleLayout } from '@/layouts/RoleLayout';
 import { ShopLayout } from '@/layouts/ShopLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
+import { CategoriesPage } from '@/pages/categories/CategoriesPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
+import { ProductDetailPage } from '@/pages/products/ProductDetailPage';
+import { ProductsPage } from '@/pages/products/ProductsPage';
 
 const page = (title: string) => <PlaceholderPage title={title} />;
 
@@ -33,8 +36,8 @@ export const routes: RouteObject[] = [
       </RequireAuth>
     ),
     children: [
-      { path: '/products', element: page('Ürünler') },
-      { path: '/products/:id', element: page('Ürün Detayı') },
+      { path: '/products', element: <ProductsPage /> },
+      { path: '/products/:id', element: <ProductDetailPage /> },
       { path: '/stock', element: page('Stok İşlemleri') },
       { path: '/stock/movements', element: page('Stok Hareketleri') },
       { path: '/stock/critical', element: page('Kritik Stok') },
@@ -48,7 +51,7 @@ export const routes: RouteObject[] = [
         ),
         children: [
           { path: '/dashboard', element: page('Dashboard') },
-          { path: '/categories', element: page('Kategoriler') },
+          { path: '/categories', element: <CategoriesPage /> },
           { path: '/orders/new', element: page('Yeni Sipariş') },
           { path: '/customers', element: page('Müşteriler') },
           { path: '/customers/:id', element: page('Müşteri Detayı') },
