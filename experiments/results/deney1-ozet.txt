@@ -1,0 +1,17 @@
+Özet (koşu ortalamaları):
+                         runs  oversell_mean  lost_updates_mean  approved_mean  failure_rate_mean  mean_ms   p95_ms
+strategy    concurrency                                                                                            
+none        10             30            5.0               8.37          10.00               0.00   192.24   245.54
+            50             30           25.0              47.00          50.00               0.00   814.71  1104.53
+            100            30           50.0              95.87         100.00               0.00  1015.86  1405.53
+optimistic  10             30            0.0               0.00           4.90               0.26   134.84   172.94
+            50             30            0.0               0.00          10.03               0.80   520.83   734.48
+            100            30            0.0               0.00          12.47               0.88  1082.25  1596.93
+pessimistic 10             30            0.0               0.00           5.00               0.00    79.84    92.24
+            50             30            0.0               0.00          25.00               0.00   309.17   379.67
+            100            30            0.0               0.00          50.00               0.00   674.71   806.74
+
+Stratejiler arası p95 yanıt süresi karşılaştırması (her eşzamanlılık düzeyi ayrı):
+  N=10: Kruskal-Wallis H=53.80 p=0.0000 · ANOVA F=22.49 p=0.0000
+  N=50: Kruskal-Wallis H=72.79 p=0.0000 · ANOVA F=61.35 p=0.0000
+  N=100: Kruskal-Wallis H=66.89 p=0.0000 · ANOVA F=28.46 p=0.0000

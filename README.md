@@ -83,7 +83,7 @@ Bu hesaplar yalnızca yerel geliştirme ve demo içindir.
 
 Gerçekçi hacimde demo ve ölçüm için Olist açık veri seti aktarılabilir.
 
-1. Kaggle'daki "Brazilian E-Commerce Public Dataset by Olist" veri setini indirin ve CSV dosyalarını `backend/data/olist/` klasörüne çıkarın (klasör git dışındadır).
+1. Kaggle'daki "Brazilian E-Commerce Public Dataset by Olist" veri setini indirin ve CSV dosyalarını `backend/data/olist/` klasörüne çıkarın (klasör git dışındadır). `experiments/requirements.txt` kuruluysa `python -c "import kagglehub; print(kagglehub.dataset_download('olistbr/brazilian-ecommerce'))"` komutu veri setini indirip klasörünü yazdırır; CSV'leri oradan kopyalayın.
 2. Aktarımı çalıştırın:
 
 ```bash
