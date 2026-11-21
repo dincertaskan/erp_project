@@ -115,6 +115,104 @@ describe('StockMovementModal', () => {
   });
 });
 
+describe('StockMovementModal validation', () => {
+  it('requires a quantity', async () => {
+    const post = vi.spyOn(api, 'post');
+    renderModal(mouse, 'in');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    expect(await screen.findByText('Miktar zorunludur.')).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('rejects taking out more than the current stock', async () => {
+    const post = vi.spyOn(api, 'post');
+    renderModal(mouse, 'out');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '13' } });
+    fireEvent.change(screen.getByLabelText('Açıklama'), { target: { value: 'Sayım farkı' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    expect(await screen.findByText('Yetersiz stok. Mevcut: 12.')).toBeInTheDocument();
+    expect(screen.queryByText(/olacak/)).not.toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('allows taking out exactly the current stock', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({
+      data: { movement: {}, product: { id: 7, stock: 0, stock_status: 'out_of_stock' } },
+    });
+    const onClose = renderModal(mouse, 'out');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('Açıklama'), { target: { value: '  Fire  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(post).toHaveBeenCalledWith('/stock/movements', {
+      product_id: 7,
+      movement_type: 'out',
+      quantity: 12,
+      description: 'Fire',
+    });
+  });
+
+  it('needs at least three characters of reason for stock out', async () => {
+    const post = vi.spyOn(api, 'post');
+    renderModal(mouse, 'out');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText('Açıklama'), { target: { value: '  ab ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    expect(await screen.findByText('Çıkış işlemlerinde açıklama zorunludur.')).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('limits the reason to 500 characters', async () => {
+    renderModal(mouse, 'in');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText('Açıklama (isteğe bağlı)'), { target: { value: 'x'.repeat(501) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    expect(await screen.findByText('Açıklama en fazla 500 karakter olabilir.')).toBeInTheDocument();
+  });
+
+  it('switches to stock out rules when the type changes', async () => {
+    renderModal(mouse, 'in');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '20' } });
+    expect(await screen.findByText(/olacak/)).toHaveTextContent('Stok 12 → 32 olacak.');
+
+    fireEvent.click(screen.getByText('Çıkış'));
+
+    expect(await screen.findByLabelText('Açıklama')).toHaveAttribute('placeholder', 'Örn: Sayım farkı, fire');
+    expect(screen.queryByText(/olacak/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+    expect(await screen.findByText('Yetersiz stok. Mevcut: 12.')).toBeInTheDocument();
+  });
+
+  it('shows other server errors as a message and keeps the dialog open', async () => {
+    vi.spyOn(api, 'post').mockRejectedValue(new ApiError(500, 'ERROR', 'İşlem sırasında bir hata oluştu.'));
+    const onClose = renderModal(mouse, 'in');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    expect(await screen.findByText('İşlem sırasında bir hata oluştu.')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing without a product', () => {
+    renderRoutes([{ path: '/', element: <StockMovementModal product={null} onClose={vi.fn()} /> }], '/');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByText('Stok İşlemi')).not.toBeInTheDocument();
+  });
+});
+
 describe('StockPage', () => {
   it('opens the movement dialog when a scanned code matches one product', async () => {
     vi.spyOn(api, 'get').mockImplementation(async (url: string) => {
