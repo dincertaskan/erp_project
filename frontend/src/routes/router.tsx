@@ -13,6 +13,9 @@ import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProductDetailPage } from '@/pages/products/ProductDetailPage';
 import { ProductsPage } from '@/pages/products/ProductsPage';
+import { CriticalStockPage } from '@/pages/stock/CriticalStockPage';
+import { StockMovementsPage } from '@/pages/stock/StockMovementsPage';
+import { StockPage } from '@/pages/stock/StockPage';
 
 const page = (title: string) => <PlaceholderPage title={title} />;
 
@@ -38,9 +41,9 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/products', element: <ProductsPage /> },
       { path: '/products/:id', element: <ProductDetailPage /> },
-      { path: '/stock', element: page('Stok İşlemleri') },
-      { path: '/stock/movements', element: page('Stok Hareketleri') },
-      { path: '/stock/critical', element: page('Kritik Stok') },
+      { path: '/stock', element: <StockPage /> },
+      { path: '/stock/movements', element: <StockMovementsPage /> },
+      { path: '/stock/critical', element: <CriticalStockPage /> },
       { path: '/orders', element: page('Siparişler') },
       { path: '/orders/:id', element: page('Sipariş Detayı') },
       {
