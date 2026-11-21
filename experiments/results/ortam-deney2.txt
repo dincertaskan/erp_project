@@ -1,0 +1,6 @@
+Tarih: 2026-11-21T18:28Z
+AMD Ryzen AI 9 365 w/ Radeon 880M              
+Mantiksal islemci: 20
+Bellek (GB): 31.3
+PostgreSQL: 16 (Docker); ölçüm: EXPLAIN (ANALYZE, BUFFERS), sorgu başına 1 ısınma + 30 tekrar
+Veri: Olist (98.666 sipariş, 102.425 kalem, 32.951 ürün, 95.420 müşteri) + demo seed
