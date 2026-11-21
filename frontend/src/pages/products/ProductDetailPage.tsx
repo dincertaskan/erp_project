@@ -10,6 +10,7 @@ import { useAuth } from '@/auth/useAuth';
 import { FullPageSpinner } from '@/auth/guards';
 import { CategoryTag } from '@/components/CategoryTag';
 import { ProductThumb } from '@/components/ProductThumb';
+import { StockMovementModal } from '@/components/StockMovementModal';
 import { ActiveTag, MovementQuantity, MovementTypeTag, StockStatusTag } from '@/components/StatusTag';
 import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatDateTime, formatNumber } from '@/utils/format';
@@ -41,6 +42,7 @@ export function ProductDetailPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [stockOpen, setStockOpen] = useState(false);
   const queryKey = ['products', id];
 
   const {
@@ -128,8 +130,11 @@ export function ProductDetailPage() {
       title={product.name}
       onBack={() => navigate('/products')}
       breadcrumb={{ items: [{ title: <Link to="/products">Ürünler</Link> }, { title: product.name }] }}
-      extra={
-        isAdmin
+      extra={[
+        <Button key="stock" type="primary" onClick={() => setStockOpen(true)} disabled={!product.is_active}>
+          Stok Girişi/Çıkışı
+        </Button>,
+        ...(isAdmin
           ? [
               <Button key="edit" onClick={() => setEditOpen(true)}>
                 Düzenle
@@ -151,8 +156,8 @@ export function ProductDetailPage() {
                 </Button>
               ),
             ]
-          : []
-      }
+          : []),
+      ]}
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <Card>
@@ -244,6 +249,7 @@ export function ProductDetailPage() {
         />
       </Space>
 
+      <StockMovementModal product={stockOpen ? product : null} onClose={() => setStockOpen(false)} />
       {isAdmin ? (
         <ProductFormModal open={editOpen} product={product} onOpenChange={setEditOpen} onSaved={refresh} />
       ) : null}
