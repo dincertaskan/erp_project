@@ -24,7 +24,7 @@ with engine.begin() as conn:
 
 app = FastAPI(title="ERP System API")
 
-origins = settings.CORS_ORIGINS
+origins = settings.cors_origins
 
 app.add_middleware(
     CORSMiddleware,
