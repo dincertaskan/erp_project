@@ -20,6 +20,7 @@ from app.controllers import (
 )
 from app.core.config import settings
 from app.core.errors import register_error_handlers
+from app.core.security_headers import SecurityHeadersMiddleware
 
 
 @asynccontextmanager
@@ -39,6 +40,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# En son eklenen ara katman en dışta çalışır; başlıklar CORS ön kontrol yanıtlarına da eklenir.
+app.add_middleware(SecurityHeadersMiddleware)
 
 register_error_handlers(app)
 
