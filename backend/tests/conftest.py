@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -25,7 +26,7 @@ from app.core.database import engine, get_db  # noqa: E402
 from app.core.login_throttle import login_throttle  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import Customer, User, UserRole  # noqa: E402
+from app.models import Category, Customer, Product, User, UserRole  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -110,3 +111,50 @@ def warehouse(make_user):
 @pytest.fixture
 def customer(make_user):
     return make_user(UserRole.CUSTOMER)
+
+
+@pytest.fixture
+def make_category(db):
+    counter = {"n": 0}
+
+    def factory(name: str | None = None, *, is_active: bool = True) -> Category:
+        counter["n"] += 1
+        category = Category(name=name or f"Test Kategori {counter['n']}", is_active=is_active)
+        db.add(category)
+        db.flush()
+        return category
+
+    return factory
+
+
+@pytest.fixture
+def make_product(db, make_category):
+    counter = {"n": 0}
+
+    def factory(
+        category: Category | None = None,
+        *,
+        sku: str | None = None,
+        name: str | None = None,
+        stock: int = 10,
+        min_stock: int = 5,
+        sale_price: str = "100.00",
+        cost_price: str = "60.00",
+        is_active: bool = True,
+    ) -> Product:
+        counter["n"] += 1
+        product = Product(
+            sku=sku or f"TST-{counter['n']:04d}",
+            name=name or f"Test Ürün {counter['n']}",
+            category=category or make_category(),
+            stock=stock,
+            min_stock=min_stock,
+            sale_price=Decimal(sale_price),
+            cost_price=Decimal(cost_price),
+            is_active=is_active,
+        )
+        db.add(product)
+        db.flush()
+        return product
+
+    return factory

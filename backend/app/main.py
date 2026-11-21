@@ -1,7 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.controllers import auth_controller, health_controller, user_controller
+from app.controllers import (
+    auth_controller,
+    category_controller,
+    health_controller,
+    product_controller,
+    user_controller,
+)
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 
@@ -20,3 +26,5 @@ register_error_handlers(app)
 app.include_router(health_controller.router)
 app.include_router(auth_controller.router)
 app.include_router(user_controller.router)
+app.include_router(category_controller.router)
+app.include_router(product_controller.router)
