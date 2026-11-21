@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller, customer_controller
+from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller, customer_controller, health_controller
 from app.core.database import Base, engine
 from app.core.config import settings
 
@@ -38,6 +38,7 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Router Bağlantıları
+app.include_router(health_controller.router)
 app.include_router(auth_controller.router)
 app.include_router(dashboard_controller.router)
 app.include_router(inventory_controller.router)
