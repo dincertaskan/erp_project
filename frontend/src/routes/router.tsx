@@ -14,7 +14,6 @@ import { OrdersPage } from '@/pages/orders/OrdersPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { RouteError } from '@/pages/errors/RouteError';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { UsersPage } from '@/pages/users/UsersPage';
@@ -28,8 +27,6 @@ import { ProductsPage } from '@/pages/products/ProductsPage';
 import { CriticalStockPage } from '@/pages/stock/CriticalStockPage';
 import { StockMovementsPage } from '@/pages/stock/StockMovementsPage';
 import { StockPage } from '@/pages/stock/StockPage';
-
-const page = (title: string) => <PlaceholderPage title={title} />;
 
 const appRoutes: RouteObject[] = [
   { path: '/', element: <HomeRedirect /> },
@@ -74,7 +71,10 @@ const appRoutes: RouteObject[] = [
           { path: '/orders/new', element: <NewOrderPage /> },
           { path: '/customers', element: <CustomersPage /> },
           { path: '/customers/:id', element: <CustomerDetailPage /> },
-          { path: '/reports', element: page('Raporlar') },
+          {
+            path: '/reports',
+            lazy: async () => ({ Component: (await import('@/pages/reports/ReportsPage')).ReportsPage }),
+          },
           { path: '/users', element: <UsersPage /> },
         ],
       },
