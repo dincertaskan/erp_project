@@ -1,49 +1,60 @@
-import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import anyio.to_thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from app.controllers import auth_controller, dashboard_controller, inventory_controller, order_controller, customer_controller
-from app.core.database import Base, engine
+
+from app.controllers import (
+    auth_controller,
+    category_controller,
+    customer_controller,
+    dashboard_controller,
+    health_controller,
+    order_controller,
+    product_controller,
+    report_controller,
+    shop_controller,
+    stock_controller,
+    user_controller,
+)
 from app.core.config import settings
+from app.core.errors import register_error_handlers
+from app.core.security_headers import SecurityHeadersMiddleware
 
-# Model dosyalarını yüklüyoruz
-from app.models.user import User
-from app.models.erp import Category, Customer, Product, Sale, StockMovement
-from sqlalchemy import text
 
-# Yüklemelerin yapılacağı dizini otomatik oluşturur
-os.makedirs(settings.UPLOAD_DIR / "avatars", exist_ok=True)
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Senkron uç noktalar iş parçacığı havuzunda çalışır. İş parçacığı sayısı bağlantı havuzu kapasitesine
+    # eşitlenir; böylece iş parçacıkları bağlantı beklerken bloke olmaz, fazla istekler sırada bekler.
+    anyio.to_thread.current_default_thread_limiter().total_tokens = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
+    yield
 
-# Veritabanı tablolarını oluşturur
-Base.metadata.create_all(bind=engine)
 
-# create_all mevcut tablolara yeni sütun eklemez; customers tablosuna giriş için gereken sütunları ekle
-with engine.begin() as conn:
-    conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS password_hash VARCHAR"))
-    conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS avatar_url VARCHAR"))
-
-app = FastAPI(title="ERP System API")
-
-origins = settings.CORS_ORIGINS
+app = FastAPI(title="Akıllı ERP API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=settings.cors_origins,
+    # Kimlik doğrulama Authorization başlığıyla yapılır, çerez kullanılmaz; kimlik bilgili CORS gerekmez.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# En son eklenen ara katman en dışta çalışır; başlıklar CORS ön kontrol yanıtlarına da eklenir.
+app.add_middleware(SecurityHeadersMiddleware)
 
-# Statik görsel dosyalarını dışarı sunma
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+register_error_handlers(app)
 
-# Router Bağlantıları
+app.include_router(health_controller.router)
 app.include_router(auth_controller.router)
-app.include_router(dashboard_controller.router)
-app.include_router(inventory_controller.router)
+app.include_router(user_controller.router)
+app.include_router(category_controller.router)
+app.include_router(product_controller.router)
+app.include_router(stock_controller.router)
+app.include_router(customer_controller.router)
 app.include_router(order_controller.router)
-app.include_router(customer_controller.router) # YENİ EKLENDİ
-
-@app.get("/")
-def read_root():
-    return {"message": "ERP Backend API çalışıyor!"}
+app.include_router(dashboard_controller.router)
+app.include_router(shop_controller.catalog_router)
+app.include_router(shop_controller.me_router)
+app.include_router(report_controller.router)

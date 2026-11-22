@@ -1,43 +1,44 @@
-from sqlalchemy import func
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
-from app.models.user import User
-from app.models.erp import Customer
-from app.schemas.user_schema import UserCreate
+
+from app.models import Customer, User, UserRole
 
 
 class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def get(self, user_id: int) -> User | None:
+        return self.db.get(User, user_id)
+
     def get_by_email(self, email: str) -> User | None:
-        return self.db.query(User).filter(User.email == email).first()
+        return self.db.scalar(select(User).where(func.lower(User.email) == email.lower()))
 
     def get_customer_by_email(self, email: str) -> Customer | None:
-        return self.db.query(Customer).filter(func.lower(Customer.email) == email.lower()).first()
+        return self.db.scalar(select(Customer).where(func.lower(Customer.email) == email.lower()))
 
-    def create_user(self, user: UserCreate, hashed_password: str) -> User:
-        """Admin kullanıcıyı 'users' tablosuna kaydeder."""
-        db_user = User(
-            full_name=user.full_name,
-            email=user.email,
-            password_hash=hashed_password,
-            role="admin",
-            is_active=True
-        )
-        self.db.add(db_user)
-        self.db.commit()
-        self.db.refresh(db_user)
-        return db_user
+    def list(
+        self,
+        *,
+        search: str | None,
+        role: UserRole | None,
+        is_active: bool | None,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[User], int]:
+        query = select(User)
+        if search:
+            pattern = f"%{search}%"
+            query = query.where(or_(User.full_name.ilike(pattern), User.email.ilike(pattern)))
+        if role is not None:
+            query = query.where(User.role == role)
+        if is_active is not None:
+            query = query.where(User.is_active.is_(is_active))
+        total = self.db.scalar(select(func.count()).select_from(query.subquery()))
+        users = self.db.scalars(query.order_by(User.id).offset(offset).limit(limit)).all()
+        return list(users), total
 
-    def create_customer(self, user: UserCreate, hashed_password: str) -> Customer:
-        """Müşteriyi 'customers' tablosuna kaydeder."""
-        db_customer = Customer(
-            name=user.full_name,
-            email=user.email,
-            password_hash=hashed_password,
-            is_active=True
+    def count_active_admins(self) -> int:
+        return self.db.scalar(
+            select(func.count()).select_from(User).where(User.role == UserRole.ADMIN, User.is_active.is_(True))
         )
-        self.db.add(db_customer)
-        self.db.commit()
-        self.db.refresh(db_customer)
-        return db_customer

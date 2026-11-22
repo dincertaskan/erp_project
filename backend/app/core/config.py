@@ -1,40 +1,57 @@
-import os
 from pathlib import Path
-from dotenv import load_dotenv
+from typing import Literal
 
-# backend/ klasörü — uygulama hangi klasörden başlatılırsa başlatılsın aynı yolları kullanırız
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/ klasörü; uygulama hangi klasörden başlatılırsa başlatılsın aynı yolları kullanırız
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-# .env dosyasını her zaman backend/.env konumundan yükle
-load_dotenv(BASE_DIR / ".env")
+DEFAULT_CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 
-def _normalize_database_url(url: str | None) -> str:
-    if not url:
-        raise RuntimeError(
-            "DATABASE_URL tanımlı değil. backend/.env dosyasına veritabanı adresinizi girin."
-        )
-    # Sürücü belirtilmemişse (postgresql:// veya postgres://) psycopg 3 kullan.
-    # postgresql+psycopg:// ve postgresql+psycopg2:// adresleri olduğu gibi çalışır;
-    # iki sürücü de requirements.txt içinde kurulu.
-    for prefix in ("postgres://", "postgresql://"):
-        if url.startswith(prefix):
-            return "postgresql+psycopg://" + url[len(prefix):]
-    return url
+class Settings(BaseSettings):
+    """Ortam değişkenlerinden (veya backend/.env dosyasından) okunan ayarlar.
 
+    Zorunlu bir değer eksikse uygulama açılışta anlaşılır bir hatayla durur.
+    """
 
-class Settings:
-    DATABASE_URL: str = _normalize_database_url(os.getenv("DATABASE_URL"))
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    DATABASE_URL: str
+    SECRET_KEY: str = Field(min_length=16)
+    # Yalnızca HMAC algoritmaları; "none" ya da açık anahtar algoritmaları yapılandırmayla seçilemez.
+    ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     # Virgülle ayrılmış ek frontend adresleri (ör. http://192.168.1.20:5173)
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        *[o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()],
-    ]
+    CORS_ORIGINS: str = ""
+    # Deney 1: stok güncellemelerinde kötümser (SELECT ... FOR UPDATE) ya da iyimser (sürüm numarası) kilit.
+    # "none" yalnızca deneyde referans içindir (kilitsiz oku-kontrol et-yaz; fazla satışa açıktır).
+    # Bağlantı havuzu (worker başına). worker × (havuz + taşma), PostgreSQL max_connections'ın altında kalmalı.
+    DB_POOL_SIZE: int = Field(5, ge=1)
+    DB_MAX_OVERFLOW: int = Field(10, ge=0)
+    DB_POOL_TIMEOUT: int = Field(30, ge=1)
+    STOCK_STRATEGY: Literal["pessimistic", "optimistic", "none"] = "pessimistic"
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def normalize_database_url(cls, url: str) -> str:
+        # Sürücü belirtilmemişse (postgresql:// veya postgres://) psycopg 3 kullan.
+        # Eski postgresql+psycopg2:// adresleri de psycopg 3'e yönlendirilir.
+        for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix) :]
+        return url
+
+    @property
+    def cors_origins(self) -> list[str]:
+        extra = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        return [*DEFAULT_CORS_ORIGINS, *extra]
 
 
 settings = Settings()

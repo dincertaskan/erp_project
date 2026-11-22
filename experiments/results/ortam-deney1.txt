@@ -1,0 +1,9 @@
+Tarih: 2026-11-22 (kilitlenme düzeltmesi #38 sonrası)
+AMD Ryzen AI 9 365 w/ Radeon 880M              
+Mantiksal islemci: 20
+Bellek (GB): 31.3
+Microsoft Windows 11 Home
+Docker: 29.0.1
+Docker CPU: 20, bellek: 16390471680
+PostgreSQL: 16 (Docker, max_connections 100), backend: uvicorn 4 worker, worker başına havuz 10+12, Python 3.12
+Veri: seed demo verisi (Olist yüklü değil), ayrı veritabanı erp_deney

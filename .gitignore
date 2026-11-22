@@ -1,0 +1,45 @@
+# Project documents and local analysis (never commit)
+.docs/
+analiz/
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Uploaded files
+backend/uploads/
+backend/data/
+
+# Local editor and tool settings
+.claude/settings.local.json
+.claude/plans/
+.claude/specs/
+CLAUDE.local.md
+docs/plans/
+docs/specs/
+*.local
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
