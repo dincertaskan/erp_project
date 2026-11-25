@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, Button, Card, Empty, Input, Pagination, Segmented, Skeleton, Space, Typography } from 'antd';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
+import { Alert, Avatar, Button, Card, Empty, Input, Pagination, Segmented, Skeleton, Space, Typography } from 'antd';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { api, errorMessage } from '@/api/client';
 import type { MyOrderSummary, StatusGroup } from '@/api/shop';
 import type { Page } from '@/api/types';
 import { OrderStatusTag } from '@/components/StatusTag';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { MyOrderCancelButton } from './MyOrderCancelButton';
 import { ProductImage } from './ShopProductCard';
@@ -61,11 +61,28 @@ function OrderCard({ order }: { order: MyOrderSummary }) {
 /** E-34 Siparişlerim */
 export function MyOrdersPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('all');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  usePageTitle('Siparişlerim');
+  // Filtreler adreste tutulur; detaydan geri dönünce aynı sekme ve sayfa açılır.
+  const [params, setParams] = useSearchParams();
+  const requestedTab = params.get('status') as Tab | null;
+  const tab: Tab = requestedTab && tabs.some((t) => t.value === requestedTab) ? requestedTab : 'all';
+  const search = params.get('q') ?? '';
+  const page = Math.max(1, Number(params.get('page')) || 1);
 
-  const { data, isPending } = useQuery({
+  const updateParams = (patch: { status?: Tab; q?: string; page?: number }) =>
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      const values = { status: tab, q: search, page: 1, ...patch };
+      if (values.status === 'all') next.delete('status');
+      else next.set('status', values.status);
+      if (values.q) next.set('q', values.q);
+      else next.delete('q');
+      if (values.page > 1) next.set('page', String(values.page));
+      else next.delete('page');
+      return next;
+    });
+
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['me', 'orders', { tab, search, page }],
     queryFn: async () =>
       (
@@ -87,26 +104,30 @@ export function MyOrdersPage() {
         Siparişlerim
       </Typography.Title>
       <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-        <Segmented
-          options={tabs}
-          value={tab}
-          onChange={(value) => {
-            setTab(value as Tab);
-            setPage(1);
-          }}
-        />
+        <Segmented options={tabs} value={tab} onChange={(value) => updateParams({ status: value as Tab })} />
         <Input.Search
+          key={search}
           allowClear
           placeholder="Sipariş kodu"
           style={{ width: 220 }}
-          onSearch={(value) => {
-            setSearch(value.trim());
-            setPage(1);
-          }}
+          defaultValue={search}
+          onSearch={(value) => updateParams({ q: value.trim() })}
         />
       </Space>
 
-      {isPending || !data ? (
+      {isError && !data ? (
+        <Alert
+          type="error"
+          showIcon
+          message="Siparişleriniz yüklenemedi"
+          description={errorMessage(error)}
+          action={
+            <Button size="small" onClick={() => void refetch()} loading={isFetching}>
+              Tekrar Dene
+            </Button>
+          }
+        />
+      ) : isPending || !data ? (
         <Card>
           <Skeleton active />
         </Card>
@@ -131,7 +152,7 @@ export function MyOrdersPage() {
             pageSize={PAGE_SIZE}
             total={data.total}
             hideOnSinglePage
-            onChange={setPage}
+            onChange={(next) => updateParams({ page: next })}
           />
         </>
       )}

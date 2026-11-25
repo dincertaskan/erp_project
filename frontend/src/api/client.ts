@@ -40,18 +40,34 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+type ErrorBody = { code?: string; message?: string; details?: unknown } | null | undefined;
+
+/** Dosya indirirken (responseType: 'blob') hata gövdesi de Blob gelir; içindeki JSON okunur. */
+async function readErrorBody(data: unknown): Promise<ErrorBody> {
+  if (typeof Blob !== 'undefined' && data instanceof Blob) {
+    try {
+      const parsed: unknown = JSON.parse(await data.text());
+      return parsed && typeof parsed === 'object' ? (parsed as ErrorBody) : null;
+    } catch {
+      return null;
+    }
+  }
+  return data as ErrorBody;
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ code?: string; message?: string; details?: unknown }>) => {
+  async (error: AxiosError) => {
     if (!error.response) {
       return Promise.reject(new ApiError(0, 'NETWORK_ERROR', 'Sunucuya ulaşılamıyor.'));
     }
-    const { status, data, config } = error.response;
+    const { status, config } = error.response;
     const sentToken = Boolean(config.headers?.Authorization);
     if (status === 401 && sentToken) {
       tokenStorage.clear();
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
     }
+    const data = await readErrorBody(error.response.data);
     return Promise.reject(
       new ApiError(status, data?.code ?? 'ERROR', data?.message ?? 'İşlem sırasında bir hata oluştu.', data?.details),
     );
