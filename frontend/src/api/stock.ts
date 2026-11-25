@@ -30,3 +30,12 @@ export function invalidateStock(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: STOCK_KEY });
   void queryClient.invalidateQueries({ queryKey: ['products'] });
 }
+
+/** 409 INSUFFICIENT_STOCK ayrıntısındaki güncel stok; beklenen biçimde değilse undefined */
+export function availableFromDetails(details: unknown): number | undefined {
+  if (!Array.isArray(details)) return undefined;
+  const first: unknown = details[0];
+  if (typeof first !== 'object' || first === null || !('available' in first)) return undefined;
+  const { available } = first;
+  return typeof available === 'number' && Number.isFinite(available) ? available : undefined;
+}

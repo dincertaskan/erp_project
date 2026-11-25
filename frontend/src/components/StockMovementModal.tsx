@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Form, Input, InputNumber, Modal, Segmented, Space, Typography } from 'antd';
 import { useState } from 'react';
 import { ApiError, api, errorMessage } from '@/api/client';
-import { invalidateStock } from '@/api/stock';
+import { availableFromDetails, invalidateStock } from '@/api/stock';
 import type { Product, StockMovementResult } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { ProductThumb } from '@/components/ProductThumb';
@@ -10,6 +10,9 @@ import { formatNumber } from '@/utils/format';
 import { getStockStatus } from '@/utils/labels';
 
 export type ManualMovementType = 'in' | 'out';
+
+/** Arka uçtaki tek işlem üst sınırı */
+export const MAX_MOVEMENT_QUANTITY = 1_000_000;
 
 export type MovementProduct = Pick<Product, 'id' | 'name' | 'sku' | 'stock' | 'min_stock' | 'image_url'>;
 
@@ -71,7 +74,7 @@ function MovementDialog({
       onClose();
     } catch (err) {
       if (err instanceof ApiError && err.code === 'INSUFFICIENT_STOCK') {
-        const available = (err.details as { available: number }[] | undefined)?.[0]?.available;
+        const available = availableFromDetails(err.details);
         if (available !== undefined) setCurrentStock(available);
         form.setFields([{ name: 'quantity', errors: [err.message] }]);
       } else {
@@ -128,6 +131,11 @@ function MovementDialog({
           rules={[
             { required: true, message: 'Miktar zorunludur.' },
             { type: 'number', min: 1, message: 'Miktar 0’dan büyük olmalıdır.' },
+            {
+              type: 'number',
+              max: MAX_MOVEMENT_QUANTITY,
+              message: `Miktar en fazla ${formatNumber(MAX_MOVEMENT_QUANTITY)} olabilir.`,
+            },
             {
               validator: (_, value?: number) =>
                 type === 'out' && value && value > currentStock

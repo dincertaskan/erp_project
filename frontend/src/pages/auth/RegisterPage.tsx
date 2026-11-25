@@ -6,7 +6,7 @@ import { PasswordStrength } from '@/components/PasswordStrength';
 import { applyServerErrors } from '@/utils/forms';
 import { confirmRules, passwordRules } from '@/utils/password';
 import { AuthLayout } from './AuthLayout';
-import type { LoginLocationState } from './LoginPage';
+import type { LoginLocationState } from './loginState';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface RegisterForm {
@@ -67,6 +67,7 @@ export function RegisterPage() {
           rules={[
             { required: true, message: 'E-posta zorunludur.' },
             { type: 'email', message: 'Geçerli bir e-posta adresi girin.' },
+            { max: 255, message: 'E-posta en fazla 255 karakter olabilir.' },
           ]}
         >
           <Input autoComplete="email" placeholder="ornek@firma.com" />

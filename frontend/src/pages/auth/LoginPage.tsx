@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { applyServerErrors } from '@/utils/forms';
 import { AuthLayout } from './AuthLayout';
+import { registeredEmailFrom } from './loginState';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface LoginForm {
@@ -11,17 +12,12 @@ interface LoginForm {
   password: string;
 }
 
-/** Kayıt ekranından dönüldüğünde gelen bilgi */
-export interface LoginLocationState {
-  registeredEmail?: string;
-}
-
 /** E-01 Giriş. Başarılı girişte yönlendirmeyi PublicOnly koruması yapar. */
 export function LoginPage() {
   usePageTitle('Giriş Yap');
   const { login, sessionExpired } = useAuth();
   const location = useLocation();
-  const registeredEmail = (location.state as LoginLocationState | null)?.registeredEmail;
+  const registeredEmail = registeredEmailFrom(location.state);
   const [form] = Form.useForm<LoginForm>();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
