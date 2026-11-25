@@ -162,6 +162,7 @@ export function StockPage() {
                 <Statistic
                   title="Kritik Stok"
                   value={summary?.critical_count ?? '–'}
+                  groupSeparator="."
                   valueStyle={summary?.critical_count ? { color: '#DC2626' } : undefined}
                 />
               </Card>
