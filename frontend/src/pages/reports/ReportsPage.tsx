@@ -12,6 +12,7 @@ import { OrderReportTab } from './OrderReportTab';
 import { ReportError } from './ReportError';
 import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
 import { StockReportTab } from './StockReportTab';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 type GroupBy = 'day' | 'week' | 'month' | 'product' | 'category';
 
@@ -54,6 +55,7 @@ const money = (value: string) => <span className="tabular-nums">{formatCurrency(
 
 /** E-25 Raporlar: satış, stok ve sipariş raporları. Ciro onaylanmış ve iptal edilmemiş siparişlerden hesaplanır. */
 export function ReportsPage() {
+  usePageTitle('Raporlar');
   const { message } = App.useApp();
   const { data: categories = [] } = useCategories();
   const [draft, setDraft] = useState<ReportFilters>(() => ({ range: defaultRange(), groupBy: 'day' }));

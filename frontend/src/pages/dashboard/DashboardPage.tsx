@@ -35,6 +35,7 @@ import { ProductThumb } from '@/components/ProductThumb';
 import { OrderStatusTag, StockStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDateTime, formatNumber, formatRelative } from '@/utils/format';
 import { SalesTrendChart } from './SalesTrendChart';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const periodOptions = [
   { label: 'Bugün', value: 'today' },
@@ -74,6 +75,7 @@ function SectionError({ error, onRetry, title }: { error: unknown; onRetry: () =
 
 /** E-10 Dashboard (yalnızca yönetici). Satışlar onaylanmış ve iptal edilmemiş siparişlerden hesaplanır. */
 export function DashboardPage() {
+  usePageTitle('Genel Bakış');
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<Period>('month');
   const [granularity, setGranularity] = useState<Granularity>('day');
