@@ -93,7 +93,8 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 
 ## Girdi doğrulama ve sınırlar
 
-- Sayfalama: `page_size` en fazla 100 (rapor tablosunda 200), dashboard `limit` en fazla 20.
+- Sayfalama: `page` en fazla 100000, `page_size` en fazla 100 (rapor tablosunda 200), dashboard `limit` en fazla 20.
+- Sipariş satır tutarı ve sipariş toplamı `Numeric(12,2)` sınırını (9.999.999.999,99) aşarsa istek 422 ile reddedilir.
 - Metin alanları ve arama parametreleri en fazla uzunlukla sınırlıdır (ör. arama 100, adres 1000, açıklama 2000 karakter). Sipariş ve sepet en fazla 100 kalem alır.
 - Sonuç: **Uygun**; değişiklik gerekmedi.
 
