@@ -31,7 +31,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 
 ### A02 – Kriptografik hatalar
 
-- Şifreler bcrypt ile saklanır. JWT HS256 ile imzalanır; `SECRET_KEY` en az 16 karakter olmalıdır.
+- Şifreler bcrypt ile saklanır. JWT HS256 ile imzalanır; `SECRET_KEY` en az 32 karakter olmalıdır; örnek dosyadaki yer tutucu değerle uygulama açılmaz.
 - Düzeltme: token doğrulaması artık `exp` alanını zorunlu tutar (süresiz token kabul edilmez). `ALGORITHM` ayarı yalnızca `HS256`, `HS384`, `HS512` değerlerini alabilir; `none` gibi değerler açılışta reddedilir.
 - HTTPS ve HSTS dağıtım ortamında (ters vekil) sağlanmalıdır: **Kapsam dışı** – uygulama kodunda değil, sunucu yapılandırmasındadır.
 - Sonuç: **Düzeltildi**.
