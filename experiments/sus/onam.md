@@ -9,7 +9,7 @@ Bu çalışma, YM 491 dersi kapsamında geliştirilen "Akıllı ERP" web uygulam
 - Sonuçlar yalnızca toplu olarak, ders raporunda ve sunumunda kullanılır.
 - Katılım gönüllüdür. İstediğiniz an gerekçe göstermeden çalışmayı bırakabilirsiniz; bu durumda verileriniz kullanılmaz.
 
-İletişim: [proje ekibi iletişim bilgisi]
+İletişim (ad, e-posta): ______________________
 
 Yukarıdaki bilgileri okudum ve çalışmaya katılmayı kabul ediyorum.
 

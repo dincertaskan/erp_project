@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 
 from app.core.clock import BUSINESS_TZ
 from app.models import Order, OrderItem, OrderStatus, PaymentMethod, StockMovement, StockMovementType
-from app.services.operations_reports import OrderReportService, StockReportService
+from app.services.operations_reports import OrderReportService, StockReportService, order_report_xlsx
 from tests.conftest import auth_headers
 
 
@@ -79,6 +79,35 @@ def test_order_report_filters_status_and_pages(db, customer, make_product):
     assert completed.rows[0].approved_at.hour == 14  # İstanbul saatiyle
     assert completed.rows[0].customer == customer.customer.full_name
     assert (len(first_page.rows), first_page.total) == (2, 3)
+
+
+def test_order_report_excel_warns_when_rows_are_truncated(db, customer, make_product):
+    product = make_product()
+    for n in range(3):
+        order = Order(
+            order_code=f"TR-{n}",
+            customer_id=customer.customer.id,
+            status=OrderStatus.PENDING,
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            total_amount=Decimal("100"),
+            created_at=at(3 + n),
+        )
+        order.items.append(OrderItem(product=product, quantity=2, unit_price=Decimal("50"), line_total=Decimal("100")))
+        db.add(order)
+    db.flush()
+    service = OrderReportService(db)
+
+    # Excel dosyası sınırla kesildiğinde (burada 2 satır) not ve toplam satırı bunu açıkça söyler.
+    truncated = load_workbook(
+        BytesIO(order_report_xlsx(service.build(date(2026, 11, 1), date(2026, 11, 10), [], page_size=2)))
+    ).active
+    full = load_workbook(BytesIO(order_report_xlsx(service.build(date(2026, 11, 1), date(2026, 11, 10), [])))).active
+
+    assert truncated["A2"].value.startswith("İlk 2 sipariş gösterildi; toplam 3 sipariş.")
+    assert [truncated.cell(row=r, column=1).value for r in (5, 6, 7)] == ["TR-2", "TR-1", "Toplam (3 siparişin tamamı)"]
+    assert truncated["D5"].value == 1
+    assert full["A2"].value == "3 sipariş. Tarihler İstanbul saatine göredir."
+    assert full["A8"].value == "Toplam"
 
 
 def test_report_endpoints_and_excel(client, admin, warehouse, make_product):

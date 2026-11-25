@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -9,7 +7,7 @@ from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
 from app.repositories.customer_repository import CustomerFilters
 from app.repositories.order_repository import OrderFilters
-from app.schemas.common import Page, PageParams
+from app.schemas.common import BusinessDateTime, Page, PageParams
 from app.schemas.customer import CustomerDetail, CustomerListItem, CustomerOrder, CustomerRequest, CustomerSort
 from app.schemas.user import StatusUpdateRequest
 from app.services.customer_service import CustomerService
@@ -79,8 +77,8 @@ def customer_orders(
     customer_id: int,
     page: PageParams = Depends(),
     status: list[OrderStatus] = Query(default=[]),
-    date_from: datetime | None = Query(None, alias="from"),
-    date_to: datetime | None = Query(None, alias="to"),
+    date_from: BusinessDateTime | None = Query(None, alias="from"),
+    date_to: BusinessDateTime | None = Query(None, alias="to"),
     _: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):

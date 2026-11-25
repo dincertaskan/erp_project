@@ -1,4 +1,12 @@
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from typing import Annotated
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+from app.core.clock import as_business_time
+
+# Sorgu parametrelerindeki tarih-saat; "2026-03-01T00:00" gibi saat dilimsiz değerler İstanbul saatidir.
+BusinessDateTime = Annotated[datetime, AfterValidator(as_business_time)]
 
 
 class ApiModel(BaseModel):
@@ -18,8 +26,12 @@ class Page[T](BaseModel):
     page_size: int
 
 
+# Çok büyük sayfa numarası OFFSET'i bigint sınırının ötesine taşıyıp veritabanı hatasına yol açar.
+MAX_PAGE = 100_000
+
+
 class PageParams(BaseModel):
-    page: int = Field(1, ge=1)
+    page: int = Field(1, ge=1, le=MAX_PAGE)
     page_size: int = Field(20, ge=1, le=100)
 
     @property

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
+from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.models import (
     Customer,
     Order,
@@ -63,7 +63,8 @@ TRANSITIONS: dict[OrderAction, Transition] = {
     ),
 }
 
-# Depo personeli yalnızca hazırlanan ve kargolanan siparişleri görür.
+# Depo personeli yalnızca uygulamada oluşturulmuş, hazırlanan ve kargolanan siparişleri görür. Olist'ten
+# aktarılan açık siparişler salt okunur olduğu için depo iş kuyruğuna girmez.
 WAREHOUSE_STATUSES = frozenset({OrderStatus.PREPARING, OrderStatus.SHIPPED})
 
 TIMESTAMP_FIELDS = {
@@ -72,6 +73,23 @@ TIMESTAMP_FIELDS = {
     OrderStatus.COMPLETED: "completed_at",
     OrderStatus.CANCELLED: "cancelled_at",
 }
+
+
+# Tutar sütunları Numeric(12, 2): bu değeri aşan tutar veritabanında taşma hatası verir.
+MAX_AMOUNT = Decimal("9999999999.99")
+
+
+def ensure_amounts_fit(line_totals: list[Decimal]) -> None:
+    """Satır tutarları istekteki sırayla verilir; hata alanı istekteki satırı gösterir."""
+    errors = [
+        {"field": f"items.{index}.quantity", "message": "Satır tutarı izin verilen üst sınırı aşıyor."}
+        for index, line_total in enumerate(line_totals)
+        if line_total > MAX_AMOUNT
+    ]
+    if not errors and sum(line_totals, Decimal("0")) > MAX_AMOUNT:
+        errors.append({"field": "items", "message": "Sipariş toplamı izin verilen üst sınırı aşıyor."})
+    if errors:
+        raise UnprocessableError(errors)
 
 
 def allowed_actions(order: Order, role: UserRole) -> list[OrderAction]:
@@ -107,6 +125,7 @@ class OrderService:
         visible = visible_statuses(viewer)
         if visible is not None:
             filters.statuses = visible & set(filters.statuses) if filters.statuses is not None else visible
+            filters.source = RecordSource.APP
         rows, total = self.orders.list(filters, offset=page.offset, limit=page.page_size)
         counts = self.orders.counts_by_status(filters)
         if visible is not None:
@@ -128,7 +147,7 @@ class OrderService:
         if order is None:
             raise NotFoundError("Sipariş bulunamadı.")
         visible = visible_statuses(viewer)
-        if visible is not None and order.status not in visible:
+        if visible is not None and (order.status not in visible or order.source != RecordSource.APP):
             raise ForbiddenError("Bu siparişi görüntüleme yetkiniz yok.")
 
         shortages = []
@@ -183,6 +202,8 @@ class OrderService:
                 code="PRODUCT_INACTIVE",
                 details={"products": inactive},
             )
+
+        ensure_amounts_fit([products[i.product_id].sale_price * i.quantity for i in data.items])
 
         order = Order(
             order_code=self.orders.next_code(clock.now().year),
