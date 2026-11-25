@@ -112,7 +112,7 @@ export function StockPage() {
           key="in"
           size="small"
           icon={<PlusOutlined />}
-          style={{ color: '#059669', borderColor: '#A7F3D0' }}
+          style={{ color: '#047857', borderColor: '#A7F3D0' }}
           onClick={() => setModal({ product: row, type: 'in' })}
         >
           Giriş

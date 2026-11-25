@@ -82,8 +82,9 @@ export const availabilityText = (product: Pick<CatalogProduct, 'availability' | 
       ? `Son ${product.available_qty} ürün`
       : 'Stokta';
 
+// Beyaz kart zemininde metin olarak AA kontrastında.
 export const availabilityColor: Record<Availability, string> = {
-  in_stock: '#059669',
-  low_stock: '#D97706',
+  in_stock: '#047857',
+  low_stock: '#B45309',
   out_of_stock: '#6B7280',
 };

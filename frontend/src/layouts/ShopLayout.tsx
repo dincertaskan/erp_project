@@ -61,7 +61,7 @@ export function ShopLayout() {
       <Layout.Content style={{ padding: 24, width: '100%', maxWidth: 1200, margin: '0 auto' }}>
         <Outlet />
       </Layout.Content>
-      <Layout.Footer style={{ textAlign: 'center', color: colors.textSubtle }}>
+      <Layout.Footer style={{ textAlign: 'center', color: colors.textSecondary }}>
         Akıllı ERP · Demo mağaza · Veriler Olist açık veri setinden alınmıştır
       </Layout.Footer>
     </Layout>

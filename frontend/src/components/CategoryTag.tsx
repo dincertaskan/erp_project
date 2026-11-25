@@ -1,18 +1,11 @@
 import { Tag } from 'antd';
 import type { CategoryRef } from '@/api/types';
+import { categoryTagColors } from '@/utils/categoryColors';
 
 /** Kategori adını kendi rengiyle gösterir (açık zemin, renkli yazı) */
 export function CategoryTag({ category }: { category: Pick<CategoryRef, 'name' | 'color'> }) {
   return (
-    <Tag
-      bordered
-      style={{
-        color: category.color,
-        background: `${category.color}14`,
-        borderColor: `${category.color}40`,
-        marginInlineEnd: 0,
-      }}
-    >
+    <Tag bordered style={{ ...categoryTagColors(category.color), marginInlineEnd: 0 }}>
       {category.name}
     </Tag>
   );

@@ -26,12 +26,13 @@ interface Tone {
   border: string;
 }
 
+// Yazı renkleri kendi zeminlerinde en az 4,5:1 kontrastta (WCAG AA).
 const tones = {
   amber: { color: '#B45309', background: '#FEF3C7', border: '#FDE68A' },
   blue: { color: '#2563EB', background: '#EFF6FF', border: '#BFDBFE' },
   purple: { color: '#7C3AED', background: '#F5F3FF', border: '#DDD6FE' },
-  green: { color: '#059669', background: '#ECFDF5', border: '#A7F3D0' },
-  red: { color: '#DC2626', background: '#FEF2F2', border: '#FECACA' },
+  green: { color: '#047857', background: '#ECFDF5', border: '#A7F3D0' },
+  red: { color: '#B91C1C', background: '#FEF2F2', border: '#FECACA' },
   darkRed: { color: '#991B1B', background: '#FEE2E2', border: '#FCA5A5' },
   orange: { color: '#C2410C', background: '#FFF7ED', border: '#FED7AA' },
   gray: { color: '#4B5563', background: '#F3F4F6', border: '#E5E7EB' },
