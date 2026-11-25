@@ -22,6 +22,16 @@ def test_cors_rejects_unknown_origin(client):
     assert "access-control-allow-origin" not in simple.headers
 
 
+@pytest.mark.parametrize("key", ["change-me-to-a-long-random-string", "kisa-anahtar", "x" * 31])
+def test_weak_or_placeholder_secret_key_is_rejected(key):
+    with pytest.raises(ValidationError, match="SECRET_KEY"):
+        Settings(DATABASE_URL="postgresql://u:p@localhost/db", SECRET_KEY=key)
+
+
+def test_secret_key_of_32_characters_is_accepted():
+    assert Settings(DATABASE_URL="postgresql://u:p@localhost/db", SECRET_KEY="x" * 32).SECRET_KEY == "x" * 32
+
+
 @pytest.mark.parametrize("algorithm", ["none", "RS256"])
 def test_only_hmac_jwt_algorithms_are_accepted(algorithm):
     with pytest.raises(ValidationError):

@@ -82,6 +82,12 @@ def test_list_shows_order_stats_with_revenue_rule(client, admin, make_customer, 
     no_orders = next(c for c in body["items"] if c["full_name"] == "Siparişsiz")
     assert (no_orders["order_count"], no_orders["total_spent"], no_orders["last_order_at"]) == (0, "0", None)
 
+    # Ada göre sıralamada istatistikler yalnızca sayfadaki müşteriler için toplanır; sonuç aynı olmalı.
+    by_name = client.get("/customers", headers=auth_headers(admin), params={"sort": "full_name"}).json()
+    stats = {c["full_name"]: (c["order_count"], c["total_spent"], c["last_order_at"]) for c in by_name["items"]}
+    assert stats["Alıcı"] == (first["order_count"], first["total_spent"], first["last_order_at"])
+    assert stats["Siparişsiz"] == (0, "0", None)
+
 
 def test_list_filters(client, admin, customer, make_customer):
     make_customer("Ankara Müşterisi", city="Ankara", phone="0312 000 00 00")
@@ -95,6 +101,20 @@ def test_list_filters(client, admin, customer, make_customer):
     assert names(search="0312") == {"Ankara Müşterisi"}
     assert names(is_active=False) == {"Pasif Müşteri"}
     assert names(has_account=True) == {customer.customer.full_name}
+
+
+def test_search_treats_wildcards_as_text(client, admin, make_customer):
+    make_customer("Yüzde %50 İndirim")
+    make_customer("Alt_Çizgi Ltd")
+    make_customer("Sıradan Müşteri")
+
+    def names(search):
+        response = client.get("/customers", headers=auth_headers(admin), params={"search": search})
+        return {c["full_name"] for c in response.json()["items"]}
+
+    assert names("%") == {"Yüzde %50 İndirim"}
+    assert names("_") == {"Alt_Çizgi Ltd"}
+    assert names("\\") == set()
 
 
 def test_cities_for_filter(client, admin, make_customer):

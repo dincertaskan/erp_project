@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -17,7 +15,7 @@ from app.schemas.catalog import (
     SkuSuggestion,
     StockStatus,
 )
-from app.schemas.common import Page, PageParams
+from app.schemas.common import BusinessDateTime, Page, PageParams
 from app.schemas.user import StatusUpdateRequest
 from app.services.product_service import ProductService
 
@@ -102,8 +100,8 @@ def product_movements(
     product_id: int,
     page: PageParams = Depends(),
     type: StockMovementType | None = None,
-    date_from: datetime | None = Query(None, alias="from"),
-    date_to: datetime | None = Query(None, alias="to"),
+    date_from: BusinessDateTime | None = Query(None, alias="from"),
+    date_to: BusinessDateTime | None = Query(None, alias="to"),
     _: User = Depends(staff),
     db: Session = Depends(get_db),
 ):

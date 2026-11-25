@@ -352,3 +352,28 @@ def test_movements_are_paginated_and_show_user_and_order(client, db, admin, cust
     assert latest["order"] == {"id": order.id, "order_code": "SIP-TEST-1"}
     assert latest["user"]["full_name"] == admin.full_name
     assert [m["movement_type"] for m in only_in["items"]] == ["in"]
+
+
+def test_movement_date_filter_reads_naive_times_as_istanbul(client, db, admin, make_product):
+    product = make_product()
+    # İstanbul saatiyle 2 Mart 00:30 (UTC 1 Mart 21:30)
+    db.add(
+        StockMovement(
+            product_id=product.id,
+            user_id=admin.id,
+            movement_type=StockMovementType.IN,
+            quantity=1,
+            previous_stock=10,
+            new_stock=11,
+            created_at=datetime(2026, 3, 1, 21, 30, tzinfo=UTC),
+        )
+    )
+    db.flush()
+
+    def count(**params):
+        url = f"/products/{product.id}/movements"
+        return client.get(url, headers=auth_headers(admin), params=params).json()["total"]
+
+    assert count(**{"from": "2026-03-02T00:00:00"}) == 1
+    assert count(**{"to": "2026-03-02T00:00:00"}) == 0
+    assert count(**{"from": "2026-03-02T00:00:00Z"}) == 0
