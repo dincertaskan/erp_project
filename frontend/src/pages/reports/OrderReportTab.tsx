@@ -7,7 +7,7 @@ import { api, errorMessage } from '@/api/client';
 import { OrderStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { orderStatusLabels, type OrderStatus } from '@/utils/labels';
-import { downloadReport, rangeParams, rangePresets, type DateRange } from './reportShared';
+import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
 
 interface OrderRow {
   id: number;
@@ -38,7 +38,7 @@ const PAGE_SIZE = 50;
 /** Sipariş Raporu: aralıktaki siparişler ve durum tarihleri. */
 export function OrderReportTab() {
   const { message } = App.useApp();
-  const [draft, setDraft] = useState<Filters>({ range: rangePresets[0].value, statuses: [] });
+  const [draft, setDraft] = useState<Filters>(() => ({ range: defaultRange(), statuses: [] }));
   const [applied, setApplied] = useState<Filters>(draft);
   const [page, setPage] = useState(1);
   const [downloading, setDownloading] = useState(false);
@@ -76,7 +76,7 @@ export function OrderReportTab() {
           <DatePicker.RangePicker
             allowClear={false}
             value={draft.range}
-            presets={rangePresets}
+            presets={getRangePresets()}
             format="DD.MM.YYYY"
             onChange={(value) => value && setDraft((d) => ({ ...d, range: value as DateRange }))}
           />

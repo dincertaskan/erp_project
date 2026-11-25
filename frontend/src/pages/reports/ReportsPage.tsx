@@ -9,7 +9,7 @@ import { api, errorMessage } from '@/api/client';
 import { colors } from '@/theme';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { OrderReportTab } from './OrderReportTab';
-import { downloadReport, rangeParams, rangePresets, type DateRange } from './reportShared';
+import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
 import { StockReportTab } from './StockReportTab';
 
 type GroupBy = 'day' | 'week' | 'month' | 'product' | 'category';
@@ -55,7 +55,7 @@ const money = (value: string) => <span className="tabular-nums">{formatCurrency(
 export function ReportsPage() {
   const { message } = App.useApp();
   const { data: categories = [] } = useCategories();
-  const [draft, setDraft] = useState<ReportFilters>({ range: rangePresets[0].value, groupBy: 'day' });
+  const [draft, setDraft] = useState<ReportFilters>(() => ({ range: defaultRange(), groupBy: 'day' }));
   const [applied, setApplied] = useState<ReportFilters>(draft);
   const [downloading, setDownloading] = useState(false);
 
@@ -87,7 +87,7 @@ export function ReportsPage() {
           <DatePicker.RangePicker
             allowClear={false}
             value={draft.range}
-            presets={rangePresets}
+            presets={getRangePresets()}
             format="DD.MM.YYYY"
             onChange={(value) => value && setDraft((d) => ({ ...d, range: value as DateRange }))}
           />

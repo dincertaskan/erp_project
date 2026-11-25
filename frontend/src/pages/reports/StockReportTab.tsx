@@ -8,7 +8,7 @@ import { api, errorMessage } from '@/api/client';
 import { StockStatusLabel } from '@/components/StatusTag';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import type { StockStatus } from '@/utils/labels';
-import { downloadReport, rangeParams, rangePresets, type DateRange } from './reportShared';
+import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
 
 interface StockRow {
   product_id: number;
@@ -44,7 +44,7 @@ const statusByLabel: Record<string, StockStatus> = {
 export function StockReportTab() {
   const { message } = App.useApp();
   const { data: categories = [] } = useCategories();
-  const [draft, setDraft] = useState<Filters>({ range: rangePresets[0].value });
+  const [draft, setDraft] = useState<Filters>(() => ({ range: defaultRange() }));
   const [applied, setApplied] = useState<Filters>(draft);
   const [downloading, setDownloading] = useState(false);
   const params = { ...rangeParams(applied.range), category_id: applied.categoryId };
@@ -74,7 +74,7 @@ export function StockReportTab() {
           <DatePicker.RangePicker
             allowClear={false}
             value={draft.range}
-            presets={rangePresets}
+            presets={getRangePresets()}
             format="DD.MM.YYYY"
             onChange={(value) => value && setDraft((d) => ({ ...d, range: value as DateRange }))}
           />
