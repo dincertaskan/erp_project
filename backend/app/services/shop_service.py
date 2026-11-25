@@ -30,6 +30,7 @@ from app.schemas.shop import (
     StatusGroup,
     availability,
 )
+from app.services.order_service import ensure_amounts_fit
 
 # Karar 11: pasif kategorideki ürünler katalogda görünmez.
 VISIBLE = (Product.is_active.is_(True), Category.is_active.is_(True))
@@ -221,6 +222,8 @@ class MyOrderService:
                 code="CART_CHANGED",
                 details=[issue.model_dump(mode="json") for issue in validation.issues],
             )
+
+        ensure_amounts_fit([products[line.product_id].sale_price * line.quantity for line in data.items])
 
         order = Order(
             order_code=OrderRepository(self.db).next_code(clock.now().year),

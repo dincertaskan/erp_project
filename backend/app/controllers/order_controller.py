@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -8,7 +6,7 @@ from app.core.deps import require_roles
 from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
 from app.repositories.order_repository import OrderFilters
-from app.schemas.common import PageParams
+from app.schemas.common import BusinessDateTime, PageParams
 from app.schemas.order import OrderAction, OrderCreateRequest, OrderDetail, OrderPage
 from app.services.order_service import OrderService
 
@@ -24,8 +22,8 @@ def list_orders(
     status: list[OrderStatus] = Query(default=[]),
     search: str | None = Query(None, max_length=100, description="Sipariş kodu ya da müşteri adı"),
     customer_id: int | None = None,
-    date_from: datetime | None = Query(None, alias="from"),
-    date_to: datetime | None = Query(None, alias="to"),
+    date_from: BusinessDateTime | None = Query(None, alias="from"),
+    date_to: BusinessDateTime | None = Query(None, alias="to"),
     viewer: User = Depends(staff),
     db: Session = Depends(get_db),
 ):

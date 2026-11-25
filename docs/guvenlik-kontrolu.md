@@ -11,7 +11,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 | A01 | Erişim denetimi hataları | Uygun (testlerle doğrulandı) |
 | A02 | Kriptografik hatalar | Düzeltildi |
 | A03 | Enjeksiyon | Uygun; Excel formül enjeksiyonu Düzeltildi |
-| A04 | Güvensiz tasarım | Uygun |
+| A04 | Güvensiz tasarım | Düzeltildi (kalan risk belgelendi) |
 | A05 | Güvenlik yanlış yapılandırması | Düzeltildi |
 | A06 | Zafiyetli ve güncel olmayan bileşenler | Uygun |
 | A07 | Kimlik doğrulama hataları | Uygun (sınırlamalarla) |
@@ -31,7 +31,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 
 ### A02 – Kriptografik hatalar
 
-- Şifreler bcrypt ile saklanır. JWT HS256 ile imzalanır; `SECRET_KEY` en az 16 karakter olmalıdır.
+- Şifreler bcrypt ile saklanır. JWT HS256 ile imzalanır; `SECRET_KEY` en az 32 karakter olmalıdır; örnek dosyadaki yer tutucu değerle uygulama açılmaz.
 - Düzeltme: token doğrulaması artık `exp` alanını zorunlu tutar (süresiz token kabul edilmez). `ALGORITHM` ayarı yalnızca `HS256`, `HS384`, `HS512` değerlerini alabilir; `none` gibi değerler açılışta reddedilir.
 - HTTPS ve HSTS dağıtım ortamında (ters vekil) sağlanmalıdır: **Kapsam dışı** – uygulama kodunda değil, sunucu yapılandırmasındadır.
 - Sonuç: **Düzeltildi**.
@@ -45,7 +45,9 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 ### A04 – Güvensiz tasarım
 
 - Sipariş tutarı sunucudaki fiyatlarla hesaplanır; sepet sunucuda yeniden doğrulanır. Stok güncellemeleri kilitlenir (kötümser kilit). Yeni kayıtlar her zaman müşteri rolüyle açılır.
-- Sonuç: **Uygun**.
+- **Düzeltildi:** Kayıt olurken ya da kullanıcı müşteri rolüne alınırken aynı e-postalı müşteri kartı hesaba otomatik bağlanıyordu. Olist'ten aktarılan kartların e-postaları tahmin edilebilir (`olist-00001@example.com`) olduğundan bu kartlar artık hiçbir hesaba bağlanmaz; bu e-postayla kayıt 409 döner (`tests/test_auth.py`, `tests/test_users.py`).
+- **Kalan risk:** E-posta doğrulaması olmadığı için yöneticinin uygulamada eklediği bir müşteri kartı, o e-postayla ilk kayıt olan kişiye bağlanır ve kişi kartın sipariş geçmişini görür. Gerçek kullanımda kayıt sonrası e-posta doğrulaması ya da bağlamanın yönetici onayıyla yapılması gerekir; bu proje kapsamında kabul edilmiştir.
+- Sonuç: **Düzeltildi**; kalan risk yukarıda belgelendi.
 
 ### A05 – Güvenlik yanlış yapılandırması
 
@@ -91,7 +93,8 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 
 ## Girdi doğrulama ve sınırlar
 
-- Sayfalama: `page_size` en fazla 100 (rapor tablosunda 200), dashboard `limit` en fazla 20.
+- Sayfalama: `page` en fazla 100000, `page_size` en fazla 100 (rapor tablosunda 200), dashboard `limit` en fazla 20.
+- Sipariş satır tutarı ve sipariş toplamı `Numeric(12,2)` sınırını (9.999.999.999,99) aşarsa istek 422 ile reddedilir.
 - Metin alanları ve arama parametreleri en fazla uzunlukla sınırlıdır (ör. arama 100, adres 1000, açıklama 2000 karakter). Sipariş ve sepet en fazla 100 kalem alır.
 - Sonuç: **Uygun**; değişiklik gerekmedi.
 

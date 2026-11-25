@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import AppError, ConflictError, ForbiddenError, TooManyRequestsError, UnauthorizedError
 from app.core.login_throttle import login_throttle
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Customer, User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, PasswordChangeRequest, ProfileUpdateRequest, RegisterRequest
 
@@ -19,7 +19,12 @@ class AuthService:
 
     def register(self, data: RegisterRequest) -> User:
         """Yeni kayıtlar her zaman müşteri rolüyle oluşturulur (FR-01)."""
-        if self.users.get_by_email(data.email):
+        # bcrypt veritabanı işlemi açılmadan çalışır; yavaş özetleme sırasında havuzdan bağlantı tutulmaz.
+        password_hash = hash_password(data.password)
+        # Yöneticinin daha önce aynı e-postayla eklediği bir müşteri kartı varsa hesaba bağlanır.
+        # Olist kartlarının e-postaları tahmin edilebilir (olist-00001@example.com); bunlar hiçbir hesaba bağlanmaz.
+        customer = self.users.get_customer_by_email(data.email)
+        if self.users.get_by_email(data.email) or (customer is not None and customer.source == RecordSource.OLIST):
             raise ConflictError(
                 "Bu e-posta adresi zaten kayıtlı.",
                 code="EMAIL_TAKEN",
@@ -28,14 +33,12 @@ class AuthService:
         user = User(
             full_name=data.full_name,
             email=data.email,
-            password_hash=hash_password(data.password),
+            password_hash=password_hash,
             role=UserRole.CUSTOMER,
         )
         self.db.add(user)
         self.db.flush()
 
-        # Yöneticinin daha önce aynı e-postayla eklediği bir müşteri kartı varsa hesaba bağlanır.
-        customer = self.users.get_customer_by_email(data.email)
         if customer is None:
             customer = Customer(full_name=data.full_name, email=data.email, phone=data.phone)
             self.db.add(customer)
@@ -57,6 +60,8 @@ class AuthService:
             )
 
         user = self.users.get_by_email(data.email)
+        # Okuma işlemi bcrypt'ten önce kapatılır; bağlantı doğrulama süresince havuza döner.
+        self.db.commit()
         if user is None or not verify_password(data.password, user.password_hash):
             login_throttle.record_failure(data.email)
             raise UnauthorizedError("E-posta veya şifre hatalı.", code="INVALID_CREDENTIALS")

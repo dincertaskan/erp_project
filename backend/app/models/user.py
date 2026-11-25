@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
@@ -11,10 +11,12 @@ class User(TimestampMixin, Base):
     """Sisteme giriş yapan her hesap. Rol; yönetici, depo personeli veya müşteri olabilir."""
 
     __tablename__ = "users"
+    # E-posta büyük/küçük harf duyarsız benzersizdir (giriş ve kayıt da lower() ile arar).
+    __table_args__ = (Index("uq_users_email_lower", text("lower(email)"), unique=True),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255), unique=True)
+    email: Mapped[str] = mapped_column(String(255))
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(pg_enum(UserRole, "user_role"), default=UserRole.CUSTOMER)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
@@ -28,11 +30,12 @@ class Customer(TimestampMixin, Base):
     """Müşteri kartı. Portal hesabı varsa bir kullanıcıya bağlıdır; yöneticinin eklediği müşterilerde boş kalır."""
 
     __tablename__ = "customers"
+    __table_args__ = (Index("uq_customers_email_lower", text("lower(email)"), unique=True),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), unique=True)
     full_name: Mapped[str] = mapped_column(String(150))
-    email: Mapped[str] = mapped_column(String(255), unique=True)
+    email: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(30))
     company_name: Mapped[str | None] = mapped_column(String(150))
     address: Mapped[str | None] = mapped_column(Text)

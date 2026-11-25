@@ -38,7 +38,11 @@ class UserRepository:
         users = self.db.scalars(query.order_by(User.id).offset(offset).limit(limit)).all()
         return list(users), total
 
-    def count_active_admins(self) -> int:
-        return self.db.scalar(
-            select(func.count()).select_from(User).where(User.role == UserRole.ADMIN, User.is_active.is_(True))
-        )
+    def lock_active_admin_ids(self) -> set[int]:
+        """Aktif yönetici satırlarını işlem sonuna kadar kilitler.
+
+        Eşzamanlı iki istek farklı yöneticileri düşürmeye çalışırsa ikincisi bekler; ilki commit edince
+        PostgreSQL koşulu yeniden değerlendirir ve ikinci istek güncel yönetici listesini görür.
+        """
+        query = select(User.id).where(User.role == UserRole.ADMIN, User.is_active.is_(True)).with_for_update()
+        return set(self.db.scalars(query).all())
