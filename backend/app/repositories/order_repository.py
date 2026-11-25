@@ -11,6 +11,17 @@ from app.models import Customer, Order, OrderItem, OrderStatus, OrderStatusHisto
 from app.models.order import ORDER_CODE_SEQUENCE
 
 
+def item_count_column():
+    """Sipariş başına kalem sayısı; ilişkili alt sorgu yalnızca sayfadaki satırlar için çalışır."""
+    return (
+        select(func.count())
+        .where(OrderItem.order_id == Order.id)
+        .correlate(Order)
+        .scalar_subquery()
+        .label("item_count")
+    )
+
+
 @dataclass
 class OrderFilters:
     statuses: Collection[OrderStatus] | None = None
@@ -45,14 +56,10 @@ class OrderRepository:
         return query
 
     def list(self, filters: OrderFilters, *, offset: int, limit: int) -> tuple[list[tuple[Order, int]], int]:
-        item_counts = (
-            select(OrderItem.order_id, func.count().label("item_count")).group_by(OrderItem.order_id).subquery()
-        )
         query = self._filtered(select(Order), filters)
         total = self.db.scalar(select(func.count()).select_from(query.subquery()))
         rows = self.db.execute(
-            query.add_columns(func.coalesce(item_counts.c.item_count, 0))
-            .outerjoin(item_counts, item_counts.c.order_id == Order.id)
+            query.add_columns(item_count_column())
             .options(joinedload(Order.customer))
             .order_by(Order.created_at.desc(), Order.id.desc())
             .offset(offset)
