@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
@@ -9,9 +9,10 @@ from app.models.enums import RecordSource, pg_enum
 
 class Category(TimestampMixin, Base):
     __tablename__ = "categories"
+    __table_args__ = (Index("uq_categories_name_lower", text("lower(name)"), unique=True),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
     color: Mapped[str] = mapped_column(String(7), default="#4F46E5", server_default="#4F46E5")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 

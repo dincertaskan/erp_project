@@ -22,6 +22,8 @@ class StockMovement(Base):
         CheckConstraint("new_stock >= 0", name="new_stock_non_negative"),
         Index("ix_stock_movements_product_id_created_at", "product_id", "created_at"),
         Index("ix_stock_movements_created_at", "created_at"),
+        Index("ix_stock_movements_order_id", "order_id"),
+        Index("ix_stock_movements_user_id", "user_id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

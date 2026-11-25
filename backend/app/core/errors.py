@@ -6,7 +6,9 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
+from sqlalchemy.orm.exc import StaleDataError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger("app.errors")
@@ -60,6 +62,27 @@ HTTP_STATUS_CODES = {
 }
 
 
+# Oku-kontrol et-yaz denetimleri eşzamanlı isteklerde atlanabilir; bu durumda veritabanındaki benzersizlik
+# kısıtı devreye girer. Bilinen kısıtlar servislerin döndürdüğü kod ve mesajla eşleştirilir.
+UNIQUE_CONFLICTS: dict[str, tuple[str, str, str]] = {
+    "uq_products_sku": ("SKU_TAKEN", "sku", "Bu SKU kullanılıyor."),
+    "uq_categories_name_lower": ("CATEGORY_NAME_TAKEN", "name", "Bu isimde bir kategori zaten var."),
+    "uq_users_email_lower": ("EMAIL_TAKEN", "email", "Bu e-posta adresi zaten kayıtlı."),
+    "uq_customers_email_lower": ("EMAIL_TAKEN", "email", "Bu e-posta adresiyle kayıtlı bir müşteri var."),
+}
+
+CONCURRENT_UPDATE_MESSAGE = "Kayıt başka bir işlem tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin."
+
+
+def integrity_conflict(exc: IntegrityError) -> dict:
+    diag = getattr(exc.orig, "diag", None)
+    known = UNIQUE_CONFLICTS.get(getattr(diag, "constraint_name", None) or "")
+    if known is None:
+        return error_body("CONFLICT", "İşlem mevcut bir kayıtla çakışıyor. Sayfayı yenileyip tekrar deneyin.")
+    code, field, message = known
+    return error_body(code, message, [{"field": field, "message": message}])
+
+
 def error_body(code: str, message: str, details: Any = None) -> dict:
     return {"code": code, "message": message, "details": details}
 
@@ -99,6 +122,17 @@ def register_error_handlers(app: FastAPI) -> None:
             content=error_body("SERVER_BUSY", "Sunucu şu anda yoğun. Lütfen biraz sonra tekrar deneyin."),
             headers={"Retry-After": "1"},
         )
+
+    @app.exception_handler(StaleDataError)
+    async def handle_stale_data(_: Request, exc: StaleDataError):
+        # İyimser kilit: kayıt okunduktan sonra başka bir işlem sürümünü artırdı.
+        logger.info("Eşzamanlı güncelleme: %s", exc)
+        return JSONResponse(status_code=409, content=error_body("CONCURRENT_UPDATE", CONCURRENT_UPDATE_MESSAGE))
+
+    @app.exception_handler(IntegrityError)
+    async def handle_integrity_error(_: Request, exc: IntegrityError):
+        logger.info("Veritabanı kısıtı ihlali: %s", exc.orig)
+        return JSONResponse(status_code=409, content=integrity_conflict(exc))
 
     @app.exception_handler(Exception)
     async def handle_unexpected(_: Request, exc: Exception):
