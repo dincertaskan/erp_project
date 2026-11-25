@@ -2,7 +2,7 @@
 
 Bu kılavuz Akıllı ERP'nin üç rolü için ekranları ve sık yapılan işlemleri adım adım anlatır: Müşteri, Depo Personeli ve Yönetici. Metindeki tırnak içindeki adlar arayüzdeki buton, menü ve alan adlarıdır.
 
-> Ekran görüntüleri eklenecek.
+Ekran görüntüleri `scripts/ekran-goruntuleri.mjs` betiğiyle demo verisi üzerinden alınmıştır; tutar ve adetler ortama göre farklı olabilir.
 
 Demo hesapları için `README.md` dosyasındaki "Demo hesaplar" tablosuna bakın.
 
@@ -17,10 +17,14 @@ Demo hesapları için `README.md` dosyasındaki "Demo hesaplar" tablosuna bakın
 
 Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir ve kaç dakika sonra tekrar denenebileceği gösterilir. Oturum süresi dolduğunda "Oturumunuzun süresi doldu" uyarısıyla giriş ekranına dönülür.
 
+![Giriş ekranı](images/01-giris.jpg)
+
 ### Profil ve şifre
 
 - Kullanıcı menüsünden "Profilim" ile "Kişisel Bilgiler" (ad soyad; müşteride ayrıca telefon, firma, şehir ve teslimat adresi) güncellenir ve "Kaydet" ile saklanır.
 - "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır.
+
+![Profil ekranı](images/42-profil.jpg)
 
 ## Müşteri
 
@@ -35,12 +39,18 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 
 Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir.
 
+![Kayıt ekranı](images/02-kayit.jpg)
+
 ### Ürün bulma
 
 - Katalogda "Ürün ara" kutusuyla arama yapılır.
 - "Filtrele" bölümünde "Kategoriler", "Fiyat Aralığı" ve "Yalnızca stokta olanlar" seçenekleri vardır; "Filtreleri Temizle" tüm filtreleri kaldırır.
 - "Sıralama" listesi: "Önerilen", "En yeni", "Fiyat (artan)", "Fiyat (azalan)", "Ada göre".
 - Ürün kartında stok durumu "Stok Sınırında" ya da "Stokta Yok" etiketiyle gösterilir.
+
+![Ürün kataloğu](images/10-musteri-katalog.jpg)
+
+![Ürün detayı](images/11-musteri-urun-detayi.jpg)
 
 ### Sipariş verme
 
@@ -51,11 +61,17 @@ Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir.
 
 Sepet tarayıcıda tutulur. Bu arada fiyat, satış durumu ya da stok değiştiyse "Sepetinizdeki bazı ürünler değişti." uyarısı çıkar; işaretli satırları kontrol edip "Güncelle" butonuyla güncel değerlerle devam edin. Sepeti tümüyle silmek için "Sepeti Boşalt" kullanılır.
 
+![Sepet ve sipariş özeti](images/12-musteri-sepet.jpg)
+
 ### Siparişleri izleme ve iptal
 
 1. "Siparişlerim" sayfasında siparişler "Tümü", "Devam Eden", "Tamamlanan" ve "İptal" sekmelerinde listelenir; "Sipariş kodu" ile arama yapılabilir.
 2. "Detay" ile siparişin ürünleri, teslimat adresi ve durumu görülür.
 3. Yalnızca "Onay Bekliyor" durumundaki sipariş iptal edilebilir: detay sayfasında "İptal Et" butonuna basıp onaylayın. Onaylanmış sipariş müşteri tarafından iptal edilemez.
+
+![Siparişlerim](images/13-musteri-siparislerim.jpg)
+
+![Müşterinin sipariş detayı](images/14-musteri-siparis-detayi.jpg)
 
 ## Depo Personeli
 
@@ -71,15 +87,23 @@ Sol menü: "Ürünler", "Stok" ("Stok İşlemleri", "Stok Hareketleri", "Kritik 
 
 Mevcut stoktan fazla çıkış yapılamaz; bu durumda "Yetersiz stok. Mevcut: ..." hatası gösterilir. Aynı işlem ürün detayındaki "Stok Girişi/Çıkışı" butonuyla da yapılabilir. Satırdaki "Geçmiş" bağlantısı ürünün hareket geçmişini açar.
 
+![Stok işlemleri](images/20-depo-stok-islemleri.jpg)
+
+![Stok işlemi penceresi](images/21-depo-stok-giris-cikis.jpg)
+
 ### Stok hareketlerini inceleme
 
 "Stok Hareketleri" sayfasında tüm hareketler "Tarih", "Ürün", "İşlem Türü" (Giriş, Çıkış, Sipariş Çıkışı, İptal İadesi), "Miktar", "Önceki Stok", "Yeni Stok", "Yapan" ve "Sipariş" sütunlarıyla listelenir. Tarih aralığı, ürün, işlem türü ve "Sipariş kodu" ile süzüp "Filtrele" butonuna basın.
+
+![Stok hareketleri](images/22-depo-stok-hareketleri.jpg)
 
 ### Kritik stok
 
 1. "Kritik Stok" sayfası, stoğu minimum seviyenin altına düşen aktif ürünleri en kritik olan önce listeler.
 2. "Eksik Miktar" ve "Son 30 Gün Satış" sütunları ne kadar giriş gerektiğine karar vermeye yardımcı olur.
 3. Satırdaki "Stok Girişi" butonuyla doğrudan giriş yapın. Liste boşsa "Tüm ürünlerin stoğu yeterli." mesajı görünür.
+
+![Kritik stok](images/23-depo-kritik-stok.jpg)
 
 ### Siparişleri kargolama
 
@@ -96,11 +120,21 @@ Sol menü: "Dashboard", "Ürünler", "Kategoriler", "Stok", "Siparişler", "Mü�
 
 "Genel Bakış" sayfasında "Bugünkü Satış", "Bu Ayki Satış", "Onay Bekleyen Sipariş" ve "Kritik Stoktaki Ürün" kartları, "Satış Trendi" grafiği, "En Çok Satan Ürünler", "Kritik Stoktaki Ürünler" ve "Son Siparişler" listeleri yer alır. "Tümünü Gör" bağlantıları ilgili sayfaya gider.
 
+![Genel bakış](images/30-yonetici-dashboard.jpg)
+
 ### Ürün ve kategori yönetimi
 
 - "Kategoriler" sayfasında "Yeni Kategori" ile kategori eklenir; satırdaki "Düzenle" ve "Pasife Al" / "Aktifleştir" ile güncellenir. Pasif kategoriye yeni ürün eklenemez.
 - "Ürünler" sayfasında "Yeni Ürün" ile ürün eklenir. Kategori seçilince "SKU (Ürün Kodu)" önerilir; boş bırakılırsa otomatik üretilir. "Başlangıç Stoku" yalnızca eklemede girilir, sonraki değişiklikler stok işlemleriyle yapılır.
 - Pasife alınan ürünler müşteri kataloğunda görünmez ve siparişe eklenemez.
+
+![Ürün listesi](images/31-yonetici-urunler.jpg)
+
+![Yeni ürün formu](images/32-yonetici-urun-formu.jpg)
+
+![Ürün detayı](images/33-yonetici-urun-detayi.jpg)
+
+![Kategoriler](images/34-yonetici-kategoriler.jpg)
 
 ### Sipariş onaylama
 
@@ -110,7 +144,9 @@ Sol menü: "Dashboard", "Ürünler", "Kategoriler", "Stok", "Siparişler", "Mü�
 
 Diğer işlemler: "Kargoya Ver" (Hazırlanıyor → Kargolandı), "Teslim Edildi" (Kargolandı → Tamamlandı), "İptal Et" (Onay Bekliyor ya da Hazırlanıyor → İptal; hazırlanan siparişte düşülen stok geri eklenir). Olist'ten aktarılan siparişler salt okunurdur.
 
-### Yetersiz stoku çözme
+![Sipariş listesi](images/35-yonetici-siparisler.jpg)
+
+### Yetersiz stoğu çözme
 
 Onay sırasında bir kalemde bile stok yetmezse sipariş onaylanmaz ve hiçbir stok değiştirilmez.
 
@@ -125,9 +161,15 @@ Onay sırasında bir kalemde bile stok yetmezse sipariş onaylanmaz ve hiçbir s
 3. "Ürünler" kartında "SKU veya ürün adı ile arayın" kutusundan ürünü seçin, adedi girip "Ekle" butonuna basın.
 4. "Teslimat ve Ödeme" bölümünü doldurup "Siparişi Oluştur" butonuna basın. Sipariş "Onay Bekliyor" durumunda oluşur; stok onay sırasında düşülür.
 
+![Yeni sipariş](images/37-yonetici-yeni-siparis.jpg)
+
 ### Müşteriler
 
 "Müşteriler" sayfasında müşteriler sipariş sayısı, "Toplam Harcama" ve "Son Sipariş" bilgileriyle listelenir. "Yeni Müşteri" ile kayıt eklenir, "Düzenle" ile güncellenir. Giriş hesabı olan müşterinin e-postası değiştirilemez. Pasif müşteri adına sipariş oluşturulamaz.
+
+![Müşteri listesi](images/38-yonetici-musteriler.jpg)
+
+![Müşteri detayı](images/39-yonetici-musteri-detayi.jpg)
 
 ### Raporlar ve Excel'e aktarma
 
@@ -138,6 +180,8 @@ Onay sırasında bir kalemde bile stok yetmezse sipariş onaylanmaz ve hiçbir s
 
 Rapor aralığı en fazla 3 yıl olabilir. Maliyet ve stok değeri ürünlerin güncel maliyetiyle hesaplanır.
 
+![Satış raporu](images/40-yonetici-raporlar.jpg)
+
 ### Kullanıcı rolü atama
 
 Yeni personel önce kayıt formundan hesap açar; ardından yönetici rol atar.
@@ -147,3 +191,5 @@ Yeni personel önce kayıt formundan hesap açar; ardından yönetici rol atar.
 3. Hesabı kapatmak için "Pasife Al" kullanın; pasif kullanıcı giriş yapamaz. Geri açmak için "Aktifleştir".
 
 Yönetici kendi rolünü değiştiremez ve kendi hesabını pasife alamaz. Sistemdeki son aktif yönetici değiştirilemez. Müşteri rolüne alınan kullanıcı için müşteri kaydı oluşturulur.
+
+![Kullanıcılar](images/41-yonetici-kullanicilar.jpg)

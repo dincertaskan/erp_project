@@ -89,6 +89,8 @@ Tüm hatalar aynı gövdeyle döner:
 
 Durumlar: `pending` (Onay Bekliyor), `preparing` (Hazırlanıyor), `shipped` (Kargolandı), `completed` (Tamamlandı), `cancelled` (İptal). Stok, sipariş onaylanırken düşülür. Olist'ten aktarılan siparişler salt okunurdur.
 
+İş kuyrukları yalnızca uygulamada oluşturulan siparişleri (`source=app`) kapsar: depo personelinin sipariş listesi, durum sayıları ve detay erişimi ile dashboard'daki onay bekleyen sayısı Olist siparişlerini içermez; yönetici listesi ve sayıları tüm siparişleri gösterir.
+
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
 | GET | `/orders` | Personel | Sipariş listesi (sayfalı; `status`, `search`, `customer_id`, `from`, `to`). Depo personeli yalnızca Hazırlanıyor ve Kargolandı durumlarını görür | |
@@ -115,7 +117,7 @@ Durumlar: `pending` (Onay Bekliyor), `preparing` (Hazırlanıyor), `shipped` (Ka
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| GET | `/dashboard/summary` | Yönetici | Bugünkü ve bu ayki satış, onay bekleyen sipariş ve kritik stok sayıları | |
+| GET | `/dashboard/summary` | Yönetici | Bugünkü ve bu ayki satış, onay bekleyen sipariş (yalnızca `source=app`) ve kritik stok sayıları | |
 | GET | `/dashboard/sales-trend` | Yönetici | Satış trendi (`granularity`: `day` ya da `month`) | |
 | GET | `/dashboard/top-products` | Yönetici | En çok satan ürünler (`period`: `today`, `week`, `month`; `limit` 1–20) | |
 
@@ -127,7 +129,7 @@ Tüm raporlar `from` ve `to` (tarih, iki uç dahil, İstanbul saati) alır. `for
 |---|---|---|---|---|
 | GET | `/reports/sales` | Yönetici | Satış raporu: ciro, maliyet, brüt kâr (`group_by`, `category_id`) | `INVALID_RANGE` (400, ters aralık ya da 3 yıldan uzun) |
 | GET | `/reports/stock` | Yönetici | Dönem başı/sonu stok, dönem içi giriş-çıkış ve stok değeri (`category_id`) | `INVALID_RANGE` (400) |
-| GET | `/reports/orders` | Yönetici | Sipariş raporu (`status`; JSON sayfalı, `page_size` en fazla 200; Excel tüm satırlar) | `INVALID_RANGE` (400) |
+| GET | `/reports/orders` | Yönetici | Sipariş raporu (`status`; JSON sayfalı, `page_size` en fazla 200; Excel en fazla 10.000 satır; kesilirse dosyadaki not satırı bunu belirtir) | `INVALID_RANGE` (400) |
 
 ## Mağaza
 

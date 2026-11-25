@@ -1,4 +1,3 @@
-from datetime import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
@@ -8,7 +7,7 @@ from app.core.database import get_db
 from app.core.deps import require_roles
 from app.core.routing import SessionReleasingRoute
 from app.models import User, UserRole
-from app.schemas.common import Page, PageParams
+from app.schemas.common import BusinessDateTime, Page, PageParams
 from app.schemas.shop import (
     CartValidateRequest,
     CartValidation,
@@ -81,8 +80,8 @@ def my_orders(
     page: PageParams = Depends(),
     status_group: StatusGroup | None = None,
     search: str | None = Query(None, max_length=40),
-    date_from: datetime | None = Query(None, alias="from"),
-    date_to: datetime | None = Query(None, alias="to"),
+    date_from: BusinessDateTime | None = Query(None, alias="from"),
+    date_to: BusinessDateTime | None = Query(None, alias="to"),
     user: User = Depends(customer_only),
     db: Session = Depends(get_db),
 ):

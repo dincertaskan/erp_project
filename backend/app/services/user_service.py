@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Customer, User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.common import Page, PageParams
 from app.schemas.user import UserOut
@@ -31,7 +31,10 @@ class UserService:
         return user
 
     def _ensure_not_last_admin(self, user: User) -> None:
-        if user.role == UserRole.ADMIN and user.is_active and self.users.count_active_admins() <= 1:
+        if user.role != UserRole.ADMIN or not user.is_active:
+            return
+        admin_ids = self.users.lock_active_admin_ids()
+        if user.id in admin_ids and len(admin_ids) <= 1:
             raise ConflictError("Sistemdeki son aktif yönetici değiştirilemez.", code="LAST_ADMIN")
 
     def set_role(self, actor: User, user_id: int, role: UserRole) -> User:
@@ -43,9 +46,16 @@ class UserService:
         if role != UserRole.ADMIN:
             self._ensure_not_last_admin(user)
 
+        needs_card = role == UserRole.CUSTOMER and user.customer is None
+        customer = self.users.get_customer_by_email(user.email) if needs_card else None
+        if customer is not None and customer.source == RecordSource.OLIST:
+            # Olist kartı hesaba bağlanmaz; aynı e-postayla ikinci kart da açılamaz.
+            raise ConflictError(
+                "Bu e-posta adresi Olist verisinden aktarılan bir müşteri kartında kullanılıyor.", code="EMAIL_TAKEN"
+            )
+
         user.role = role
-        if role == UserRole.CUSTOMER and user.customer is None:
-            customer = self.users.get_customer_by_email(user.email)
+        if needs_card:
             if customer is None:
                 customer = Customer(full_name=user.full_name, email=user.email)
                 self.db.add(customer)
