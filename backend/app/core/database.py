@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, MetaData, create_engine, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
 
@@ -43,4 +44,8 @@ async def get_db():
     try:
         yield db
     finally:
-        db.close()
+        if db.in_transaction():
+            # Hata yolunda işlem açık kalır; kapanıştaki ROLLBACK ağ beklemesi olay döngüsünü durdurmasın.
+            await run_in_threadpool(db.close)
+        else:
+            db.close()
