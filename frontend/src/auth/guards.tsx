@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import type { UserRole } from '@/utils/labels';
 import { useAuth } from './useAuth';
-import { homePathByRole, safeRedirect } from './roles';
+import { homePathByRole, landingPath } from './roles';
 
 export function FullPageSpinner() {
   return (
@@ -47,13 +47,16 @@ export function RequireAuth({ roles, children }: { roles?: UserRole[]; children:
   return <>{children}</>;
 }
 
-/** Giriş ve kayıt ekranları: oturum açıksa ?redirect= adresine ya da rolün ana sayfasına gönderir. */
+/**
+ * Giriş ve kayıt ekranları: oturum açıksa ?redirect= adresine (rol erişebiliyorsa)
+ * ya da rolün ana sayfasına gönderir.
+ */
 export function PublicOnly({ children }: { children: ReactNode }) {
   const { user, isLoading, unavailable, retry } = useAuth();
   const [params] = useSearchParams();
   if (isLoading) return <FullPageSpinner />;
   if (!user && unavailable) return <ServerUnavailable onRetry={retry} />;
-  if (user) return <Navigate to={safeRedirect(params.get('redirect')) ?? homePathByRole[user.role]} replace />;
+  if (user) return <Navigate to={landingPath(params.get('redirect'), user.role)} replace />;
   return <>{children}</>;
 }
 
