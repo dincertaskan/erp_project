@@ -195,7 +195,7 @@ export function ShopCatalogPage() {
         <Typography.Title level={3} style={{ margin: 0 }}>
           Ürünler
         </Typography.Title>
-        <Typography.Text type="secondary">Hoş geldin, {user?.full_name.split(' ')[0]}.</Typography.Text>
+        <Typography.Text type="secondary">Hoş geldiniz, {user?.full_name.split(' ')[0]}.</Typography.Text>
       </div>
 
       <Row gutter={24}>
