@@ -24,6 +24,8 @@ import type { CustomerDetail } from '@/api/customers';
 import type { CustomerListItem, OrderDetail } from '@/api/orders';
 import { CustomerFormModal } from '@/components/CustomerFormModal';
 import type { Page, Product } from '@/api/types';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { applyServerErrors } from '@/utils/forms';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { paymentMethodLabels, type PaymentMethod } from '@/utils/labels';
@@ -40,18 +42,30 @@ interface OrderForm {
   note?: string;
 }
 
-function useRemoteOptions<T>(load: (search: string) => Promise<T[]>) {
-  const [options, setOptions] = useState<T[]>([]);
-  const [loading, setLoading] = useState(false);
-  const search = async (value: string) => {
-    setLoading(true);
-    try {
-      setOptions(await load(value));
-    } finally {
-      setLoading(false);
-    }
+/** Sunucunun kalem başına kabul ettiği en büyük adet (OrderItemRequest.quantity) */
+const MAX_QUANTITY = 10_000;
+
+const clampQuantity = (value: number | null | undefined) => Math.min(MAX_QUANTITY, Math.max(1, value ?? 1));
+
+/**
+ * Yazdıkça arama: istek 300 ms bekledikten sonra atılır, sonuçlar arama terimine göre saklanır.
+ * Geç dönen eski bir yanıt güncel terimin sonuçlarının üzerine yazamaz.
+ */
+function useRemoteOptions<T>(key: string, load: (search: string) => Promise<T[]>) {
+  const [term, setTerm] = useState('');
+  const [active, setActive] = useState(false);
+  const debouncedTerm = useDebouncedValue(term, 300);
+  const query = useQuery({
+    queryKey: ['new-order', key, debouncedTerm],
+    queryFn: () => load(debouncedTerm),
+    enabled: active,
+    placeholderData: (previous) => previous,
+  });
+  const search = (value: string) => {
+    setActive(true);
+    setTerm(value);
   };
-  return { options, loading, search };
+  return { options: query.data ?? [], loading: active && (query.isFetching || term !== debouncedTerm), search };
 }
 
 const addressOf = (customer: Pick<CustomerListItem, 'address' | 'city'>) =>
@@ -81,7 +95,8 @@ export function NewOrderPage() {
   const [pickedQuantity, setPickedQuantity] = useState<number>(1);
   const [linesError, setLinesError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const customers = useRemoteOptions(loadCustomers);
+  usePageTitle('Yeni Sipariş');
+  const customers = useRemoteOptions('customers', loadCustomers);
   const [extraCustomers, setExtraCustomers] = useState<CustomerListItem[]>([]);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [params] = useSearchParams();
@@ -101,7 +116,7 @@ export function NewOrderPage() {
   const customerOptions = [...(presetCustomer ? [presetCustomer] : []), ...extraCustomers, ...customers.options].filter(
     (c, index, all) => all.findIndex((other) => other.id === c.id) === index,
   );
-  const products = useRemoteOptions(loadProducts);
+  const products = useRemoteOptions('products', loadProducts);
 
   const total = lines.reduce((sum, line) => sum + Number(line.product.sale_price) * line.quantity, 0);
 
@@ -118,10 +133,10 @@ export function NewOrderPage() {
       const existing = current.find((line) => line.product.id === product.id);
       if (existing) {
         return current.map((line) =>
-          line.product.id === product.id ? { ...line, quantity: line.quantity + pickedQuantity } : line,
+          line.product.id === product.id ? { ...line, quantity: clampQuantity(line.quantity + pickedQuantity) } : line,
         );
       }
-      return [...current, { product, quantity: pickedQuantity }];
+      return [...current, { product, quantity: clampQuantity(pickedQuantity) }];
     });
     setPickedProductId(undefined);
     setPickedQuantity(1);
@@ -130,7 +145,7 @@ export function NewOrderPage() {
 
   const updateQuantity = (productId: number, quantity: number | null) =>
     setLines((current) =>
-      current.map((line) => (line.product.id === productId ? { ...line, quantity: Math.max(1, quantity ?? 1) } : line)),
+      current.map((line) => (line.product.id === productId ? { ...line, quantity: clampQuantity(quantity) } : line)),
     );
 
   const onFinish = async (values: OrderForm) => {
@@ -174,8 +189,8 @@ export function NewOrderPage() {
                     placeholder="Ad, e-posta veya firma ile arayın"
                     filterOption={false}
                     loading={customers.loading}
-                    onSearch={(value) => void customers.search(value)}
-                    onFocus={() => customers.options.length === 0 && void customers.search('')}
+                    onSearch={customers.search}
+                    onFocus={() => customers.options.length === 0 && customers.search('')}
                     onChange={onCustomerChange}
                     notFoundContent="Müşteri bulunamadı"
                     options={customerOptions.map((c) => ({
@@ -203,8 +218,8 @@ export function NewOrderPage() {
                     filterOption={false}
                     value={pickedProductId}
                     loading={products.loading}
-                    onSearch={(value) => void products.search(value)}
-                    onFocus={() => products.options.length === 0 && void products.search('')}
+                    onSearch={products.search}
+                    onFocus={() => products.options.length === 0 && products.search('')}
                     onChange={setPickedProductId}
                     notFoundContent="Ürün bulunamadı"
                     options={products.options.map((p) => ({
@@ -214,6 +229,7 @@ export function NewOrderPage() {
                   />
                   <InputNumber
                     min={1}
+                    max={MAX_QUANTITY}
                     precision={0}
                     value={pickedQuantity}
                     onChange={(value) => setPickedQuantity(value ?? 1)}
@@ -262,6 +278,7 @@ export function NewOrderPage() {
                         <Space direction="vertical" size={0}>
                           <InputNumber
                             min={1}
+                            max={MAX_QUANTITY}
                             precision={0}
                             value={line.quantity}
                             onChange={(value) => updateQuantity(line.product.id, value)}
