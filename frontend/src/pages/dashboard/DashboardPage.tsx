@@ -1,4 +1,13 @@
-import { ArrowDownOutlined, ArrowUpOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ReloadOutlined,
+  WalletOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -19,6 +28,7 @@ import {
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from '@/api/client';
+import { StatIcon } from '@/components/StatIcon';
 import {
   DASHBOARD_KEY,
   changePercent,
@@ -122,12 +132,18 @@ export function DashboardPage() {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} xl={6}>
             <Card loading={summary.isPending}>
+              <StatIcon>
+                <WalletOutlined />
+              </StatIcon>
               <Statistic title="Bugünkü Satış" value={s ? formatCurrency(s.today_sales) : '–'} />
               {s ? <Change current={s.today_sales} previous={s.yesterday_sales} label="düne göre" /> : null}
             </Card>
           </Col>
           <Col xs={24} sm={12} xl={6}>
             <Card loading={summary.isPending}>
+              <StatIcon>
+                <CalendarOutlined />
+              </StatIcon>
               <Statistic title="Bu Ayki Satış" value={s ? formatCurrency(s.month_sales) : '–'} />
               {s ? <Change current={s.month_sales} previous={s.prev_month_sales} label="geçen aya göre" /> : null}
             </Card>
@@ -135,6 +151,9 @@ export function DashboardPage() {
           <Col xs={24} sm={12} xl={6}>
             <Link to="/orders?status=pending">
               <Card loading={summary.isPending} hoverable>
+                <StatIcon>
+                  <ClockCircleOutlined />
+                </StatIcon>
                 <Statistic title="Onay Bekleyen Sipariş" value={s?.pending_orders ?? '–'} groupSeparator="." />
                 <Typography.Text type="secondary">Siparişlere git</Typography.Text>
               </Card>
@@ -143,6 +162,9 @@ export function DashboardPage() {
           <Col xs={24} sm={12} xl={6}>
             <Link to="/stock/critical">
               <Card loading={summary.isPending} hoverable>
+                <StatIcon>
+                  <WarningOutlined />
+                </StatIcon>
                 <Statistic
                   title="Kritik Stoktaki Ürün"
                   value={s?.critical_stock_count ?? '–'}

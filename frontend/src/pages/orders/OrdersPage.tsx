@@ -12,6 +12,7 @@ import { OrderStatusTag } from '@/components/StatusTag';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { orderStatusLabels, paymentMethodLabels, type OrderStatus } from '@/utils/labels';
+import { colors } from '@/theme';
 import { tablePagination } from '@/utils/table';
 
 type Tab = OrderStatus | 'all';
@@ -135,7 +136,13 @@ export function OrdersPage() {
     return (
       <Space size={6}>
         {key === 'all' ? 'Tümü' : orderStatusLabels[key]}
-        <Badge count={count} showZero overflowCount={9999} color="#E5E7EB" style={{ color: '#4B5563' }} />
+        <Badge
+          count={count}
+          showZero
+          overflowCount={9999}
+          color={colors.border}
+          style={{ color: colors.textSecondary }}
+        />
       </Space>
     );
   };

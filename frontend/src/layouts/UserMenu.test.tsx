@@ -38,7 +38,7 @@ describe('UserMenu', () => {
   it('shows the user with a Turkish upper-case initial and role', () => {
     renderMenu();
 
-    expect(screen.getByText('İ')).toBeInTheDocument();
+    expect(screen.getByText('İY')).toBeInTheDocument();
     expect(screen.getByText('ilkay Yılmaz')).toBeInTheDocument();
     expect(screen.getByText('Yönetici')).toBeInTheDocument();
   });

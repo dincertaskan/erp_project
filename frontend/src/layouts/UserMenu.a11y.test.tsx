@@ -54,6 +54,9 @@ describe('UserMenu keyboard access', () => {
 
 describe('admin navigation wording', () => {
   it('uses the same name as the dashboard page title', () => {
-    expect(navigationForRole(adminNavigation, 'admin')[0]).toMatchObject({ path: '/dashboard', name: 'Genel Bakış' });
+    expect(navigationForRole(adminNavigation, 'admin')[0].items[0]).toMatchObject({
+      path: '/dashboard',
+      name: 'Genel Bakış',
+    });
   });
 });

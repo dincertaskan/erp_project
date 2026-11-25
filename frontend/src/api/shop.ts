@@ -86,5 +86,5 @@ export const availabilityText = (product: Pick<CatalogProduct, 'availability' | 
 export const availabilityColor: Record<Availability, string> = {
   in_stock: '#047857',
   low_stock: '#B45309',
-  out_of_stock: '#6B7280',
+  out_of_stock: '#64748B',
 };

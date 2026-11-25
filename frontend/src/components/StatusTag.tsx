@@ -35,8 +35,8 @@ const tones = {
   red: { color: '#B91C1C', background: '#FEF2F2', border: '#FECACA' },
   darkRed: { color: '#991B1B', background: '#FEE2E2', border: '#FCA5A5' },
   orange: { color: '#C2410C', background: '#FFF7ED', border: '#FED7AA' },
-  gray: { color: '#4B5563', background: '#F3F4F6', border: '#E5E7EB' },
-  indigo: { color: '#4338CA', background: '#EEF2FF', border: '#C7D2FE' },
+  gray: { color: '#475569', background: '#F1F5F9', border: '#E2E8F0' },
+  navy: { color: '#1E40AF', background: '#DBEAFE', border: '#BFDBFE' },
   cyan: { color: '#0E7490', background: '#ECFEFF', border: '#A5F3FC' },
 } satisfies Record<string, Tone>;
 
@@ -115,7 +115,7 @@ export function ActiveTag({ active }: { active: boolean }) {
 }
 
 const roleTone: Record<UserRole, Tone> = {
-  admin: tones.indigo,
+  admin: tones.navy,
   warehouse: tones.cyan,
   customer: tones.green,
 };
