@@ -133,6 +133,19 @@ def test_place_order_uses_server_prices_and_does_not_touch_stock(client, db, cus
     assert product.stock == 10
 
 
+def test_order_total_beyond_the_numeric_column_is_rejected(client, db, customer, make_product):
+    first = make_product(sale_price="2000000.00", stock=10_000)
+    second = make_product(sale_price="2000000.00", stock=10_000)
+
+    response = place(client, customer, [line(first, 3000), line(second, 3000)])
+
+    assert response.status_code == 422
+    assert response.json()["details"] == [
+        {"field": "items", "message": "Sipariş toplamı izin verilen üst sınırı aşıyor."}
+    ]
+    assert db.scalar(select(Order).where(Order.customer_id == customer.customer.id)) is None
+
+
 def test_changed_cart_blocks_the_order(client, db, customer, make_product):
     product = make_product(sale_price="120.00")
 

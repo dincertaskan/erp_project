@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.deps import require_roles
 from app.core.routing import SessionReleasingRoute
 from app.models import OrderStatus, User, UserRole
+from app.schemas.common import MAX_PAGE
 from app.schemas.report import OrderReport, SalesGroupBy, SalesReport, StockReport
 from app.services.operations_reports import (
     OrderReportService,
@@ -93,7 +94,7 @@ def order_report(
     date_from: date = Query(alias="from"),
     date_to: date = Query(alias="to"),
     status: list[OrderStatus] = Query(default=[]),
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, le=MAX_PAGE),
     page_size: int = Query(50, ge=1, le=200),
     format: ReportFormat = ReportFormat.JSON,
     _: User = Depends(admin_only),

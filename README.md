@@ -28,6 +28,12 @@ docker compose up -d --build            # backend açılırken veritabanı göç
 docker compose exec -e SEED_PASSWORD=Demo1234 backend python -m app.seed
 ```
 
+`backend/.env.example` içindeki `SECRET_KEY` yalnızca örnektir; en az 32 karakterlik rastgele bir değerle değiştirin. Üretmek için:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
 - Uygulama: http://localhost:5173
 - API: http://localhost:8000 (Swagger: http://localhost:8000/docs)
 - Sağlık kontrolü: http://localhost:8000/health
@@ -43,8 +49,9 @@ Veritabanını Docker ile açıp arka ucu yerelde çalıştırmak için:
 ```bash
 docker compose up -d db
 cd backend
+cp .env.example .env            # henüz yoksa; SECRET_KEY değerini değiştirin
 python -m venv .venv
-.venv/Scripts/activate          # Linux/macOS: source .venv/bin/activate
+source .venv/Scripts/activate   # Windows Git Bash; PowerShell: .venv\Scripts\Activate.ps1; Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt
 alembic upgrade head
 SEED_PASSWORD=Demo1234 python -m app.seed     # PowerShell: $env:SEED_PASSWORD="Demo1234"; python -m app.seed
@@ -102,7 +109,23 @@ Aktarım uygulamanın sipariş ve stok mantığını atlayıp verileri toplu yaz
 
 ## Testler ve kod denetimi
 
-Testler `TEST_DATABASE_URL` ile gösterilen ayrı bir veritabanında çalışır. Docker Compose, ilk açılışta `erp_test` veritabanını otomatik oluşturur.
+Testler `TEST_DATABASE_URL` ile gösterilen ayrı bir veritabanında çalışır. Docker Compose, `erp_test` veritabanını yalnızca veritabanı birimi (`pgdata`) ilk oluşturulurken otomatik oluşturur. Birim bu özellik eklenmeden önce oluşturulduysa veritabanını bir kez elle oluşturun:
+
+```bash
+docker compose exec db createdb -U erp erp_test
+```
+
+Arka uç testlerini çalıştırmanın önerilen yolu Docker'dır; testler CI ile aynı Python 3.12 sürümünde, `db` servisindeki `erp_test` veritabanına karşı çalışır. Kod ve testler konteynere canlı bağlanır; yalnızca `requirements*.txt` değişince `--build` ekleyin.
+
+```bash
+docker compose --profile test run --rm backend-test                       # tüm testler
+docker compose --profile test run --rm backend-test pytest --cov=app      # kapsam raporuyla
+docker compose --profile test run --rm --build backend-test               # bağımlılıklar değiştiyse
+```
+
+`backend/tests/test_scenarios.py` API düzeyinde senaryo testleridir: bir kullanıcının işini baştan sona HTTP çağrılarıyla yürütür, tarayıcı kullanmaz.
+
+Yerel sanal ortamda ve önyüzde:
 
 ```bash
 cd backend
@@ -125,10 +148,31 @@ cd frontend
 npm run test:coverage
 ```
 
+CI'da arka uç kapsamı `--cov-fail-under`, önyüz kapsamı `vite.config.ts` içindeki `coverage.thresholds` ile denetlenir; kapsam bu eşiklerin altına düşerse CI başarısız olur. CI ayrıca göçlerin modellerle uyumunu (`alembic check`) ve bağımlılıklardaki bilinen açıkları (`pip-audit`, `npm audit`) denetler.
+
+## Üretim kurulumu
+
+`docker-compose.prod.yml` önyüzü derleyip nginx ile sunar. nginx `/api/` isteklerini önekini kaldırarak arka uca iletir; veritabanı ve arka uç dışarıya port açmaz, servisler hata durumunda yeniden başlar.
+
+```bash
+# Kök dizindeki .env dosyasına (ya da ortama) yazın:
+#   POSTGRES_PASSWORD=<güçlü bir şifre>
+#   SECRET_KEY=<en az 32 karakter, yukarıdaki komutla üretin>
+#   HTTP_PORT=80                     (isteğe bağlı)
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec -e SEED_PASSWORD=... backend python -m app.seed   # isteğe bağlı demo verisi
+```
+
+- Uygulama: http://sunucu-adresi (`HTTP_PORT`, varsayılan 80)
+- `POSTGRES_PASSWORD` ve `SECRET_KEY` tanımlı değilse compose başlamaz.
+- HTTPS için önüne TLS sonlandıran bir ters vekil (ör. sunucudaki nginx ya da Caddy) koyun.
+- Geliştirme kurulumu (`docker-compose.yml`) değişmeden kullanılabilir; iki dosya aynı dizinde farklı proje adlarıyla da çalışabilir (`-p`).
+
 ## Dokümantasyon
 
 - [API özeti](docs/api.md): uç noktalar, roller ve hata kodları
 - [Kullanıcı kılavuzu](docs/kullanici-kilavuzu.md): rollere göre ekranlar ve adım adım işlemler
+- [Güvenlik kontrolü](docs/guvenlik-kontrolu.md): OWASP Top 10 incelemesi ve sonuçları
 - [Üçüncü taraf lisansları](docs/lisanslar.md)
 - [Deneyler](experiments/README.md) ve [deney sonuçları](experiments/results/README.md)
 

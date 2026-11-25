@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { App, Breadcrumb, Button, Card, Col, InputNumber, Result, Row, Space, Spin, Typography } from 'antd';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, errorMessage } from '@/api/client';
+import { ApiError, api, errorMessage } from '@/api/client';
 import type { CatalogProductDetail } from '@/api/shop';
 import { useCart } from '@/cart/useCart';
 import { CategoryTag } from '@/components/CategoryTag';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { formatCurrency } from '@/utils/format';
 import { AvailabilityText, ProductImage, ShopProductCard } from './ShopProductCard';
 
@@ -22,10 +23,13 @@ export function ShopProductPage() {
     data: product,
     error,
     isPending,
+    isFetching,
+    refetch,
   } = useQuery({
     queryKey: ['catalog', 'product', id],
     queryFn: async () => (await api.get<CatalogProductDetail>(`/catalog/products/${id}`)).data,
   });
+  usePageTitle(product?.name ?? 'Ürün');
 
   if (isPending) {
     return (
@@ -34,12 +38,23 @@ export function ShopProductPage() {
       </div>
     );
   }
-  if (error || !product) {
+  if (error) {
+    const notFound = error instanceof ApiError && error.status === 404;
     return (
       <Result
-        status="404"
-        title={errorMessage(error) || 'Bu ürün artık satışta değil.'}
-        extra={<Button onClick={() => navigate('/shop')}>Kataloğa Dön</Button>}
+        status={notFound ? '404' : 'error'}
+        title={notFound ? 'Bu ürün artık satışta değil.' : 'Ürün yüklenemedi'}
+        subTitle={notFound ? undefined : errorMessage(error)}
+        extra={
+          <Space>
+            {notFound ? null : (
+              <Button type="primary" onClick={() => void refetch()} loading={isFetching}>
+                Tekrar Dene
+              </Button>
+            )}
+            <Button onClick={() => navigate('/shop')}>Kataloğa Dön</Button>
+          </Space>
+        }
       />
     );
   }

@@ -3,15 +3,19 @@ import { api } from '@/api/client';
 
 export type DateRange = [Dayjs, Dayjs];
 
-export const rangePresets: { label: string; value: DateRange }[] = [
-  { label: 'Bu ay', value: [dayjs().startOf('month'), dayjs()] },
-  {
-    label: 'Geçen ay',
-    value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')],
-  },
-  { label: 'Son 3 ay', value: [dayjs().subtract(3, 'month').startOf('day'), dayjs()] },
-  { label: 'Bu yıl', value: [dayjs().startOf('year'), dayjs()] },
-];
+/** Hazır tarih aralıkları; sayfa uzun süre açık kalsa da "bugün" her çizimde yeniden hesaplanır. */
+export function getRangePresets(now: Dayjs = dayjs()): { label: string; value: DateRange }[] {
+  const lastMonth = now.subtract(1, 'month');
+  return [
+    { label: 'Bu ay', value: [now.startOf('month'), now] },
+    { label: 'Geçen ay', value: [lastMonth.startOf('month'), lastMonth.endOf('month')] },
+    { label: 'Son 3 ay', value: [now.subtract(3, 'month').startOf('day'), now] },
+    { label: 'Bu yıl', value: [now.startOf('year'), now] },
+  ];
+}
+
+/** Varsayılan aralık: bu ay */
+export const defaultRange = (): DateRange => getRangePresets()[0].value;
 
 export const rangeParams = (range: DateRange) => ({
   from: range[0].format('YYYY-MM-DD'),

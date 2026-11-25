@@ -60,6 +60,18 @@ async function visit(path: string) {
   return router;
 }
 
+// Sayfa grupları geç yüklenir; ilk testin zaman aşımına düşmemesi için parçalar önceden yüklenir.
+beforeAll(async () => {
+  await Promise.all([
+    import('./adminPages'),
+    import('./shopPages'),
+    import('./authPages'),
+    import('./accountPages'),
+    import('@/pages/dashboard/DashboardPage'),
+    import('@/pages/reports/ReportsPage'),
+  ]);
+}, 30_000);
+
 beforeEach(() => {
   vi.restoreAllMocks();
   auth.signedOut = false;

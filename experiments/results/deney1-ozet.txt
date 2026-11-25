@@ -1,17 +1,109 @@
-Özet (koşu ortalamaları):
-                         runs  oversell_mean  lost_updates_mean  approved_mean  failure_rate_mean  mean_ms   p95_ms
-strategy    concurrency                                                                                            
-none        10             30            5.0               8.37          10.00               0.00   192.24   245.54
-            50             30           25.0              47.00          50.00               0.00   814.71  1104.53
-            100            30           50.0              95.87         100.00               0.00  1015.86  1405.53
-optimistic  10             30            0.0               0.00           4.90               0.26   134.84   172.94
-            50             30            0.0               0.00          10.03               0.80   520.83   734.48
-            100            30            0.0               0.00          12.47               0.88  1082.25  1596.93
-pessimistic 10             30            0.0               0.00           5.00               0.00    79.84    92.24
-            50             30            0.0               0.00          25.00               0.00   309.17   379.67
-            100            30            0.0               0.00          50.00               0.00   674.71   806.74
+Not: p95_ms, koşudaki N isteğin p95 süresidir. Bu CSV, sıralı listede round(0,95·N)'inci değeri
+alan eski formülle üretildi: N=10'da bu değer koşunun en yavaş isteğine (maksimum) eşittir;
+N=50'de 48./50, N=100'de 95./100 değerdir. deney1.py artık doğrusal enterpolasyonlu yüzdelik
+(numpy.percentile, linear) kullanır. Mevcut koşular yeniden hesaplanamaz (istek düzeyinde süre
+saklanmadı); bu yüzden p95 yanında koşu ortalama süresi (mean_ms) de test edilmiştir.
 
-Stratejiler arası p95 yanıt süresi karşılaştırması (her eşzamanlılık düzeyi ayrı):
-  N=10: Kruskal-Wallis H=53.80 p=0.0000 · ANOVA F=22.49 p=0.0000
-  N=50: Kruskal-Wallis H=72.79 p=0.0000 · ANOVA F=61.35 p=0.0000
-  N=100: Kruskal-Wallis H=66.89 p=0.0000 · ANOVA F=28.46 p=0.0000
+Özet (koşu düzeyinde; süreler ms; IQR = 1.–3. çeyrek):
+   strateji   N  kosu  onay_ort  basari_orani  fazla_satis  kayip_guncelleme  basarisiz_oran  ort_ms_ort  ort_ms_medyan  p95_ort  p95_medyan   p95_IQR
+       none  10    30     10.00         1.000          5.0              8.37            0.00       192.2          144.6    245.5       180.3   166–234
+       none  50    30     50.00         1.000         25.0             47.00            0.00       814.7          702.4   1104.5       972.9  847–1103
+       none 100    30    100.00         1.000         50.0             95.87            0.00      1015.9          802.9   1405.5      1123.0 1071–1335
+pessimistic  10    30      5.00         0.500          0.0              0.00            0.00        79.8           72.4     92.2        83.0    70–110
+pessimistic  50    30     25.00         0.500          0.0              0.00            0.00       309.2          295.8    379.7       365.9   353–402
+pessimistic 100    30     50.00         0.500          0.0              0.00            0.00       674.7          651.5    806.7       784.6   765–847
+ optimistic  10    30      4.90         0.490          0.0              0.00            0.26       134.8          137.1    172.9       172.9   149–198
+ optimistic  50    30     10.03         0.201          0.0              0.00            0.80       520.8          509.6    734.5       731.7   653–791
+ optimistic 100    30     12.47         0.125          0.0              0.00            0.88      1082.3         1064.8   1596.9      1548.1 1489–1667
+
+Yalnızca başarılı onayların süresi ve saniyede başarılı onay sayısı bu CSV'den hesaplanamaz:
+istek düzeyinde süreler ve koşu süresi saklanmadı. Süreler, stratejiye göre farklı oranda hızlı
+reddedilen istekleri de içerir (pessimistic: stok yetersiz, optimistic: 409); süre farkları
+'aynı işi daha hızlı yapma' olarak yorumlanmamalıdır.
+
+Stratejiler arası p95 süresi karşılaştırması (her N ayrı; tüm koşular):
+  N=10: Kruskal-Wallis H=53.80 p=2.1e-12 ε²=0.60 · ANOVA F=22.49 p=1.3e-08
+      none – pessimistic: Dunn z=+6.92 p_Holm=1.3e-11 · Cliff's δ=+0.96 (medyan 180 / 83 ms)
+      none – optimistic: Dunn z=+1.36 p_Holm=0.17 · Cliff's δ=+0.28 (medyan 180 / 173 ms)
+      pessimistic – optimistic: Dunn z=-5.56 p_Holm=5.4e-08 · Cliff's δ=-0.91 (medyan 83 / 173 ms)
+  N=50: Kruskal-Wallis H=72.79 p=1.6e-16 ε²=0.81 · ANOVA F=61.35 p=2.4e-17
+      none – pessimistic: Dunn z=+8.50 p_Holm=5.5e-17 · Cliff's δ=+1.00 (medyan 973 / 366 ms)
+      none – optimistic: Dunn z=+3.67 p_Holm=0.00025 · Cliff's δ=+0.82 (medyan 973 / 732 ms)
+      pessimistic – optimistic: Dunn z=-4.84 p_Holm=2.6e-06 · Cliff's δ=-1.00 (medyan 366 / 732 ms)
+  N=100: Kruskal-Wallis H=66.89 p=3e-15 ε²=0.75 · ANOVA F=28.46 p=3.1e-10
+      none – pessimistic: Dunn z=+5.30 p_Holm=2.3e-07 · Cliff's δ=+1.00 (medyan 1123 / 785 ms)
+      none – optimistic: Dunn z=-2.75 p_Holm=0.006 · Cliff's δ=-0.62 (medyan 1123 / 1548 ms)
+      pessimistic – optimistic: Dunn z=-8.05 p_Holm=2.6e-15 · Cliff's δ=-1.00 (medyan 785 / 1548 ms)
+
+Stratejiler arası ortalama süre karşılaştırması (her N ayrı; tüm koşular):
+  N=10: Kruskal-Wallis H=51.35 p=7.1e-12 ε²=0.57 · ANOVA F=21.05 p=3.5e-08
+      none – pessimistic: Dunn z=+6.84 p_Holm=2.4e-11 · Cliff's δ=+0.94 (medyan 145 / 72 ms)
+      none – optimistic: Dunn z=+1.57 p_Holm=0.12 · Cliff's δ=+0.32 (medyan 145 / 137 ms)
+      pessimistic – optimistic: Dunn z=-5.27 p_Holm=2.7e-07 · Cliff's δ=-0.87 (medyan 72 / 137 ms)
+  N=50: Kruskal-Wallis H=76.57 p=2.4e-17 ε²=0.86 · ANOVA F=51.55 p=1.7e-15
+      none – pessimistic: Dunn z=+8.75 p_Holm=6.6e-18 · Cliff's δ=+1.00 (medyan 702 / 296 ms)
+      none – optimistic: Dunn z=+4.15 p_Holm=3.3e-05 · Cliff's δ=+0.93 (medyan 702 / 510 ms)
+      pessimistic – optimistic: Dunn z=-4.60 p_Holm=8.6e-06 · Cliff's δ=-1.00 (medyan 296 / 510 ms)
+  N=100: Kruskal-Wallis H=59.93 p=9.7e-14 ε²=0.67 · ANOVA F=13.65 p=7e-06
+      none – pessimistic: Dunn z=+4.90 p_Holm=1.9e-06 · Cliff's δ=+0.88 (medyan 803 / 652 ms)
+      none – optimistic: Dunn z=-2.74 p_Holm=0.0062 · Cliff's δ=-0.56 (medyan 803 / 1065 ms)
+      pessimistic – optimistic: Dunn z=-7.64 p_Holm=6.5e-14 · Cliff's δ=-1.00 (medyan 652 / 1065 ms)
+
+Isınma kontrolü (p95, ms): ilk koşu · ilk 5 koşu · kalan koşuların medyanı · Tukey üst sınırı
+  none         N=10     594 · [594 437 728 513 179] · 179 · 334 → aykırı
+  none         N=50    1579 · [1579 1005 1014 816 866] · 960 · 1379 → aykırı
+  none         N=100   1880 · [1880 3987 3685 1795 1815] · 1119 · 1622 → aykırı
+  pessimistic  N=10     120 · [120 112 92 134 189] · 81 · 168 → -
+  pessimistic  N=50     424 · [424 363 378 356 369] · 363 · 438 → -
+  pessimistic  N=100    888 · [888 928 780 745 824] · 782 · 937 → -
+  optimistic   N=10     115 · [115 157 186 134 227] · 174 · 267 → -
+  optimistic   N=50     792 · [792 783 891 668 767] · 725 · 992 → -
+  optimistic   N=100   1536 · [1536 1447 1485 1537 1437] · 1558 · 1960 → -
+
+Duyarlılık analizi: her koşulun ilk koşusu çıkarıldı
+   strateji   N  kosu  p95_ort  p95_medyan   p95_IQR
+       none  10    29    233.5       179.3   165–232
+       none  50    29   1088.2       959.6  844–1058
+       none 100    29   1389.2      1119.2 1070–1291
+pessimistic  10    29     91.3        81.2    70–109
+pessimistic  50    29    378.2       363.2   353–387
+pessimistic 100    29    803.9       782.1   764–833
+ optimistic  10    29    174.9       174.0   154–199
+ optimistic  50    29    732.5       724.6   649–786
+ optimistic 100    29   1599.0      1558.5 1485–1675
+  N=10: Kruskal-Wallis H=51.79 p=5.7e-12 ε²=0.59 · ANOVA F=22.53 p=1.5e-08
+      none – pessimistic: Dunn z=+6.71 p_Holm=6e-11 · Cliff's δ=+0.95 (medyan 179 / 81 ms)
+      none – optimistic: Dunn z=+1.09 p_Holm=0.27 · Cliff's δ=+0.23 (medyan 179 / 174 ms)
+      pessimistic – optimistic: Dunn z=-5.61 p_Holm=3.9e-08 · Cliff's δ=-0.92 (medyan 81 / 174 ms)
+  N=50: Kruskal-Wallis H=70.10 p=6e-16 ε²=0.81 · ANOVA F=57.38 p=1.9e-16
+      none – pessimistic: Dunn z=+8.34 p_Holm=2.2e-16 · Cliff's δ=+1.00 (medyan 960 / 363 ms)
+      none – optimistic: Dunn z=+3.57 p_Holm=0.00036 · Cliff's δ=+0.82 (medyan 960 / 725 ms)
+      pessimistic – optimistic: Dunn z=-4.77 p_Holm=3.6e-06 · Cliff's δ=-1.00 (medyan 363 / 725 ms)
+  N=100: Kruskal-Wallis H=65.91 p=4.9e-15 ε²=0.76 · ANOVA F=26.96 p=9e-10
+      none – pessimistic: Dunn z=+5.09 p_Holm=7e-07 · Cliff's δ=+1.00 (medyan 1119 / 782 ms)
+      none – optimistic: Dunn z=-2.93 p_Holm=0.0034 · Cliff's δ=-0.67 (medyan 1119 / 1558 ms)
+      pessimistic – optimistic: Dunn z=-8.02 p_Holm=3.1e-15 · Cliff's δ=-1.00 (medyan 782 / 1558 ms)
+
+Duyarlılık analizi: her koşulun ilk 5 koşusu çıkarıldı
+   strateji   N  kosu  p95_ort  p95_medyan   p95_IQR
+       none  10    25    196.6       177.7   162–191
+       none  50    25   1114.2       959.6  844–1119
+       none 100    25   1160.1      1109.1 1062–1204
+pessimistic  10    25     84.8        78.3    70–101
+pessimistic  50    25    380.0       363.2   352–407
+pessimistic 100    25    801.5       782.1   764–833
+ optimistic  10    25    174.7       174.0   154–199
+ optimistic  50    25    725.3       717.1   646–786
+ optimistic 100    25   1618.7      1570.6 1516–1712
+  N=10: Kruskal-Wallis H=48.45 p=3e-11 ε²=0.65 · ANOVA F=47.29 p=7.7e-14
+      none – pessimistic: Dunn z=+6.31 p_Holm=8.5e-10 · Cliff's δ=+1.00 (medyan 178 / 78 ms)
+      none – optimistic: Dunn z=+0.60 p_Holm=0.55 · Cliff's δ=+0.14 (medyan 178 / 174 ms)
+      pessimistic – optimistic: Dunn z=-5.70 p_Holm=2.3e-08 · Cliff's δ=-0.97 (medyan 78 / 174 ms)
+  N=50: Kruskal-Wallis H=60.60 p=6.9e-14 ε²=0.81 · ANOVA F=47.04 p=8.6e-14
+      none – pessimistic: Dunn z=+7.76 p_Holm=2.5e-14 · Cliff's δ=+1.00 (medyan 960 / 363 ms)
+      none – optimistic: Dunn z=+3.35 p_Holm=0.00079 · Cliff's δ=+0.83 (medyan 960 / 717 ms)
+      pessimistic – optimistic: Dunn z=-4.41 p_Holm=2.1e-05 · Cliff's δ=-1.00 (medyan 363 / 717 ms)
+  N=100: Kruskal-Wallis H=63.36 p=1.7e-14 ε²=0.85 · ANOVA F=193.25 p=1.1e-29
+      none – pessimistic: Dunn z=+4.21 p_Holm=5.1e-05 · Cliff's δ=+1.00 (medyan 1109 / 782 ms)
+      none – optimistic: Dunn z=-3.74 p_Holm=0.00018 · Cliff's δ=-0.92 (medyan 1109 / 1571 ms)
+      pessimistic – optimistic: Dunn z=-7.96 p_Holm=5.4e-15 · Cliff's δ=-1.00 (medyan 782 / 1571 ms)

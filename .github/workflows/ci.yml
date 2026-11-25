@@ -5,9 +5,15 @@ on:
   push:
     branches: [main, dev]
 
+# Aynı PR'a yeni commit gelince önceki çalışma iptal edilir; main/dev push'ları tamamlanır.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -42,11 +48,22 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
+      - name: Migrations
+        # Göçler sıfırdan uygulanır ve modellerle göçler arasında fark kalmadığı denetlenir.
+        run: |
+          alembic upgrade head
+          alembic check
+      - name: Dependency audit
+        # Bilinen ve kabul edilen açıklar gerekçesiyle buraya eklenir: --ignore-vuln <ID>
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
       - name: Test
-        run: pytest
+        run: pytest --cov=app --cov-report=term --cov-fail-under=93
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -59,6 +76,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
       - name: Lint
         run: |
           npm run lint
@@ -66,6 +85,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Test
-        run: npm test
+        # Kapsam eşikleri vite.config.ts içindedir
+        run: npm run test:coverage
       - name: Build
         run: npx vite build
