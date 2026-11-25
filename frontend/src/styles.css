@@ -684,24 +684,24 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* İstatistik kartlarının sağ üstünde süs amaçlı açık mavi rozet */
-.ant-card:has(> .ant-card-body > .ant-statistic:first-child) > .ant-card-body {
+/* İstatistik kartlarının sağ üstünde süs amaçlı açık mavi rozet (StatIcon) */
+.ant-card-body:has(> .stat-icon) {
   position: relative;
 }
 
-.ant-card:has(> .ant-card-body > .ant-statistic:first-child) > .ant-card-body::after {
-  content: '';
+.stat-icon {
   position: absolute;
   top: 20px;
   right: 20px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--c-primary-soft);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 17 9 11 13 15 21 7'/%3E%3Cpolyline points='15 7 21 7 21 13'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 18px;
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
   pointer-events: none;
 }
 
