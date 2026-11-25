@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError, errorMessage } from '@/api/client';
+import { invalidateStock } from '@/api/stock';
 import type { Page, ProductDetail, StockMovement } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { FullPageSpinner } from '@/auth/guards';
@@ -75,7 +76,8 @@ export function ProductDetailPage() {
     try {
       await api.patch(`/products/${product.id}/status`, { is_active: isActive });
       message.success(isActive ? 'Ürün aktifleştirildi.' : 'Ürün pasife alındı.');
-      refresh();
+      // Ürün detayı da ['products'] altında olduğu için birlikte yenilenir.
+      invalidateStock(queryClient);
     } catch (err) {
       message.error(errorMessage(err));
     }

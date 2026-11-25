@@ -11,6 +11,9 @@ export function useCriticalCount(enabled = true) {
     queryFn: async () => (await api.get<{ count: number }>('/stock/critical/count')).data.count,
     enabled,
     staleTime: 30 * 1000,
+    // Başka kullanıcıların işlemleri de rozete yansısın.
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
 

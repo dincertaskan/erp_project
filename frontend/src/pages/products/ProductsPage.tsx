@@ -1,10 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
+import { useQueryClient } from '@tanstack/react-query';
 import { App, Button, Popconfirm } from 'antd';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toSortParam, useCategories } from '@/api/catalog';
 import { api, errorMessage } from '@/api/client';
+import { invalidateStock } from '@/api/stock';
 import type { Page, Product } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { CategoryTag } from '@/components/CategoryTag';
@@ -32,6 +34,7 @@ export function ProductsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const actionRef = useRef<ActionType>(null);
   const { data: categories = [] } = useCategories();
   const [editing, setEditing] = useState<Product | null>(null);
@@ -46,6 +49,8 @@ export function ProductsPage() {
     try {
       await api.patch(`/products/${product.id}/status`, { is_active: isActive });
       message.success(isActive ? 'Ürün aktifleştirildi.' : 'Ürün pasife alındı.');
+      // Pasif ürünler kritik stok sayısına girmez; rozet ve özet yenilenir.
+      invalidateStock(queryClient);
       actionRef.current?.reload();
     } catch (err) {
       message.error(errorMessage(err));
