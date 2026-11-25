@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/api/client';
 import { colors } from '@/theme';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { OrderReportTab } from './OrderReportTab';
+import { ReportError } from './ReportError';
 import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
 import { StockReportTab } from './StockReportTab';
 
@@ -137,6 +138,10 @@ export function ReportsPage() {
         </Col>
       </Row>
 
+      {report.isError ? (
+        <ReportError error={report.error} onRetry={() => void report.refetch()} retrying={report.isFetching} />
+      ) : null}
+
       {timeGrouped && hasData ? (
         <Card title="Ciro">
           <Column
@@ -155,55 +160,57 @@ export function ReportsPage() {
         </Card>
       ) : null}
 
-      <Card styles={{ body: { padding: 0 } }}>
-        <Table<SalesRow>
-          rowKey={(row) => row.period ?? row.label}
-          loading={report.isPending}
-          dataSource={hasData ? rows : []}
-          pagination={rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false}
-          scroll={{ x: 820 }}
-          locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
-          columns={[
-            { title: groupOptions.find((o) => o.value === applied.groupBy)?.label, dataIndex: 'label' },
-            { title: 'Sipariş Sayısı', dataIndex: 'order_count', align: 'right', render: formatNumber },
-            { title: 'Satılan Adet', dataIndex: 'quantity', align: 'right', render: formatNumber },
-            { title: 'Ciro', dataIndex: 'revenue', align: 'right', render: money },
-            {
-              title: (
-                <Tooltip title="Ürünlerin güncel maliyetiyle hesaplanır">
-                  <span>Maliyet</span>
-                </Tooltip>
-              ),
-              dataIndex: 'cost',
-              align: 'right',
-              render: money,
-            },
-            { title: 'Brüt Kâr', dataIndex: 'gross_profit', align: 'right', render: money },
-          ]}
-          summary={() =>
-            totals && hasData ? (
-              <Table.Summary.Row style={{ fontWeight: 600 }}>
-                <Table.Summary.Cell index={0}>Toplam</Table.Summary.Cell>
-                <Table.Summary.Cell index={1} align="right">
-                  {formatNumber(totals.order_count)}
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} align="right">
-                  {formatNumber(totals.quantity)}
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={3} align="right">
-                  {money(totals.revenue)}
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={4} align="right">
-                  {money(totals.cost)}
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={5} align="right">
-                  {money(totals.gross_profit)}
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            ) : null
-          }
-        />
-      </Card>
+      {report.isError ? null : (
+        <Card styles={{ body: { padding: 0 } }}>
+          <Table<SalesRow>
+            rowKey={(row) => row.period ?? row.label}
+            loading={report.isPending}
+            dataSource={hasData ? rows : []}
+            pagination={rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false}
+            scroll={{ x: 820 }}
+            locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
+            columns={[
+              { title: groupOptions.find((o) => o.value === applied.groupBy)?.label, dataIndex: 'label' },
+              { title: 'Sipariş Sayısı', dataIndex: 'order_count', align: 'right', render: formatNumber },
+              { title: 'Satılan Adet', dataIndex: 'quantity', align: 'right', render: formatNumber },
+              { title: 'Ciro', dataIndex: 'revenue', align: 'right', render: money },
+              {
+                title: (
+                  <Tooltip title="Ürünlerin güncel maliyetiyle hesaplanır">
+                    <span>Maliyet</span>
+                  </Tooltip>
+                ),
+                dataIndex: 'cost',
+                align: 'right',
+                render: money,
+              },
+              { title: 'Brüt Kâr', dataIndex: 'gross_profit', align: 'right', render: money },
+            ]}
+            summary={() =>
+              totals && hasData ? (
+                <Table.Summary.Row style={{ fontWeight: 600 }}>
+                  <Table.Summary.Cell index={0}>Toplam</Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} align="right">
+                    {formatNumber(totals.order_count)}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} align="right">
+                    {formatNumber(totals.quantity)}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={3} align="right">
+                    {money(totals.revenue)}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={4} align="right">
+                    {money(totals.cost)}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={5} align="right">
+                    {money(totals.gross_profit)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              ) : null
+            }
+          />
+        </Card>
+      )}
     </Space>
   );
 

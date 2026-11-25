@@ -9,6 +9,7 @@ import { StockStatusLabel } from '@/components/StatusTag';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import type { StockStatus } from '@/utils/labels';
 import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
+import { ReportError } from './ReportError';
 
 interface StockRow {
   product_id: number;
@@ -113,40 +114,44 @@ export function StockReportTab() {
         </Col>
       </Row>
 
-      <Card styles={{ body: { padding: 0 } }}>
-        <Table<StockRow>
-          rowKey="product_id"
-          loading={report.isPending}
-          dataSource={rows}
-          pagination={rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false}
-          scroll={{ x: 1000 }}
-          locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
-          columns={[
-            { title: 'SKU', dataIndex: 'sku', width: 110 },
-            {
-              title: 'Ürün',
-              dataIndex: 'name',
-              render: (_, row) => <Link to={`/products/${row.product_id}`}>{row.name}</Link>,
-            },
-            { title: 'Kategori', dataIndex: 'category', width: 150 },
-            { title: 'Dönem Başı', dataIndex: 'opening_stock', align: 'right', render: formatNumber },
-            { title: 'Giriş', dataIndex: 'stock_in', align: 'right', render: formatNumber },
-            { title: 'Çıkış', dataIndex: 'stock_out', align: 'right', render: formatNumber },
-            { title: 'Dönem Sonu', dataIndex: 'closing_stock', align: 'right', render: formatNumber },
-            {
-              title: 'Stok Değeri',
-              dataIndex: 'stock_value',
-              align: 'right',
-              render: (value: string) => <span className="tabular-nums">{formatCurrency(value)}</span>,
-            },
-            {
-              title: 'Durum',
-              dataIndex: 'status',
-              render: (value: string) => <StockStatusLabel status={statusByLabel[value]} />,
-            },
-          ]}
-        />
-      </Card>
+      {report.isError ? (
+        <ReportError error={report.error} onRetry={() => void report.refetch()} retrying={report.isFetching} />
+      ) : (
+        <Card styles={{ body: { padding: 0 } }}>
+          <Table<StockRow>
+            rowKey="product_id"
+            loading={report.isPending}
+            dataSource={rows}
+            pagination={rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false}
+            scroll={{ x: 1000 }}
+            locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
+            columns={[
+              { title: 'SKU', dataIndex: 'sku', width: 110 },
+              {
+                title: 'Ürün',
+                dataIndex: 'name',
+                render: (_, row) => <Link to={`/products/${row.product_id}`}>{row.name}</Link>,
+              },
+              { title: 'Kategori', dataIndex: 'category', width: 150 },
+              { title: 'Dönem Başı', dataIndex: 'opening_stock', align: 'right', render: formatNumber },
+              { title: 'Giriş', dataIndex: 'stock_in', align: 'right', render: formatNumber },
+              { title: 'Çıkış', dataIndex: 'stock_out', align: 'right', render: formatNumber },
+              { title: 'Dönem Sonu', dataIndex: 'closing_stock', align: 'right', render: formatNumber },
+              {
+                title: 'Stok Değeri',
+                dataIndex: 'stock_value',
+                align: 'right',
+                render: (value: string) => <span className="tabular-nums">{formatCurrency(value)}</span>,
+              },
+              {
+                title: 'Durum',
+                dataIndex: 'status',
+                render: (value: string) => <StockStatusLabel status={statusByLabel[value]} />,
+              },
+            ]}
+          />
+        </Card>
+      )}
     </Space>
   );
 }

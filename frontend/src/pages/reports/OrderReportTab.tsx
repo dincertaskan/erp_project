@@ -8,6 +8,7 @@ import { OrderStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { orderStatusLabels, type OrderStatus } from '@/utils/labels';
 import { downloadReport, defaultRange, getRangePresets, rangeParams, type DateRange } from './reportShared';
+import { ReportError } from './ReportError';
 
 interface OrderRow {
   id: number;
@@ -110,43 +111,51 @@ export function OrderReportTab() {
         </Space>
       </Card>
 
-      <Card styles={{ body: { padding: 0 } }}>
-        <Table<OrderRow>
-          rowKey="id"
-          loading={report.isPending}
-          dataSource={report.data?.rows ?? []}
-          scroll={{ x: 1200 }}
-          locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
-          pagination={{
-            current: page,
-            pageSize: PAGE_SIZE,
-            total,
-            showSizeChanger: false,
-            hideOnSinglePage: true,
-            onChange: setPage,
-          }}
-          columns={[
-            {
-              title: 'Sipariş Kodu',
-              dataIndex: 'order_code',
-              render: (_, row) => <Link to={`/orders/${row.id}`}>{row.order_code}</Link>,
-            },
-            { title: 'Tarih', dataIndex: 'created_at', render: formatDateTime },
-            { title: 'Müşteri', dataIndex: 'customer' },
-            { title: 'Kalem', dataIndex: 'item_count', align: 'right' },
-            {
-              title: 'Tutar',
-              dataIndex: 'total_amount',
-              align: 'right',
-              render: (value: string) => <span className="tabular-nums">{formatCurrency(value)}</span>,
-            },
-            { title: 'Durum', dataIndex: 'status', render: (value: OrderStatus) => <OrderStatusTag status={value} /> },
-            { title: 'Onay', dataIndex: 'approved_at', render: formatDateTime },
-            { title: 'Kargo', dataIndex: 'shipped_at', render: formatDateTime },
-            { title: 'Teslim', dataIndex: 'completed_at', render: formatDateTime },
-          ]}
-        />
-      </Card>
+      {report.isError ? (
+        <ReportError error={report.error} onRetry={() => void report.refetch()} retrying={report.isFetching} />
+      ) : (
+        <Card styles={{ body: { padding: 0 } }}>
+          <Table<OrderRow>
+            rowKey="id"
+            loading={report.isPending}
+            dataSource={report.data?.rows ?? []}
+            scroll={{ x: 1200 }}
+            locale={{ emptyText: <Empty description="Seçilen aralıkta kayıt yok." /> }}
+            pagination={{
+              current: page,
+              pageSize: PAGE_SIZE,
+              total,
+              showSizeChanger: false,
+              hideOnSinglePage: true,
+              onChange: setPage,
+            }}
+            columns={[
+              {
+                title: 'Sipariş Kodu',
+                dataIndex: 'order_code',
+                render: (_, row) => <Link to={`/orders/${row.id}`}>{row.order_code}</Link>,
+              },
+              { title: 'Tarih', dataIndex: 'created_at', render: formatDateTime },
+              { title: 'Müşteri', dataIndex: 'customer' },
+              { title: 'Kalem', dataIndex: 'item_count', align: 'right' },
+              {
+                title: 'Tutar',
+                dataIndex: 'total_amount',
+                align: 'right',
+                render: (value: string) => <span className="tabular-nums">{formatCurrency(value)}</span>,
+              },
+              {
+                title: 'Durum',
+                dataIndex: 'status',
+                render: (value: OrderStatus) => <OrderStatusTag status={value} />,
+              },
+              { title: 'Onay', dataIndex: 'approved_at', render: formatDateTime },
+              { title: 'Kargo', dataIndex: 'shipped_at', render: formatDateTime },
+              { title: 'Teslim', dataIndex: 'completed_at', render: formatDateTime },
+            ]}
+          />
+        </Card>
+      )}
     </Space>
   );
 }
