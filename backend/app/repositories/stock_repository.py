@@ -7,6 +7,7 @@ from sqlalchemy import Float, cast, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Order, Product, StockMovement, StockMovementType
+from app.repositories.search import contains_pattern
 from app.schemas.stock import MovementFilters
 
 CRITICAL = Product.stock < Product.min_stock
@@ -30,7 +31,7 @@ class StockRepository:
             query = query.where(StockMovement.user_id == filters.user_id)
         if filters.order_code:
             query = query.join(Order, Order.id == StockMovement.order_id).where(
-                Order.order_code.ilike(f"%{filters.order_code}%")
+                Order.order_code.ilike(contains_pattern(filters.order_code))
             )
         total = self.db.scalar(select(func.count()).select_from(query.subquery()))
         items = self.db.scalars(

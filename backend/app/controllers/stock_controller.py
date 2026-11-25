@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -7,7 +5,7 @@ from app.core.database import get_db
 from app.core.deps import require_roles
 from app.core.routing import SessionReleasingRoute
 from app.models import StockMovementType, User, UserRole
-from app.schemas.common import Page, PageParams
+from app.schemas.common import BusinessDateTime, Page, PageParams
 from app.schemas.stock import (
     CriticalCount,
     CriticalProductOut,
@@ -33,8 +31,8 @@ def record_movement(data: StockMovementRequest, actor: User = Depends(staff), db
 @router.get("/movements", response_model=Page[MovementListItem])
 def list_movements(
     page: PageParams = Depends(),
-    date_from: datetime | None = Query(None, alias="from"),
-    date_to: datetime | None = Query(None, alias="to"),
+    date_from: BusinessDateTime | None = Query(None, alias="from"),
+    date_to: BusinessDateTime | None = Query(None, alias="to"),
     product_id: int | None = None,
     type: list[StockMovementType] = Query(default=[]),
     user_id: int | None = None,

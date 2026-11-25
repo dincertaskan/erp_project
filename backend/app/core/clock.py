@@ -11,6 +11,11 @@ def now() -> datetime:
     return datetime.now(BUSINESS_TZ)
 
 
+def as_business_time(moment: datetime) -> datetime:
+    """Saat dilimi belirtilmemiş zaman İstanbul saati kabul edilir (UTC değil)."""
+    return moment.replace(tzinfo=BUSINESS_TZ) if moment.tzinfo is None else moment
+
+
 def start_of_day(moment: datetime) -> datetime:
     return moment.astimezone(BUSINESS_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
 
