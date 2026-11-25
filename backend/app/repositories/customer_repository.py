@@ -8,6 +8,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Customer, Order, OrderStatus
+from app.repositories.search import contains_pattern, escape_like
 from app.schemas.customer import CustomerSort
 
 # Karar 6: ciroya yalnızca onaylanmış ve iptal edilmemiş siparişler girer.
@@ -56,7 +57,7 @@ class CustomerRepository:
 
     def _filtered(self, query: Select, filters: CustomerFilters) -> Select:
         if filters.search:
-            pattern = f"%{filters.search}%"
+            pattern = contains_pattern(filters.search)
             query = query.where(
                 or_(
                     Customer.full_name.ilike(pattern),
@@ -66,7 +67,7 @@ class CustomerRepository:
                 )
             )
         if filters.city:
-            query = query.where(Customer.city.ilike(filters.city))
+            query = query.where(Customer.city.ilike(escape_like(filters.city)))
         if filters.is_active is not None:
             query = query.where(Customer.is_active.is_(filters.is_active))
         if filters.has_account is not None:

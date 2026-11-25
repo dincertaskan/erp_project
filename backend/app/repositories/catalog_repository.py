@@ -7,6 +7,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Category, Product, StockMovement, StockMovementType
+from app.repositories.search import contains_pattern, escape_like
 from app.schemas.catalog import ProductSort, StockStatus
 
 
@@ -31,7 +32,7 @@ class CategoryRepository:
             active_products, active_products.c.category_id == Category.id
         )
         if search:
-            query = query.where(Category.name.ilike(f"%{search}%"))
+            query = query.where(Category.name.ilike(contains_pattern(search)))
         if is_active is not None:
             query = query.where(Category.is_active.is_(is_active))
         return [(row[0], row[1]) for row in self.db.execute(query.order_by(Category.name)).all()]
@@ -53,7 +54,7 @@ class ProductRepository:
         return self.db.scalar(select(Product).where(Product.sku == sku))
 
     def skus_with_prefix(self, prefix: str) -> list[str]:
-        return list(self.db.scalars(select(Product.sku).where(Product.sku.like(f"{prefix}-%"))).all())
+        return list(self.db.scalars(select(Product.sku).where(Product.sku.like(f"{escape_like(prefix)}-%"))).all())
 
     def list(
         self,
@@ -69,7 +70,7 @@ class ProductRepository:
     ) -> tuple[list[Product], int]:
         query: Select = select(Product)
         if search:
-            pattern = f"%{search}%"
+            pattern = contains_pattern(search)
             query = query.where(or_(Product.name.ilike(pattern), Product.sku.ilike(pattern)))
         if category_ids:
             query = query.where(Product.category_id.in_(category_ids))

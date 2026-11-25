@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, RecordSource, StockMovement
 from app.models.order import ORDER_CODE_SEQUENCE
+from app.repositories.search import contains_pattern
 
 
 def item_count_column():
@@ -44,7 +45,7 @@ class OrderRepository:
         if with_status and filters.statuses is not None:
             query = query.where(Order.status.in_(filters.statuses))
         if filters.search:
-            pattern = f"%{filters.search}%"
+            pattern = contains_pattern(filters.search)
             query = query.join(Customer, Customer.id == Order.customer_id).where(
                 or_(Order.order_code.ilike(pattern), Customer.full_name.ilike(pattern))
             )
