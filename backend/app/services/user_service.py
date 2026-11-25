@@ -31,7 +31,10 @@ class UserService:
         return user
 
     def _ensure_not_last_admin(self, user: User) -> None:
-        if user.role == UserRole.ADMIN and user.is_active and self.users.count_active_admins() <= 1:
+        if user.role != UserRole.ADMIN or not user.is_active:
+            return
+        admin_ids = self.users.lock_active_admin_ids()
+        if user.id in admin_ids and len(admin_ids) <= 1:
             raise ConflictError("Sistemdeki son aktif yönetici değiştirilemez.", code="LAST_ADMIN")
 
     def set_role(self, actor: User, user_id: int, role: UserRole) -> User:

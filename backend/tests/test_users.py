@@ -1,7 +1,13 @@
-import pytest
+import threading
 
+import pytest
+from sqlalchemy import delete, func, select
+
+from app.core.database import SessionLocal
 from app.core.errors import ConflictError
-from app.models import UserRole
+from app.core.security import hash_password
+from app.models import User, UserRole
+from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 from tests.conftest import auth_headers
 
@@ -79,6 +85,60 @@ def test_last_active_admin_cannot_be_deactivated_or_demoted(db, make_user):
 
     assert demote.value.code == "LAST_ADMIN"
     assert deactivate.value.code == "LAST_ADMIN"
+
+
+@pytest.fixture
+def two_committed_admins():
+    with SessionLocal() as session:
+        admins = [
+            User(full_name=f"Yarış Yönetici {n}", email=f"race-admin-{n}@example.com", password_hash=hash_password("x"))
+            for n in (1, 2)
+        ]
+        for admin in admins:
+            admin.role = UserRole.ADMIN
+        session.add_all(admins)
+        session.commit()
+        ids = [admin.id for admin in admins]
+    yield ids
+    with SessionLocal() as session:
+        session.execute(delete(User).where(User.id.in_(ids)))
+        session.commit()
+
+
+def test_concurrent_demotions_cannot_remove_every_admin(two_committed_admins):
+    first_id, second_id = two_committed_admins
+    with SessionLocal() as session:
+        active = select(func.count()).select_from(User).where(User.role == UserRole.ADMIN, User.is_active)
+        assert session.scalar(active) == 2
+
+    holder = SessionLocal()
+    result: dict = {}
+
+    def demote_first():
+        # İkinci yönetici, birincisini düşürmeye çalışır; kilit serbest kalana kadar beklemelidir.
+        with SessionLocal() as session:
+            try:
+                UserService(session).set_role(session.get(User, second_id), first_id, UserRole.WAREHOUSE)
+                result["outcome"] = "demoted"
+            except ConflictError as exc:
+                result["outcome"] = exc.code
+
+    try:
+        # Birinci yönetici, ikincisini düşüren işlemi kilit alıp henüz commit etmeden tutar.
+        assert UserRepository(holder).lock_active_admin_ids() == {first_id, second_id}
+        worker = threading.Thread(target=demote_first)
+        worker.start()
+        worker.join(timeout=0.5)
+        assert worker.is_alive(), "ikinci istek kilidi beklemeden ilerledi"
+        holder.get(User, second_id).role = UserRole.WAREHOUSE
+        holder.commit()
+        worker.join(timeout=10)
+    finally:
+        holder.close()
+
+    assert result["outcome"] == "LAST_ADMIN"
+    with SessionLocal() as session:
+        assert session.scalar(active) == 1
 
 
 def test_unknown_user_returns_404(client, admin):
