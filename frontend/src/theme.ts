@@ -12,7 +12,10 @@ export const colors = {
   tableHeaderBg: '#F9FAFB',
   text: '#111827',
   textSecondary: '#4B5563',
+  // Yalnızca süsleyici ikonlar için; metinde AA kontrastı (4,5:1) sağlamaz.
   textMuted: '#9CA3AF',
+  // Soluk metinler (alt bilgi, pasif işlem): beyaz ve açık gri zeminde AA kontrastında.
+  textSubtle: '#6B7280',
 } as const;
 
 export const fontFamily =

@@ -11,6 +11,7 @@ import { CustomerFormModal } from '@/components/CustomerFormModal';
 import { ActiveTag } from '@/components/StatusTag';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import { tablePagination } from '@/utils/table';
+import { ActionLink } from '@/components/ActionLink';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CustomerFilters {
@@ -126,9 +127,9 @@ export function CustomersPage() {
       width: 130,
       render: (_, row) => [
         row.source === 'app' ? (
-          <a key="edit" onClick={() => openModal(row)}>
+          <ActionLink key="edit" onClick={() => openModal(row)}>
             Düzenle
-          </a>
+          </ActionLink>
         ) : null,
         <Link key="detail" to={`/customers/${row.id}`}>
           Detay

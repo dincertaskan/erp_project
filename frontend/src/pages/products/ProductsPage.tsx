@@ -14,6 +14,7 @@ import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { stockStatusLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { ActionLink } from '@/components/ActionLink';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface ProductFilters {
@@ -178,9 +179,9 @@ export function ProductsPage() {
         </Link>,
         ...(isAdmin
           ? [
-              <a key="edit" onClick={() => openModal(row)}>
+              <ActionLink key="edit" onClick={() => openModal(row)}>
                 Düzenle
-              </a>,
+              </ActionLink>,
               row.is_active ? (
                 <Popconfirm
                   key="status"
@@ -191,12 +192,12 @@ export function ProductsPage() {
                   okButtonProps={{ danger: true }}
                   onConfirm={() => setStatus(row, false)}
                 >
-                  <a style={{ color: '#DC2626' }}>Pasife Al</a>
+                  <ActionLink danger>Pasife Al</ActionLink>
                 </Popconfirm>
               ) : (
-                <a key="status" onClick={() => setStatus(row, true)}>
+                <ActionLink key="status" onClick={() => setStatus(row, true)}>
                   Aktifleştir
-                </a>
+                </ActionLink>
               ),
             ]
           : []),

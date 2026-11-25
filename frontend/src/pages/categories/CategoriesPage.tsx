@@ -19,6 +19,7 @@ import { ColorDot } from '@/components/CategoryTag';
 import { ActiveTag } from '@/components/StatusTag';
 import { applyServerErrors } from '@/utils/forms';
 import { formatDate, formatNumber } from '@/utils/format';
+import { ActionLink } from '@/components/ActionLink';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CategoryForm {
@@ -96,9 +97,9 @@ export function CategoriesPage() {
       valueType: 'option',
       width: 180,
       render: (_, row) => [
-        <a key="edit" onClick={() => openModal(row)}>
+        <ActionLink key="edit" onClick={() => openModal(row)}>
           Düzenle
-        </a>,
+        </ActionLink>,
         row.is_active ? (
           <Popconfirm
             key="status"
@@ -113,12 +114,12 @@ export function CategoriesPage() {
             okButtonProps={{ danger: true }}
             onConfirm={() => setStatus(row, false)}
           >
-            <a style={{ color: '#DC2626' }}>Pasife Al</a>
+            <ActionLink danger>Pasife Al</ActionLink>
           </Popconfirm>
         ) : (
-          <a key="status" onClick={() => setStatus(row, true)}>
+          <ActionLink key="status" onClick={() => setStatus(row, true)}>
             Aktifleştir
-          </a>
+          </ActionLink>
         ),
       ],
     },
