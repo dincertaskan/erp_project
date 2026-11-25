@@ -63,7 +63,8 @@ TRANSITIONS: dict[OrderAction, Transition] = {
     ),
 }
 
-# Depo personeli yalnızca hazırlanan ve kargolanan siparişleri görür.
+# Depo personeli yalnızca uygulamada oluşturulmuş, hazırlanan ve kargolanan siparişleri görür. Olist'ten
+# aktarılan açık siparişler salt okunur olduğu için depo iş kuyruğuna girmez.
 WAREHOUSE_STATUSES = frozenset({OrderStatus.PREPARING, OrderStatus.SHIPPED})
 
 TIMESTAMP_FIELDS = {
@@ -107,6 +108,7 @@ class OrderService:
         visible = visible_statuses(viewer)
         if visible is not None:
             filters.statuses = visible & set(filters.statuses) if filters.statuses is not None else visible
+            filters.source = RecordSource.APP
         rows, total = self.orders.list(filters, offset=page.offset, limit=page.page_size)
         counts = self.orders.counts_by_status(filters)
         if visible is not None:
@@ -128,7 +130,7 @@ class OrderService:
         if order is None:
             raise NotFoundError("Sipariş bulunamadı.")
         visible = visible_statuses(viewer)
-        if visible is not None and order.status not in visible:
+        if visible is not None and (order.status not in visible or order.source != RecordSource.APP):
             raise ForbiddenError("Bu siparişi görüntüleme yetkiniz yok.")
 
         shortages = []

@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.models import Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, StockMovement
+from app.models import Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, RecordSource, StockMovement
 from app.models.order import ORDER_CODE_SEQUENCE
 
 
@@ -29,6 +29,7 @@ class OrderFilters:
     customer_id: int | None = None
     date_from: datetime | None = None
     date_to: datetime | None = None
+    source: RecordSource | None = None
 
 
 class OrderRepository:
@@ -49,6 +50,8 @@ class OrderRepository:
             )
         if filters.customer_id is not None:
             query = query.where(Order.customer_id == filters.customer_id)
+        if filters.source is not None:
+            query = query.where(Order.source == filters.source)
         if filters.date_from is not None:
             query = query.where(Order.created_at >= filters.date_from)
         if filters.date_to is not None:
