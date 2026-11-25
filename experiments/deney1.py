@@ -212,7 +212,7 @@ def main() -> None:
     parser.add_argument("--password", default=os.environ.get("ERP_PASSWORD"), help="ya da ERP_PASSWORD")
     parser.add_argument("--strategies", default="pessimistic", help="virgülle: none,pessimistic,optimistic")
     parser.add_argument("--concurrency", default="10", help="virgülle eşzamanlı istek sayıları")
-    parser.add_argument("--stock", type=float, default=0.5, help="başlangıç stoku: tam sayı ya da N'ye oran (0.5)")
+    parser.add_argument("--stock", type=float, default=0.5, help="başlangıç stoğu: tam sayı ya da N'ye oran (0.5)")
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--workers", type=int, default=4, help="--restart ile uvicorn worker sayısı")
     parser.add_argument("--restart", action="store_true", help="her strateji için backend'i yeniden başlat")
