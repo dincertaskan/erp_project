@@ -13,7 +13,7 @@ _test_db_url = os.getenv("TEST_DATABASE_URL") or _env_file.get("TEST_DATABASE_UR
 if not _test_db_url:
     raise RuntimeError("TEST_DATABASE_URL tanımlı değil. backend/.env.example dosyasına bakın.")
 os.environ["DATABASE_URL"] = _test_db_url
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-only")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-only-not-for-production")
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402
