@@ -1,32 +1,27 @@
+import type { ComponentType } from 'react';
 import { createBrowserRouter, Outlet, type RouteObject } from 'react-router-dom';
 import { HomeRedirect, PublicOnly, RequireAuth } from '@/auth/guards';
 import { ADMIN_ONLY, CUSTOMER_ONLY, STAFF_ROLES } from '@/auth/roles';
-import { AdminLayout } from '@/layouts/AdminLayout';
-import { RoleLayout } from '@/layouts/RoleLayout';
-import { ShopLayout } from '@/layouts/ShopLayout';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { CategoriesPage } from '@/pages/categories/CategoriesPage';
-import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage';
-import { CustomersPage } from '@/pages/customers/CustomersPage';
-import { NewOrderPage } from '@/pages/orders/NewOrderPage';
-import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
-import { OrdersPage } from '@/pages/orders/OrdersPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { RouteError } from '@/pages/errors/RouteError';
-import { ChangePasswordPage } from '@/pages/profile/ChangePasswordPage';
-import { ProfilePage } from '@/pages/profile/ProfilePage';
-import { UsersPage } from '@/pages/users/UsersPage';
-import { CartPage } from '@/pages/shop/CartPage';
-import { MyOrderDetailPage } from '@/pages/shop/MyOrderDetailPage';
-import { MyOrdersPage } from '@/pages/shop/MyOrdersPage';
-import { ShopCatalogPage } from '@/pages/shop/ShopCatalogPage';
-import { ShopProductPage } from '@/pages/shop/ShopProductPage';
-import { ProductDetailPage } from '@/pages/products/ProductDetailPage';
-import { ProductsPage } from '@/pages/products/ProductsPage';
-import { CriticalStockPage } from '@/pages/stock/CriticalStockPage';
-import { StockMovementsPage } from '@/pages/stock/StockMovementsPage';
-import { StockPage } from '@/pages/stock/StockPage';
+
+type PageModule = Record<string, ComponentType>;
+
+/**
+ * Sayfalar rol gruplarına göre ayrı parçalarda, ilk ihtiyaç duyulduğunda yüklenir:
+ * müşteri yönetim ekranlarını, personel mağazayı indirmez. Parça yüklenemezse RouteError gösterilir.
+ */
+function lazyPage<M extends PageModule>(load: () => Promise<M>, name: keyof M & string) {
+  return async () => ({ Component: (await load())[name] });
+}
+
+const adminPages = () => import('./adminPages');
+const shopPages = () => import('./shopPages');
+const authPages = () => import('./authPages');
+const accountPages = () => import('./accountPages');
+// Grafik kütüphanesi yalnızca dashboard ve raporlar açılınca yüklenir.
+const dashboardPage = () => import('@/pages/dashboard/DashboardPage');
+const reportsPage = () => import('@/pages/reports/ReportsPage');
 
 const appRoutes: RouteObject[] = [
   { path: '/', element: <HomeRedirect /> },
@@ -37,45 +32,43 @@ const appRoutes: RouteObject[] = [
       </PublicOnly>
     ),
     children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <RegisterPage /> },
+      { path: '/login', lazy: lazyPage(authPages, 'LoginPage') },
+      { path: '/register', lazy: lazyPage(authPages, 'RegisterPage') },
     ],
   },
   {
     element: (
       <RequireAuth roles={STAFF_ROLES}>
-        <AdminLayout />
+        <Outlet />
       </RequireAuth>
     ),
     children: [
-      { path: '/products', element: <ProductsPage /> },
-      { path: '/products/:id', element: <ProductDetailPage /> },
-      { path: '/stock', element: <StockPage /> },
-      { path: '/stock/movements', element: <StockMovementsPage /> },
-      { path: '/stock/critical', element: <CriticalStockPage /> },
-      { path: '/orders', element: <OrdersPage /> },
-      { path: '/orders/:id', element: <OrderDetailPage /> },
       {
-        element: (
-          <RequireAuth roles={ADMIN_ONLY}>
-            <Outlet />
-          </RequireAuth>
-        ),
+        lazy: lazyPage(adminPages, 'AdminLayout'),
         children: [
+          { path: '/products', lazy: lazyPage(adminPages, 'ProductsPage') },
+          { path: '/products/:id', lazy: lazyPage(adminPages, 'ProductDetailPage') },
+          { path: '/stock', lazy: lazyPage(adminPages, 'StockPage') },
+          { path: '/stock/movements', lazy: lazyPage(adminPages, 'StockMovementsPage') },
+          { path: '/stock/critical', lazy: lazyPage(adminPages, 'CriticalStockPage') },
+          { path: '/orders', lazy: lazyPage(adminPages, 'OrdersPage') },
+          { path: '/orders/:id', lazy: lazyPage(adminPages, 'OrderDetailPage') },
           {
-            path: '/dashboard',
-            // Grafik kütüphanesi yalnızca dashboard açılınca yüklenir.
-            lazy: async () => ({ Component: (await import('@/pages/dashboard/DashboardPage')).DashboardPage }),
+            element: (
+              <RequireAuth roles={ADMIN_ONLY}>
+                <Outlet />
+              </RequireAuth>
+            ),
+            children: [
+              { path: '/dashboard', lazy: lazyPage(dashboardPage, 'DashboardPage') },
+              { path: '/categories', lazy: lazyPage(adminPages, 'CategoriesPage') },
+              { path: '/orders/new', lazy: lazyPage(adminPages, 'NewOrderPage') },
+              { path: '/customers', lazy: lazyPage(adminPages, 'CustomersPage') },
+              { path: '/customers/:id', lazy: lazyPage(adminPages, 'CustomerDetailPage') },
+              { path: '/reports', lazy: lazyPage(reportsPage, 'ReportsPage') },
+              { path: '/users', lazy: lazyPage(adminPages, 'UsersPage') },
+            ],
           },
-          { path: '/categories', element: <CategoriesPage /> },
-          { path: '/orders/new', element: <NewOrderPage /> },
-          { path: '/customers', element: <CustomersPage /> },
-          { path: '/customers/:id', element: <CustomerDetailPage /> },
-          {
-            path: '/reports',
-            lazy: async () => ({ Component: (await import('@/pages/reports/ReportsPage')).ReportsPage }),
-          },
-          { path: '/users', element: <UsersPage /> },
         ],
       },
     ],
@@ -83,26 +76,36 @@ const appRoutes: RouteObject[] = [
   {
     element: (
       <RequireAuth roles={CUSTOMER_ONLY}>
-        <ShopLayout />
+        <Outlet />
       </RequireAuth>
     ),
     children: [
-      { path: '/shop', element: <ShopCatalogPage /> },
-      { path: '/shop/products/:id', element: <ShopProductPage /> },
-      { path: '/shop/cart', element: <CartPage /> },
-      { path: '/shop/orders', element: <MyOrdersPage /> },
-      { path: '/shop/orders/:id', element: <MyOrderDetailPage /> },
+      {
+        lazy: lazyPage(shopPages, 'ShopLayout'),
+        children: [
+          { path: '/shop', lazy: lazyPage(shopPages, 'ShopCatalogPage') },
+          { path: '/shop/products/:id', lazy: lazyPage(shopPages, 'ShopProductPage') },
+          { path: '/shop/cart', lazy: lazyPage(shopPages, 'CartPage') },
+          { path: '/shop/orders', lazy: lazyPage(shopPages, 'MyOrdersPage') },
+          { path: '/shop/orders/:id', lazy: lazyPage(shopPages, 'MyOrderDetailPage') },
+        ],
+      },
     ],
   },
   {
     element: (
       <RequireAuth>
-        <RoleLayout />
+        <Outlet />
       </RequireAuth>
     ),
     children: [
-      { path: '/profile', element: <ProfilePage /> },
-      { path: '/profile/password', element: <ChangePasswordPage /> },
+      {
+        lazy: lazyPage(accountPages, 'RoleLayout'),
+        children: [
+          { path: '/profile', lazy: lazyPage(accountPages, 'ProfilePage') },
+          { path: '/profile/password', lazy: lazyPage(accountPages, 'ChangePasswordPage') },
+        ],
+      },
     ],
   },
   { path: '/403', element: <ErrorPage status={403} /> },
