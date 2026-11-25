@@ -9,7 +9,8 @@ from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.models import Category, Customer, Order, OrderItem, OrderStatus, Product, StockMovement, StockMovementType
+from app.models import Category, Customer, Order, OrderStatus, Product, StockMovement, StockMovementType
+from app.repositories.order_repository import item_count_column
 from app.schemas.catalog import stock_status
 from app.schemas.report import (
     OrderReport,
@@ -120,9 +121,6 @@ class OrderReportService:
         page_size: int = ORDER_REPORT_LIMIT,
     ) -> OrderReport:
         start, end = local_bounds(date_from, date_to)
-        item_counts = (
-            select(OrderItem.order_id, func.count().label("item_count")).group_by(OrderItem.order_id).subquery()
-        )
         query = select(Order).where(Order.created_at >= start, Order.created_at < end)
         if statuses:
             query = query.where(Order.status.in_(statuses))
@@ -130,9 +128,8 @@ class OrderReportService:
             select(func.count(), func.coalesce(func.sum(query.subquery().c.total_amount), 0))
         ).one()
         rows = self.db.execute(
-            query.add_columns(Customer.full_name, func.coalesce(item_counts.c.item_count, 0))
+            query.add_columns(Customer.full_name, item_count_column())
             .join(Customer, Customer.id == Order.customer_id)
-            .outerjoin(item_counts, item_counts.c.order_id == Order.id)
             .order_by(Order.created_at.desc(), Order.id.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
@@ -189,11 +186,26 @@ def stock_report_xlsx(report: StockReport) -> bytes:
     )
 
 
+def _thousands(value: int) -> str:
+    return f"{value:,}".replace(",", ".")
+
+
 def order_report_xlsx(report: OrderReport) -> bytes:
+    # Dosya en fazla ORDER_REPORT_LIMIT satır içerir; kesildiyse not satırı bunu açıkça belirtir.
+    truncated = report.total > len(report.rows)
+    if truncated:
+        note = (
+            f"İlk {_thousands(len(report.rows))} sipariş gösterildi; toplam {_thousands(report.total)} sipariş. "
+            "Tarihler İstanbul saatine göredir."
+        )
+        total_label = f"Toplam ({_thousands(report.total)} siparişin tamamı)"
+    else:
+        note = f"{report.total} sipariş. Tarihler İstanbul saatine göredir."
+        total_label = "Toplam"
     return build_xlsx(
         sheet_title="Sipariş Raporu",
         title=f"Sipariş Raporu · {report.date_from:%d.%m.%Y} – {report.date_to:%d.%m.%Y}",
-        note=f"{report.total} sipariş. Tarihler İstanbul saatine göredir.",
+        note=note,
         headers=[
             "Sipariş Kodu",
             "Tarih",
@@ -219,7 +231,7 @@ def order_report_xlsx(report: OrderReport) -> bytes:
             ]
             for r in report.rows
         ),
-        total_row=["Toplam", "", "", "", report.total_amount, "", "", "", ""],
+        total_row=[total_label, "", "", "", report.total_amount, "", "", "", ""],
         money_columns={5},
         widths=[18, 17, 24, 8, 16, 14, 17, 17, 17],
     )

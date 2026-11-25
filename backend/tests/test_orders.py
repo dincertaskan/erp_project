@@ -349,6 +349,31 @@ def test_warehouse_only_sees_preparing_and_shipped(client, admin, warehouse, cus
     assert client.get(f"/orders/{pending['id']}", headers=auth_headers(warehouse)).status_code == 403
 
 
+def test_warehouse_queue_excludes_olist_orders(client, db, admin, warehouse, customer, make_product):
+    product = make_product(stock=100)
+    approved = create_order(client, admin, customer, [(product, 1)]).json()
+    act(client, admin, approved["id"], "approve")
+    olist = Order(
+        order_code="OLIST-PREP",
+        customer_id=customer.customer.id,
+        status=OrderStatus.PREPARING,
+        total_amount=Decimal("10"),
+        payment_method="credit_card",
+        source=RecordSource.OLIST,
+    )
+    db.add(olist)
+    db.flush()
+
+    body = client.get("/orders", headers=auth_headers(warehouse)).json()
+    admin_body = client.get("/orders", headers=auth_headers(admin)).json()
+
+    assert [o["id"] for o in body["items"]] == [approved["id"]]
+    assert (body["total"], body["counts_by_status"]) == (1, {"preparing": 1})
+    assert client.get(f"/orders/{olist.id}", headers=auth_headers(warehouse)).status_code == 403
+    # Yönetici listesi aktarılan siparişleri de gösterir; sayılar listeyle tutarlıdır.
+    assert (admin_body["total"], admin_body["counts_by_status"]) == (2, {"preparing": 2})
+
+
 def test_customers_cannot_use_panel_orders(client, customer):
     assert client.get("/orders", headers=auth_headers(customer)).status_code == 403
 

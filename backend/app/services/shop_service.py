@@ -11,6 +11,7 @@ from app.core import clock
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError
 from app.models import Category, Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, Product, User
 from app.repositories.order_repository import OrderRepository
+from app.repositories.search import contains_pattern
 from app.schemas.common import PageParams
 from app.schemas.shop import (
     CartIssue,
@@ -110,7 +111,7 @@ class CatalogService:
     ) -> CatalogPage:
         query = self._visible()
         if search:
-            pattern = f"%{search}%"
+            pattern = contains_pattern(search)
             query = query.where(or_(Product.name.ilike(pattern), Product.sku.ilike(pattern)))
         if category_id is not None:
             query = query.where(Product.category_id == category_id)
@@ -252,7 +253,7 @@ class MyOrderService:
     def _query(self) -> Select:
         return (
             select(Order)
-            .options(selectinload(Order.items).joinedload(OrderItem.product), selectinload(Order.history))
+            .options(selectinload(Order.items).joinedload(OrderItem.product))
             .where(Order.customer_id == self._customer().id)
         )
 
@@ -275,7 +276,7 @@ class MyOrderService:
         if group is not None:
             query = query.where(Order.status.in_(STATUS_GROUPS[group]))
         if search:
-            query = query.where(Order.order_code.ilike(f"%{search}%"))
+            query = query.where(Order.order_code.ilike(contains_pattern(search)))
         if date_from is not None:
             query = query.where(Order.created_at >= date_from)
         if date_to is not None:
@@ -287,7 +288,8 @@ class MyOrderService:
         return [MyOrderSummary(**self._summary(o)) for o in orders], total
 
     def _get(self, order_id: int) -> Order:
-        order = self.db.scalar(self._query().where(Order.id == order_id))
+        # Durum geçmişi yalnızca detaydaki zaman çizelgesi için yüklenir; liste özeti kullanmaz.
+        order = self.db.scalar(self._query().options(selectinload(Order.history)).where(Order.id == order_id))
         if order is None:
             raise NotFoundError("Sipariş bulunamadı.")
         return order

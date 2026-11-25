@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.models import Order, OrderItem, OrderStatus, Product
+from app.models import Order, OrderItem, OrderStatus, Product, RecordSource
 from app.repositories.customer_repository import REVENUE_STATUSES
 from app.repositories.stock_repository import StockRepository
 from app.schemas.dashboard import DashboardSummary, Granularity, Period, TopProduct, TrendPoint
@@ -41,7 +41,10 @@ class DashboardService:
         yesterday_sales, _ = self._sales(today - timedelta(days=1), today)
         month_sales, _ = self._sales(month_start, self.now)
         prev_month_sales, _ = self._sales(clock.add_months(month_start, -1), clock.add_months(self.now, -1))
-        pending = self.db.scalar(select(func.count()).where(Order.status == OrderStatus.PENDING))
+        # İş kuyruğu: Olist'ten aktarılan siparişler onaylanamaz, sayıya girmez.
+        pending = self.db.scalar(
+            select(func.count()).where(Order.status == OrderStatus.PENDING, Order.source == RecordSource.APP)
+        )
         return DashboardSummary(
             today_sales=today_sales,
             today_order_count=today_count,

@@ -2,6 +2,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Customer, User, UserRole
+from app.repositories.search import contains_pattern
 
 
 class UserRepository:
@@ -28,7 +29,7 @@ class UserRepository:
     ) -> tuple[list[User], int]:
         query = select(User)
         if search:
-            pattern = f"%{search}%"
+            pattern = contains_pattern(search)
             query = query.where(or_(User.full_name.ilike(pattern), User.email.ilike(pattern)))
         if role is not None:
             query = query.where(User.role == role)

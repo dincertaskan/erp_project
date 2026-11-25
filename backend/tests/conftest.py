@@ -3,6 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from dotenv import dotenv_values
+from sqlalchemy.engine import make_url
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -12,6 +13,13 @@ _env_file = dotenv_values(BACKEND_DIR / ".env")
 _test_db_url = os.getenv("TEST_DATABASE_URL") or _env_file.get("TEST_DATABASE_URL")
 if not _test_db_url:
     raise RuntimeError("TEST_DATABASE_URL tanımlı değil. backend/.env.example dosyasına bakın.")
+# Oturum başında şema silinir; yanlışlıkla geliştirme ya da demo veritabanına bağlanılmasın.
+_test_db_name = make_url(_test_db_url).database or ""
+if not _test_db_name.endswith("_test"):
+    raise RuntimeError(
+        f"TEST_DATABASE_URL '{_test_db_name}' veritabanını gösteriyor. Testler şemayı sildiği için "
+        "veritabanı adı '_test' ile bitmelidir."
+    )
 os.environ["DATABASE_URL"] = _test_db_url
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-only-not-for-production")
 

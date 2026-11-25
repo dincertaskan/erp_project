@@ -30,7 +30,6 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      - uploads:/app/uploads
       # Olist CSV dosyaları (git dışında); aktarım betiği buradan okur
       - ./backend/data:/app/data:ro
     depends_on:
@@ -50,4 +49,3 @@ services:
 
 volumes:
   pgdata:
-  uploads:

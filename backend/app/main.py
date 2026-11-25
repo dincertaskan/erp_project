@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -20,11 +21,20 @@ from app.controllers import (
 )
 from app.core.config import settings
 from app.core.errors import register_error_handlers
+from app.core.logging import configure_logging
 from app.core.security_headers import SecurityHeadersMiddleware
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if settings.STOCK_STRATEGY == "none":
+        logger.warning(
+            "STOCK_STRATEGY=none: stok kilidi kapalı, eşzamanlı onaylarda stok eksiye düşebilir. "
+            "Yalnızca deney içindir."
+        )
     # Senkron uç noktalar iş parçacığı havuzunda çalışır. İş parçacığı sayısı bağlantı havuzu kapasitesine
     # eşitlenir; böylece iş parçacıkları bağlantı beklerken bloke olmaz, fazla istekler sırada bekler.
     anyio.to_thread.current_default_thread_limiter().total_tokens = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
