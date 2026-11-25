@@ -1,10 +1,24 @@
 import { ArrowDownOutlined, ArrowUpOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Col, Empty, List, Row, Segmented, Skeleton, Space, Statistic, Table, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Empty,
+  List,
+  Row,
+  Segmented,
+  Skeleton,
+  Space,
+  Statistic,
+  Table,
+  Typography,
+} from 'antd';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
+import { Link } from 'react-router-dom';
+import { api, errorMessage } from '@/api/client';
 import {
   DASHBOARD_KEY,
   changePercent,
@@ -41,9 +55,25 @@ function Change({ current, previous, label }: { current: string; previous: strin
   );
 }
 
+/** Bölüm verisi alınamadığında boş durum yerine hata ve tekrar deneme gösterilir. */
+function SectionError({ error, onRetry, title }: { error: unknown; onRetry: () => void; title: string }) {
+  return (
+    <Alert
+      type="error"
+      showIcon
+      message={title}
+      description={errorMessage(error)}
+      action={
+        <Button size="small" onClick={onRetry}>
+          Tekrar Dene
+        </Button>
+      }
+    />
+  );
+}
+
 /** E-10 Dashboard (yalnızca yönetici). Satışlar onaylanmış ve iptal edilmemiş siparişlerden hesaplanır. */
 export function DashboardPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<Period>('month');
   const [granularity, setGranularity] = useState<Granularity>('day');
@@ -80,6 +110,13 @@ export function DashboardPage() {
       ]}
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
+        {summary.isError ? (
+          <SectionError
+            title="Özet bilgiler yüklenemedi"
+            error={summary.error}
+            onRetry={() => void summary.refetch()}
+          />
+        ) : null}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} xl={6}>
             <Card loading={summary.isPending}>
@@ -94,20 +131,25 @@ export function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={summary.isPending} hoverable onClick={() => navigate('/orders?status=pending')}>
-              <Statistic title="Onay Bekleyen Sipariş" value={s?.pending_orders ?? '–'} />
-              <Typography.Text type="secondary">Siparişlere git</Typography.Text>
-            </Card>
+            <Link to="/orders?status=pending">
+              <Card loading={summary.isPending} hoverable>
+                <Statistic title="Onay Bekleyen Sipariş" value={s?.pending_orders ?? '–'} groupSeparator="." />
+                <Typography.Text type="secondary">Siparişlere git</Typography.Text>
+              </Card>
+            </Link>
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={summary.isPending} hoverable onClick={() => navigate('/stock/critical')}>
-              <Statistic
-                title="Kritik Stoktaki Ürün"
-                value={s?.critical_stock_count ?? '–'}
-                valueStyle={s?.critical_stock_count ? { color: '#DC2626' } : undefined}
-              />
-              <Typography.Text type="secondary">Kritik stoka git</Typography.Text>
-            </Card>
+            <Link to="/stock/critical">
+              <Card loading={summary.isPending} hoverable>
+                <Statistic
+                  title="Kritik Stoktaki Ürün"
+                  value={s?.critical_stock_count ?? '–'}
+                  groupSeparator="."
+                  valueStyle={s?.critical_stock_count ? { color: '#DC2626' } : undefined}
+                />
+                <Typography.Text type="secondary">Kritik stoka git</Typography.Text>
+              </Card>
+            </Link>
           </Col>
         </Row>
 
@@ -127,7 +169,13 @@ export function DashboardPage() {
                 />
               }
             >
-              {trend.isPending ? (
+              {trend.isError ? (
+                <SectionError
+                  title="Satış trendi yüklenemedi"
+                  error={trend.error}
+                  onRetry={() => void trend.refetch()}
+                />
+              ) : trend.isPending ? (
                 <Skeleton active />
               ) : hasSales && trend.data ? (
                 <SalesTrendChart data={trend.data} granularity={granularity} />
@@ -138,19 +186,27 @@ export function DashboardPage() {
           </Col>
           <Col xs={24} xl={8}>
             <Card title="En Çok Satan Ürünler" loading={top.isPending} styles={{ body: { minHeight: 280 } }}>
-              <List
-                dataSource={top.data ?? []}
-                locale={{ emptyText: 'Bu dönemde satış yok.' }}
-                renderItem={(item, index) => (
-                  <List.Item extra={<Typography.Text strong>{formatCurrency(item.revenue)}</Typography.Text>}>
-                    <List.Item.Meta
-                      avatar={<Typography.Text type="secondary">{index + 1}.</Typography.Text>}
-                      title={<Link to={`/products/${item.product_id}`}>{item.name}</Link>}
-                      description={`${formatNumber(item.quantity)} adet`}
-                    />
-                  </List.Item>
-                )}
-              />
+              {top.isError ? (
+                <SectionError
+                  title="En çok satan ürünler yüklenemedi"
+                  error={top.error}
+                  onRetry={() => void top.refetch()}
+                />
+              ) : (
+                <List
+                  dataSource={top.data ?? []}
+                  locale={{ emptyText: 'Bu dönemde satış yok.' }}
+                  renderItem={(item, index) => (
+                    <List.Item extra={<Typography.Text strong>{formatCurrency(item.revenue)}</Typography.Text>}>
+                      <List.Item.Meta
+                        avatar={<Typography.Text type="secondary">{index + 1}.</Typography.Text>}
+                        title={<Link to={`/products/${item.product_id}`}>{item.name}</Link>}
+                        description={`${formatNumber(item.quantity)} adet`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
             </Card>
           </Col>
         </Row>
@@ -158,7 +214,13 @@ export function DashboardPage() {
         <Row gutter={[16, 16]}>
           <Col xs={24} xl={12}>
             <Card title="Kritik Stoktaki Ürünler" extra={<Link to="/stock/critical">Tümünü Gör</Link>}>
-              {critical.data && critical.data.length === 0 ? (
+              {critical.isError ? (
+                <SectionError
+                  title="Kritik stok listesi yüklenemedi"
+                  error={critical.error}
+                  onRetry={() => void critical.refetch()}
+                />
+              ) : critical.data && critical.data.length === 0 ? (
                 <Space>
                   <CheckCircleOutlined style={{ color: '#059669' }} />
                   <Typography.Text>Kritik stokta ürün yok.</Typography.Text>
@@ -170,7 +232,6 @@ export function DashboardPage() {
                   pagination={false}
                   loading={critical.isPending}
                   dataSource={critical.data ?? []}
-                  onRow={(row) => ({ onClick: () => navigate(`/products/${row.id}`), style: { cursor: 'pointer' } })}
                   columns={[
                     {
                       title: 'Ürün',
@@ -178,7 +239,7 @@ export function DashboardPage() {
                       render: (_, row) => (
                         <Space>
                           <ProductThumb product={row} size={24} />
-                          {row.name}
+                          <Link to={`/products/${row.id}`}>{row.name}</Link>
                         </Space>
                       ),
                     },
@@ -197,46 +258,54 @@ export function DashboardPage() {
           </Col>
           <Col xs={24} xl={12}>
             <Card title="Son Siparişler" extra={<Link to="/orders">Tümünü Gör</Link>}>
-              <Table<OrderListItem>
-                rowKey="id"
-                size="small"
-                pagination={false}
-                loading={recent.isPending}
-                dataSource={recent.data ?? []}
-                locale={{ emptyText: 'Henüz sipariş yok.' }}
-                columns={[
-                  {
-                    title: 'Sipariş',
-                    key: 'code',
-                    render: (_, row) => (
-                      <Link to={`/orders/${row.id}`} style={{ whiteSpace: 'nowrap' }}>
-                        {row.order_code}
-                      </Link>
-                    ),
-                  },
-                  { title: 'Müşteri', key: 'customer', render: (_, row) => row.customer.full_name },
-                  {
-                    title: 'Tutar',
-                    dataIndex: 'total_amount',
-                    align: 'right',
-                    render: (value: string) => <span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(value)}</span>,
-                  },
-                  { title: 'Durum', key: 'status', render: (_, row) => <OrderStatusTag status={row.status} /> },
-                  {
-                    title: 'Tarih',
-                    key: 'date',
-                    render: (_, row) => (
-                      <Typography.Text
-                        type="secondary"
-                        title={formatDateTime(row.created_at)}
-                        style={{ whiteSpace: 'nowrap' }}
-                      >
-                        {formatRelative(row.created_at)}
-                      </Typography.Text>
-                    ),
-                  },
-                ]}
-              />
+              {recent.isError ? (
+                <SectionError
+                  title="Son siparişler yüklenemedi"
+                  error={recent.error}
+                  onRetry={() => void recent.refetch()}
+                />
+              ) : (
+                <Table<OrderListItem>
+                  rowKey="id"
+                  size="small"
+                  pagination={false}
+                  loading={recent.isPending}
+                  dataSource={recent.data ?? []}
+                  locale={{ emptyText: 'Henüz sipariş yok.' }}
+                  columns={[
+                    {
+                      title: 'Sipariş',
+                      key: 'code',
+                      render: (_, row) => (
+                        <Link to={`/orders/${row.id}`} style={{ whiteSpace: 'nowrap' }}>
+                          {row.order_code}
+                        </Link>
+                      ),
+                    },
+                    { title: 'Müşteri', key: 'customer', render: (_, row) => row.customer.full_name },
+                    {
+                      title: 'Tutar',
+                      dataIndex: 'total_amount',
+                      align: 'right',
+                      render: (value: string) => <span style={{ whiteSpace: 'nowrap' }}>{formatCurrency(value)}</span>,
+                    },
+                    { title: 'Durum', key: 'status', render: (_, row) => <OrderStatusTag status={row.status} /> },
+                    {
+                      title: 'Tarih',
+                      key: 'date',
+                      render: (_, row) => (
+                        <Typography.Text
+                          type="secondary"
+                          title={formatDateTime(row.created_at)}
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
+                          {formatRelative(row.created_at)}
+                        </Typography.Text>
+                      ),
+                    },
+                  ]}
+                />
+              )}
             </Card>
           </Col>
         </Row>
