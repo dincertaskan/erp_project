@@ -5,8 +5,8 @@ Bu klasör kullanılabilirlik oturumlarının materyallerini içerir:
 - `gorevler.md`: rollere göre görev senaryoları ve gözlem formu
 - `sus-formu.md`: 10 maddelik SUS formu (Google Forms'a aktarmak için)
 - `onam.md`: katılımcı bilgilendirme ve onam metni
-- `yanitlar-sablon.csv`: yanıtların toplanacağı tablo şablonu
-- `sus_score.py`: SUS puanlarını hesaplar, 68 eşiğine karşı tek örneklem t-testi uygular
+- `yanitlar-sablon.csv`: yanıtların toplanacağı tablo şablonu; `gorevler.md`'deki her görev (M1–M6, D1–D4, Y1–Y4) için `task_<no>_done` ve `task_<no>_seconds` sütunları vardır, her katılımcı yalnızca kendi rolünün görev sütunlarını doldurur
+- `sus_score.py`: SUS puanlarını hesaplar; ortalama için %95 güven aralığı verir ve 68 eşiğine karşı tek örneklem t-testi uygular
 
 ## Akış
 
@@ -23,5 +23,7 @@ python sus_score.py yanitlar.csv
 ## Notlar
 
 - SUS puanı: tek numaralı maddelerde (yanıt − 1), çift numaralı maddelerde (5 − yanıt); toplam × 2,5 (0–100).
-- Türkçe madde metinleri bir çalışma çevirisidir. Raporda yayımlanmış ve doğrulanmış bir Türkçe uyarlama (ör. SUS-TR, Demirkol ve Şeneler, 2018; künyesi doğrulanmalı) kullanılacaksa form metni onunla değiştirilmeli ve kaynak gösterilmelidir.
+- Türkçe madde metinleri bir çalışma çevirisidir. Raporda yayımlanmış ve geçerliği gösterilmiş bir Türkçe uyarlama kullanılacaksa form metni onunla değiştirilmeli ve uyarlamanın kaynağı birincil yayından gösterilmelidir.
+- Yaklaşık 10 katılımcıyla 68 eşiğine karşı t-testinin gücü sınırlıdır; sonuç ortalama ve %95 güven aralığıyla raporlanır.
+- `onam.md`'deki iletişim satırı oturumlardan önce doldurulmalıdır.
 - Etik kurul gerekliliği danışmana sorulmalıdır. Katılımcı adları sonuç dosyalarına yazılmaz; yalnızca K01, K02 gibi kodlar kullanılır.
