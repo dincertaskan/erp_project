@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
+from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.models import (
     Customer,
     Order,
@@ -73,6 +73,23 @@ TIMESTAMP_FIELDS = {
     OrderStatus.COMPLETED: "completed_at",
     OrderStatus.CANCELLED: "cancelled_at",
 }
+
+
+# Tutar sütunları Numeric(12, 2): bu değeri aşan tutar veritabanında taşma hatası verir.
+MAX_AMOUNT = Decimal("9999999999.99")
+
+
+def ensure_amounts_fit(line_totals: list[Decimal]) -> None:
+    """Satır tutarları istekteki sırayla verilir; hata alanı istekteki satırı gösterir."""
+    errors = [
+        {"field": f"items.{index}.quantity", "message": "Satır tutarı izin verilen üst sınırı aşıyor."}
+        for index, line_total in enumerate(line_totals)
+        if line_total > MAX_AMOUNT
+    ]
+    if not errors and sum(line_totals, Decimal("0")) > MAX_AMOUNT:
+        errors.append({"field": "items", "message": "Sipariş toplamı izin verilen üst sınırı aşıyor."})
+    if errors:
+        raise UnprocessableError(errors)
 
 
 def allowed_actions(order: Order, role: UserRole) -> list[OrderAction]:
@@ -185,6 +202,8 @@ class OrderService:
                 code="PRODUCT_INACTIVE",
                 details={"products": inactive},
             )
+
+        ensure_amounts_fit([products[i.product_id].sale_price * i.quantity for i in data.items])
 
         order = Order(
             order_code=self.orders.next_code(clock.now().year),

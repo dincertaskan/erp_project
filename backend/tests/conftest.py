@@ -21,7 +21,7 @@ if not _test_db_name.endswith("_test"):
         "veritabanı adı '_test' ile bitmelidir."
     )
 os.environ["DATABASE_URL"] = _test_db_url
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-only")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-only-not-for-production")
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402

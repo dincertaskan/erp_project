@@ -9,6 +9,10 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 DEFAULT_CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+SECRET_KEY_MIN_LENGTH = 32
+# Örnek dosyalardaki yer tutucular; kopyalanıp değiştirilmeden kullanılırsa tokenlar tahmin edilebilir.
+PLACEHOLDER_SECRET_KEYS = frozenset({"change-me-to-a-long-random-string", "change-me", "changeme", "secret"})
+
 
 class Settings(BaseSettings):
     """Ortam değişkenlerinden (veya backend/.env dosyasından) okunan ayarlar.
@@ -23,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     DATABASE_URL: str
-    SECRET_KEY: str = Field(min_length=16)
+    SECRET_KEY: str
     # Yalnızca HMAC algoritmaları; "none" ya da açık anahtar algoritmaları yapılandırmayla seçilemez.
     ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
@@ -47,6 +51,16 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix) :]
         return url
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def strong_secret_key(cls, key: str) -> str:
+        hint = 'Üretmek için: python -c "import secrets; print(secrets.token_urlsafe(32))"'
+        if key.strip().lower() in PLACEHOLDER_SECRET_KEYS:
+            raise ValueError(f"SECRET_KEY örnek dosyadaki yer tutucu değer olamaz. {hint}")
+        if len(key) < SECRET_KEY_MIN_LENGTH:
+            raise ValueError(f"SECRET_KEY en az {SECRET_KEY_MIN_LENGTH} karakter olmalıdır. {hint}")
+        return key
 
     @property
     def cors_origins(self) -> list[str]:
