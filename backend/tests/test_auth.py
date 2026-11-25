@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from app.core import security
 from app.models import Customer, User, UserRole
 from tests.conftest import TEST_PASSWORD, auth_headers
 
@@ -61,6 +62,28 @@ def test_login_returns_token_and_user(client, admin):
     assert body["user"]["role"] == "admin"
     me = client.get("/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
     assert me.json()["id"] == admin.id
+
+
+def test_bcrypt_runs_without_an_open_transaction(client, db, admin, monkeypatch):
+    seen = []
+
+    def record(original):
+        def wrapper(*args):
+            seen.append(db.in_transaction())
+            return original(*args)
+
+        return wrapper
+
+    monkeypatch.setattr("app.services.auth_service.verify_password", record(security.verify_password))
+    monkeypatch.setattr("app.services.auth_service.hash_password", record(security.hash_password))
+
+    login = client.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD})
+    register = client.post("/auth/register", json=REGISTER)
+
+    assert (login.status_code, register.status_code) == (200, 201)
+    assert seen == [False, False]
+    db.refresh(admin)
+    assert admin.last_login_at is not None
 
 
 def test_login_with_wrong_password_is_rejected(client, admin):

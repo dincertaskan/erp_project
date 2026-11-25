@@ -19,6 +19,8 @@ class AuthService:
 
     def register(self, data: RegisterRequest) -> User:
         """Yeni kayıtlar her zaman müşteri rolüyle oluşturulur (FR-01)."""
+        # bcrypt veritabanı işlemi açılmadan çalışır; yavaş özetleme sırasında havuzdan bağlantı tutulmaz.
+        password_hash = hash_password(data.password)
         if self.users.get_by_email(data.email):
             raise ConflictError(
                 "Bu e-posta adresi zaten kayıtlı.",
@@ -28,7 +30,7 @@ class AuthService:
         user = User(
             full_name=data.full_name,
             email=data.email,
-            password_hash=hash_password(data.password),
+            password_hash=password_hash,
             role=UserRole.CUSTOMER,
         )
         self.db.add(user)
@@ -57,6 +59,8 @@ class AuthService:
             )
 
         user = self.users.get_by_email(data.email)
+        # Okuma işlemi bcrypt'ten önce kapatılır; bağlantı doğrulama süresince havuza döner.
+        self.db.commit()
         if user is None or not verify_password(data.password, user.password_hash):
             login_throttle.record_failure(data.email)
             raise UnauthorizedError("E-posta veya şifre hatalı.", code="INVALID_CREDENTIALS")
