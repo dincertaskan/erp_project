@@ -15,6 +15,9 @@ import { ActiveTag, RoleTag } from '@/components/StatusTag';
 import { formatDate, formatDateTime } from '@/utils/format';
 import { roleLabels, type UserRole } from '@/utils/labels';
 import { tablePagination } from '@/utils/table';
+import { colors } from '@/theme';
+import { ActionLink } from '@/components/ActionLink';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface UserFilters {
   keyword?: string;
@@ -25,9 +28,12 @@ interface UserFilters {
 }
 
 const SELF_HINT = 'Kendi hesabınızda bu işlem yapılamaz.';
+// Kendi hesabındaki işlemler: ipucu klavyeyle de okunabilsin diye odaklanabilir, metin AA kontrastında.
+const disabledActionStyle = { color: colors.textSubtle, cursor: 'not-allowed' } as const;
 
 /** E-26 Kullanıcılar (yalnızca yönetici). Personel hesapları kayıt + rol atama ile oluşur (karar 10). */
 export function UsersPage() {
+  usePageTitle('Kullanıcılar');
   const { user: me } = useAuth();
   const { message } = App.useApp();
   const actionRef = useRef<ActionType>(null);
@@ -88,16 +94,20 @@ export function UsersPage() {
         const self = row.id === me?.id;
         const roleLink = self ? (
           <Tooltip key="role" title={SELF_HINT}>
-            <span style={{ color: '#9CA3AF', cursor: 'not-allowed' }}>Rol Ata</span>
+            <span tabIndex={0} aria-disabled="true" style={disabledActionStyle}>
+              Rol Ata
+            </span>
           </Tooltip>
         ) : (
-          <a key="role" onClick={() => setRoleTarget(row)}>
+          <ActionLink key="role" onClick={() => setRoleTarget(row)}>
             Rol Ata
-          </a>
+          </ActionLink>
         );
         const statusLink = self ? (
           <Tooltip key="status" title={SELF_HINT}>
-            <span style={{ color: '#9CA3AF', cursor: 'not-allowed' }}>Pasife Al</span>
+            <span tabIndex={0} aria-disabled="true" style={disabledActionStyle}>
+              Pasife Al
+            </span>
           </Tooltip>
         ) : row.is_active ? (
           <Popconfirm
@@ -109,12 +119,12 @@ export function UsersPage() {
             okButtonProps={{ danger: true }}
             onConfirm={() => setStatus(row, false)}
           >
-            <a style={{ color: '#DC2626' }}>Pasife Al</a>
+            <ActionLink danger>Pasife Al</ActionLink>
           </Popconfirm>
         ) : (
-          <a key="status" onClick={() => setStatus(row, true)}>
+          <ActionLink key="status" onClick={() => setStatus(row, true)}>
             Aktifleştir
-          </a>
+          </ActionLink>
         );
         return [roleLink, statusLink];
       },
@@ -157,7 +167,7 @@ export function UsersPage() {
         open={roleTarget !== null}
         width={440}
         modalProps={{ destroyOnHidden: true, onCancel: () => setRoleTarget(null) }}
-        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
         initialValues={{ role: roleTarget?.role }}
         onFinish={async ({ role }) => {
           if (!roleTarget) return false;

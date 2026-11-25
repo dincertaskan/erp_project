@@ -7,11 +7,13 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Col, Row } from 'antd';
 import type { FormInstance } from 'antd';
 import { useRef } from 'react';
 import { toMoney, useCategories } from '@/api/catalog';
 import { api, errorMessage } from '@/api/client';
+import { invalidateStock } from '@/api/stock';
 import type { Product } from '@/api/types';
 import { applyServerErrors } from '@/utils/forms';
 
@@ -45,6 +47,7 @@ const moneyField = {
 /** E-12 Ürün Ekle/Düzenle. Stok miktarı yalnızca eklemede girilir; sonrası stok işlemleriyle değişir. */
 export function ProductFormModal({ open, product, onOpenChange, onSaved }: ProductFormModalProps) {
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const formRef = useRef<FormInstance<ProductForm>>(null);
   const skuTouched = useRef(false);
   const { data: categories = [] } = useCategories();
@@ -83,6 +86,8 @@ export function ProductFormModal({ open, product, onOpenChange, onSaved }: Produ
         ? await api.put<Product>(`/products/${product.id}`, payload)
         : await api.post<Product>('/products', payload);
       message.success('Ürün kaydedildi.');
+      // Minimum stok, aktiflik ve başlangıç stoku kritik stok sayısını değiştirebilir.
+      invalidateStock(queryClient);
       onSaved(data);
       return true;
     } catch (err) {
@@ -119,7 +124,7 @@ export function ProductFormModal({ open, product, onOpenChange, onSaved }: Produ
           if (visible) skuTouched.current = false;
         },
       }}
-      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
       onOpenChange={onOpenChange}
       onFinish={onFinish}
     >

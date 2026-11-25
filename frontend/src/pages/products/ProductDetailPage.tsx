@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError, errorMessage } from '@/api/client';
+import { invalidateStock } from '@/api/stock';
 import type { Page, ProductDetail, StockMovement } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { FullPageSpinner } from '@/auth/guards';
@@ -13,9 +14,11 @@ import { ProductThumb } from '@/components/ProductThumb';
 import { StockMovementModal } from '@/components/StockMovementModal';
 import { ActiveTag, MovementQuantity, MovementTypeTag, StockStatusTag } from '@/components/StatusTag';
 import { tablePagination } from '@/utils/table';
-import { formatCurrency, formatDateTime, formatNumber } from '@/utils/format';
+import { formatCurrency, formatDateTime, formatNumber, formatPercent } from '@/utils/format';
 import { movementTypeLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { DEACTIVATE_PRODUCT_DESCRIPTION, DEACTIVATE_PRODUCT_TITLE } from './productTexts';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface MovementFilters {
   movement_type?: string;
@@ -29,8 +32,7 @@ function marginText(sale: string, cost: string | undefined) {
   const salePrice = Number(sale);
   const costPrice = Number(cost ?? 0);
   if (!salePrice) return '–';
-  const margin = ((salePrice - costPrice) / salePrice) * 100;
-  return `${margin.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}%`;
+  return formatPercent(((salePrice - costPrice) / salePrice) * 100);
 }
 
 /** E-13 Ürün Detayı ve Stok Geçmişi */
@@ -54,6 +56,8 @@ export function ProductDetailPage() {
     queryFn: async () => (await api.get<ProductDetail>(`/products/${id}`)).data,
   });
 
+  usePageTitle(product?.name ?? 'Ürün Detayı');
+
   if (isPending) return <FullPageSpinner />;
   if (error || !product) {
     const notFound = error instanceof ApiError && error.status === 404;
@@ -72,7 +76,8 @@ export function ProductDetailPage() {
     try {
       await api.patch(`/products/${product.id}/status`, { is_active: isActive });
       message.success(isActive ? 'Ürün aktifleştirildi.' : 'Ürün pasife alındı.');
-      refresh();
+      // Ürün detayı da ['products'] altında olduğu için birlikte yenilenir.
+      invalidateStock(queryClient);
     } catch (err) {
       message.error(errorMessage(err));
     }
@@ -142,7 +147,8 @@ export function ProductDetailPage() {
               product.is_active ? (
                 <Popconfirm
                   key="status"
-                  title="Ürün pasife alınsın mı?"
+                  title={DEACTIVATE_PRODUCT_TITLE}
+                  description={DEACTIVATE_PRODUCT_DESCRIPTION}
                   okText="Pasife Al"
                   cancelText="Vazgeç"
                   okButtonProps={{ danger: true }}
@@ -161,11 +167,12 @@ export function ProductDetailPage() {
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <Card>
-          <Row gutter={24} wrap={false}>
+          {/* Dar ekranda görsel üstte, bilgiler altta kalır */}
+          <Row gutter={[24, 16]}>
             <Col flex="none">
               <ProductThumb product={product} size={120} />
             </Col>
-            <Col flex="auto" style={{ minWidth: 0 }}>
+            <Col flex="1 1 280px" style={{ minWidth: 0 }}>
               <Descriptions column={{ xs: 1, md: 2 }} size="small">
                 <Descriptions.Item label="SKU">
                   <Typography.Text copyable>{product.sku}</Typography.Text>

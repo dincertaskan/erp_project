@@ -1,5 +1,5 @@
 import { KeyOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Dropdown, Space, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { RoleTag } from '@/components/StatusTag';
@@ -31,13 +31,20 @@ export function UserMenu() {
         ],
       }}
     >
-      <Space style={{ cursor: 'pointer' }} size={8}>
+      {/* Gerçek düğme: Tab ile odaklanır, Enter/Boşluk menüyü açar. Dar ekranda yalnızca baş harf kalır. */}
+      <Button
+        type="text"
+        aria-label="Kullanıcı menüsü"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 'auto', padding: '4px 8px' }}
+      >
         <Avatar size="small" style={{ backgroundColor: '#4F46E5' }}>
           {user.full_name.charAt(0).toLocaleUpperCase('tr-TR')}
         </Avatar>
-        <Typography.Text>{user.full_name}</Typography.Text>
-        <RoleTag role={user.role} />
-      </Space>
+        <Typography.Text className="hide-below-sm">{user.full_name}</Typography.Text>
+        <span className="hide-below-sm">
+          <RoleTag role={user.role} />
+        </span>
+      </Button>
     </Dropdown>
   );
 }

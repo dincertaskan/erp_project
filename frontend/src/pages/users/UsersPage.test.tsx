@@ -36,9 +36,9 @@ describe('UsersPage', () => {
     const ownRow = (await screen.findByText('yonetici@example.com')).closest('tr') as HTMLElement;
     const staffRow = screen.getByText('depo@example.com').closest('tr') as HTMLElement;
 
-    expect(within(ownRow).queryByRole('link', { name: 'Rol Ata' })).not.toBeInTheDocument();
+    expect(within(ownRow).queryByRole('button', { name: 'Rol Ata' })).not.toBeInTheDocument();
     expect(within(ownRow).getByText('Rol Ata')).toHaveStyle({ cursor: 'not-allowed' });
     expect(within(staffRow).getByText('Depo Personeli')).toBeInTheDocument();
-    expect(within(staffRow).getByText('Pasife Al').tagName).toBe('A');
+    expect(within(staffRow).getByRole('button', { name: 'Pasife Al' })).toBeInTheDocument();
   });
 });

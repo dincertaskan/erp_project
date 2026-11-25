@@ -62,6 +62,8 @@ export function OrderDetailPage() {
     queryFn: async () => (await api.get<OrderDetail>(`/orders/${id}`)).data,
   });
 
+  usePageTitle(order ? `Sipariş ${order.order_code}` : 'Sipariş Detayı');
+
   if (isPending) return <FullPageSpinner />;
   if (error || !order) {
     const status = error instanceof ApiError ? error.status : 0;

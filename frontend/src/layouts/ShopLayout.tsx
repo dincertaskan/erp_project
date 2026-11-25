@@ -1,5 +1,5 @@
 import { ShoppingCartOutlined } from '@ant-design/icons';
-import { Badge, Layout, Menu, Space, Typography } from 'antd';
+import { Badge, Layout, Menu, Typography } from 'antd';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useCart } from '@/cart/useCart';
 import { colors } from '@/theme';
@@ -25,18 +25,18 @@ export function ShopLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {/* İç boşluk ve aralıklar styles.css'te: sm altında daralır */}
       <Layout.Header
+        className="shop-header"
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 10,
           height: 56,
           lineHeight: '56px',
-          padding: '0 24px',
           borderBottom: `1px solid ${colors.border}`,
           display: 'flex',
           alignItems: 'center',
-          gap: 32,
         }}
       >
         <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -49,19 +49,19 @@ export function ShopLayout() {
           items={navItems}
           style={{ flex: 1, borderBottom: 'none', minWidth: 0 }}
         />
-        <Space size={24}>
+        <div className="shop-header-actions">
           <Link to="/shop/cart" aria-label="Sepet">
             <Badge count={cartCount} size="small">
               <ShoppingCartOutlined style={{ fontSize: 20, color: colors.text }} />
             </Badge>
           </Link>
           <UserMenu />
-        </Space>
+        </div>
       </Layout.Header>
       <Layout.Content style={{ padding: 24, width: '100%', maxWidth: 1200, margin: '0 auto' }}>
         <Outlet />
       </Layout.Content>
-      <Layout.Footer style={{ textAlign: 'center', color: colors.textMuted }}>
+      <Layout.Footer style={{ textAlign: 'center', color: colors.textSecondary }}>
         Akıllı ERP · Demo mağaza · Veriler Olist açık veri setinden alınmıştır
       </Layout.Footer>
     </Layout>

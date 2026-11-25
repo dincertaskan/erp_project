@@ -20,7 +20,7 @@ export interface NavItem {
 }
 
 export const adminNavigation: NavItem[] = [
-  { path: '/dashboard', name: 'Dashboard', icon: <DashboardOutlined />, roles: ['admin'] },
+  { path: '/dashboard', name: 'Genel Bakış', icon: <DashboardOutlined />, roles: ['admin'] },
   { path: '/products', name: 'Ürünler', icon: <AppstoreOutlined />, roles: ['admin', 'warehouse'] },
   { path: '/categories', name: 'Kategoriler', icon: <TagsOutlined />, roles: ['admin'] },
   {

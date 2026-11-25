@@ -46,3 +46,12 @@ export function formatRelative(value: string | Date | null | undefined): string 
 export function formatWithMonthName(value: string | Date, pattern: string): string {
   return tr(value).format(pattern);
 }
+
+const percentFormat = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
+
+/** 12.5 -> "%12,5" (Türkçede yüzde işareti sayıdan önce yazılır) */
+export function formatPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '–';
+  const sign = value < 0 ? '-' : '';
+  return `${sign}%${percentFormat.format(Math.abs(value))}`;
+}

@@ -8,6 +8,9 @@ const checks: { test: (value: string) => boolean; message: string }[] = [
   { test: (v) => /\d/.test(v), message: 'Şifre en az bir rakam içermelidir.' },
 ];
 
+/** Arka uçtaki üst sınır (bcrypt öncesi) */
+export const PASSWORD_MAX_LENGTH = 128;
+
 export const PASSWORD_HINT = 'En az 8 karakter; büyük harf, küçük harf ve rakam';
 
 export function passwordProblem(value: string): string | null {
@@ -21,6 +24,7 @@ export function passwordScore(value: string): number {
 
 export const passwordRules: Rule[] = [
   { required: true, message: 'Şifre zorunludur.' },
+  { max: PASSWORD_MAX_LENGTH, message: `Şifre en fazla ${PASSWORD_MAX_LENGTH} karakter olabilir.` },
   {
     validator: (_, value: string | undefined) => {
       const problem = value ? passwordProblem(value) : null;
