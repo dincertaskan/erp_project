@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => {
         reporter: ['text-summary', 'html'],
         include: ['src/**/*.{ts,tsx}'],
         exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/**/*.d.ts'],
+        // Mevcut kapsamın birkaç puan altında; kapsam düşerse npm run test:coverage hata verir.
+        thresholds: { lines: 70, statements: 70, branches: 63, functions: 57 },
       },
     },
   };
