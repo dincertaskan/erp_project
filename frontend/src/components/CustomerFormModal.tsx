@@ -61,7 +61,7 @@ export function CustomerFormModal({ open, customer, onOpenChange, onSaved }: Cus
       width={640}
       formRef={formRef}
       modalProps={{ destroyOnHidden: true }}
-      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
       initialValues={
         customer
           ? {

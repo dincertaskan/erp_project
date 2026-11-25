@@ -167,7 +167,7 @@ export function UsersPage() {
         open={roleTarget !== null}
         width={440}
         modalProps={{ destroyOnHidden: true, onCancel: () => setRoleTarget(null) }}
-        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
         initialValues={{ role: roleTarget?.role }}
         onFinish={async ({ role }) => {
           if (!roleTarget) return false;

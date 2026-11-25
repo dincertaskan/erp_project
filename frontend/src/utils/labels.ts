@@ -34,7 +34,7 @@ export const movementTypeLabels: Record<StockMovementType, string> = {
 export const stockStatusLabels: Record<StockStatus, string> = {
   sufficient: 'Yeterli',
   critical: 'Kritik',
-  out_of_stock: 'Tükendi',
+  out_of_stock: 'Stokta Yok',
 };
 
 /** Kritik stok: stok, minimum stok seviyesinin altında. */

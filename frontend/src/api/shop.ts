@@ -77,7 +77,7 @@ export interface MyOrderDetail extends MyOrderSummary {
 
 export const availabilityText = (product: Pick<CatalogProduct, 'availability' | 'available_qty'>) =>
   product.availability === 'out_of_stock'
-    ? 'Stokta yok'
+    ? 'Stokta Yok'
     : product.availability === 'low_stock'
       ? `Son ${product.available_qty} ürün`
       : 'Stokta';

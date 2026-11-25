@@ -66,7 +66,7 @@ export function RegisterPage() {
           name="email"
           rules={[
             { required: true, message: 'E-posta zorunludur.' },
-            { type: 'email', message: 'Lütfen geçerli bir e-posta adresi giriniz.' },
+            { type: 'email', message: 'Geçerli bir e-posta adresi girin.' },
           ]}
         >
           <Input autoComplete="email" placeholder="ornek@firma.com" />
@@ -108,7 +108,7 @@ export function RegisterPage() {
       </Form>
       <Divider style={{ margin: '24px 0 16px' }} />
       <Typography.Paragraph style={{ textAlign: 'center', margin: 0 }}>
-        Zaten hesabın var mı? <Link to="/login">Giriş Yap</Link>
+        Zaten hesabınız var mı? <Link to="/login">Giriş Yap</Link>
       </Typography.Paragraph>
     </AuthLayout>
   );

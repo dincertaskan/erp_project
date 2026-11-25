@@ -154,7 +154,7 @@ export function CategoriesPage() {
         formRef={formRef}
         width={480}
         modalProps={{ destroyOnHidden: true, onCancel: () => setModalOpen(false) }}
-        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
         initialValues={editing ?? { name: '', color: DEFAULT_COLOR, is_active: true }}
         onOpenChange={setModalOpen}
         onFinish={onFinish}

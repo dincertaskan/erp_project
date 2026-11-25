@@ -38,6 +38,7 @@ const statusByLabel: Record<string, StockStatus> = {
   Yeterli: 'sufficient',
   Kritik: 'critical',
   Tükendi: 'out_of_stock',
+  'Stokta Yok': 'out_of_stock',
 };
 
 /** Stok Raporu: dönem başı/sonu stok ve dönem içi giriş-çıkışlar. */

@@ -124,7 +124,7 @@ export function ProductFormModal({ open, product, onOpenChange, onSaved }: Produ
           if (visible) skuTouched.current = false;
         },
       }}
-      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+      submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
       onOpenChange={onOpenChange}
       onFinish={onFinish}
     >

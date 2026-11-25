@@ -88,7 +88,7 @@ function MovementDialog({
       title="Stok İşlemi"
       width={480}
       okText="Kaydet"
-      cancelText="İptal"
+      cancelText="Vazgeç"
       confirmLoading={saving}
       onOk={() => form.submit()}
       onCancel={onClose}

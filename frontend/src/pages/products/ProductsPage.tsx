@@ -16,6 +16,7 @@ import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { stockStatusLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { DEACTIVATE_PRODUCT_DESCRIPTION, DEACTIVATE_PRODUCT_TITLE } from './productTexts';
 import { ActionLink } from '@/components/ActionLink';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
@@ -190,8 +191,8 @@ export function ProductsPage() {
               row.is_active ? (
                 <Popconfirm
                   key="status"
-                  title="Ürün pasife alınsın mı?"
-                  description="Pasif ürünler müşteri kataloğunda görünmez ve siparişe eklenemez."
+                  title={DEACTIVATE_PRODUCT_TITLE}
+                  description={DEACTIVATE_PRODUCT_DESCRIPTION}
                   okText="Pasife Al"
                   cancelText="Vazgeç"
                   okButtonProps={{ danger: true }}

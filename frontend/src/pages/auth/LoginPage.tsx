@@ -90,7 +90,7 @@ export function LoginPage() {
       </Form>
       <Divider style={{ margin: '24px 0 16px' }} />
       <Typography.Paragraph style={{ textAlign: 'center', margin: 0 }}>
-        Hesabın yok mu? <Link to="/register">Kayıt Ol</Link>
+        Hesabınız yok mu? <Link to="/register">Kayıt Ol</Link>
       </Typography.Paragraph>
     </AuthLayout>
   );
