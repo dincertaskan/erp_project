@@ -131,6 +131,28 @@ def test_create_validation(client, admin, customer, payload, field):
     assert field in {d["field"] for d in response.json()["details"]}
 
 
+def test_amounts_beyond_the_numeric_column_are_rejected(client, db, admin, customer, make_product):
+    expensive = make_product(sale_price="9999999.99")
+    big = make_product(sale_price="6000000000.00")
+
+    line = create_order(client, admin, customer, [(big, 1), (expensive, 1001)])
+    total = create_order(client, admin, customer, [(big, 1), (expensive, 500)])
+
+    assert line.status_code == 422
+    assert line.json()["code"] == "VALIDATION_ERROR"
+    assert line.json()["details"][0]["field"] == "items.1.quantity"
+    assert total.status_code == 422
+    assert total.json()["details"][0]["field"] == "items"
+    assert db.scalar(select(Order).where(Order.customer_id == customer.customer.id)) is None
+
+
+def test_page_number_is_bounded(client, admin):
+    response = client.get("/orders", headers=auth_headers(admin), params={"page": 100_001})
+
+    assert response.status_code == 422
+    assert response.json()["details"][0]["field"] == "page"
+
+
 def test_duplicate_products_are_rejected(client, admin, customer, make_product):
     product = make_product()
 

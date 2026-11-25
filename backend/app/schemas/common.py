@@ -18,8 +18,12 @@ class Page[T](BaseModel):
     page_size: int
 
 
+# Çok büyük sayfa numarası OFFSET'i bigint sınırının ötesine taşıyıp veritabanı hatasına yol açar.
+MAX_PAGE = 100_000
+
+
 class PageParams(BaseModel):
-    page: int = Field(1, ge=1)
+    page: int = Field(1, ge=1, le=MAX_PAGE)
     page_size: int = Field(20, ge=1, le=100)
 
     @property

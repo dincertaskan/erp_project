@@ -46,6 +46,16 @@ class ConflictError(AppError):
     code = "CONFLICT"
 
 
+class UnprocessableError(AppError):
+    """Şemadan geçen ama sunucudaki verilerle birlikte geçersiz olan istek; doğrulama hatasıyla aynı biçimde döner."""
+
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+    def __init__(self, details: list[dict[str, str]]):
+        super().__init__("Girilen bilgileri kontrol edin.", details=details)
+
+
 class TooManyRequestsError(AppError):
     status_code = 429
     code = "TOO_MANY_REQUESTS"
