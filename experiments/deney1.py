@@ -3,7 +3,8 @@
 Her koşuda API üzerinden stoğu K olan bir ürün ve bu üründen 1'er adetlik N "Onay Bekliyor" sipariş
 oluşturulur; N onay isteği aynı anda gönderilir. Ölçülenler: onaylanan sipariş sayısı, fazla satış
 (onaylanan - K), son stok, kayıp güncelleme (stoktan düşmesi gereken ile düşen arasındaki fark),
-başarısız istek oranı, ortalama ve p95 yanıt süresi. Sonuçlar CSV'ye eklenir.
+başarısız istek oranı, ortalama ve p95 yanıt süresi; ayrıca yalnızca başarılı onayların ortalama ve p95
+süresi ile saniyede başarılı onay sayısı. Sonuçlar CSV'ye eklenir.
 
 Sunucu stratejisi STOCK_STRATEGY ortam değişkeniyle seçilir; --restart verilirse betik backend
 konteynerini her strateji için yeniden başlatır.
@@ -26,6 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent
 PREPARE_PARALLEL = 20
@@ -46,12 +48,20 @@ FIELDS = [
     "mean_ms",
     "p95_ms",
     "failure_rate",
+    "ok_mean_ms",
+    "ok_p95_ms",
+    "duration_ms",
+    "ok_per_s",
 ]
 
 
 def p95(values: list[float]) -> float:
-    ordered = sorted(values)
-    return ordered[max(0, round(0.95 * len(ordered)) - 1)] if ordered else 0.0
+    """Doğrusal enterpolasyonlu 95. yüzdelik (numpy.percentile, linear).
+
+    results/deney1.csv bu değişiklikten önce üretildi: orada sıralı listedeki round(0,95·N)'inci değer
+    kullanılmıştı (N=10'da maksimum).
+    """
+    return float(np.percentile(values, 95)) if values else 0.0
 
 
 class Api:
@@ -117,8 +127,8 @@ class Api:
 
             return list(await asyncio.gather(*(create() for _ in range(count))))
 
-    async def approve_all(self, order_ids: list[int]) -> list[tuple[int, str, float]]:
-        """Tüm onay isteklerini aynı anda gönderir; (durum kodu, hata kodu, süre ms) döner."""
+    async def approve_all(self, order_ids: list[int]) -> tuple[list[tuple[int, str, float]], float]:
+        """Tüm onay isteklerini aynı anda gönderir; [(durum kodu, hata kodu, süre ms)] ve toplam süre (ms) döner."""
         limits = httpx.Limits(max_connections=len(order_ids), max_keepalive_connections=len(order_ids))
         async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=60, limits=limits) as client:
             start = asyncio.Event()
@@ -138,8 +148,10 @@ class Api:
 
             tasks = [asyncio.create_task(approve(order_id)) for order_id in order_ids]
             await asyncio.sleep(0.2)  # tüm bağlantılar hazır olsun, sonra hepsi birlikte
+            began = time.perf_counter()
             start.set()
-            return await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
+            return results, (time.perf_counter() - began) * 1000
 
 
 def restart_backend(
@@ -216,6 +228,11 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     new_file = not args.out.exists()
+    if not new_file:
+        with args.out.open(encoding="utf-8") as existing:
+            header = existing.readline().strip().split(",")
+        if header != FIELDS:
+            raise SystemExit(f"{args.out} farklı sütunlarla üretilmiş; yeni bir dosya verin (--out).")
     with args.out.open("a", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS)
         if new_file:
@@ -243,11 +260,12 @@ def run_all(args, writer, handle) -> None:
             stock = int(args.stock) if args.stock >= 1 else max(1, int(concurrency * args.stock))
             for repetition in range(1, args.repetitions + 1):
                 product_id, order_ids = api.prepare(category_id, customer_id, stock, concurrency)
-                results = asyncio.run(api.approve_all(order_ids))
+                results, duration_ms = asyncio.run(api.approve_all(order_ids))
                 final_stock = api.request("GET", f"/products/{product_id}")["stock"]
                 approved = sum(1 for status, _, _ in results if status == 200)
                 insufficient = sum(1 for _, code, _ in results if code == "INSUFFICIENT_STOCK")
                 latencies = [elapsed for _, _, elapsed in results]
+                ok_latencies = [elapsed for status, _, elapsed in results if status == 200]
                 row = {
                     "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
                     "strategy": strategy,
@@ -266,6 +284,11 @@ def run_all(args, writer, handle) -> None:
                     "mean_ms": round(statistics.fmean(latencies), 2),
                     "p95_ms": round(p95(latencies), 2),
                     "failure_rate": round((len(results) - approved - insufficient) / len(results), 4),
+                    # Yalnızca başarılı onaylar: stratejiler reddettikleri istek oranında farklılaştığı için
+                    "ok_mean_ms": round(statistics.fmean(ok_latencies), 2) if ok_latencies else "",
+                    "ok_p95_ms": round(p95(ok_latencies), 2) if ok_latencies else "",
+                    "duration_ms": round(duration_ms, 2),
+                    "ok_per_s": round(approved / (duration_ms / 1000), 2),
                 }
                 writer.writerow(row)
                 handle.flush()
