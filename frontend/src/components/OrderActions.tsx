@@ -14,6 +14,11 @@ import {
 import { invalidateStock } from '@/api/stock';
 import { formatNumber } from '@/utils/format';
 
+const isShortageList = (value: unknown): value is Shortage[] =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  value.every((item) => typeof item === 'object' && item !== null && 'product_id' in item);
+
 type ActionOrder = Pick<OrderListItem, 'id' | 'order_code' | 'status' | 'item_count' | 'allowed_actions'>;
 
 function confirmText(action: OrderAction, order: ActionOrder): string {
@@ -51,8 +56,10 @@ export function OrderActions({ order, size = 'middle', onDone }: OrderActionsPro
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       onDone?.(data);
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'INSUFFICIENT_STOCK') setShortages(err.details as Shortage[]);
-      else message.error(errorMessage(err));
+      // Eksik kalem listesi yoksa boş pencere yerine sunucunun mesajı gösterilir.
+      if (err instanceof ApiError && err.code === 'INSUFFICIENT_STOCK' && isShortageList(err.details)) {
+        setShortages(err.details);
+      } else message.error(errorMessage(err));
     }
   };
 

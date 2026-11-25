@@ -45,6 +45,7 @@ function timelineItems(order: OrderDetail) {
 
 /** E-20 Sipariş Detayı */
 export function OrderDetailPage() {
+  usePageTitle('Sipariş Detayı');
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();

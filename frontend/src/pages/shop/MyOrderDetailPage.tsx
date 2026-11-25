@@ -14,10 +14,12 @@ import {
   Table,
   Typography,
 } from 'antd';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { api } from '@/api/client';
+import { ApiError, api, errorMessage } from '@/api/client';
 import type { MyOrderDetail, MyOrderItem } from '@/api/shop';
 import { OrderStatusTag } from '@/components/StatusTag';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { orderStatusLabels, paymentMethodLabels, type OrderStatus } from '@/utils/labels';
 import { MyOrderCancelButton } from './MyOrderCancelButton';
@@ -53,16 +55,32 @@ function timeline(order: MyOrderDetail) {
 /** E-35 Sipariş Detayı (müşteri); ?new=1 ile gelindiyse E-33 "Siparişiniz alındı" şeridi gösterilir. */
 export function MyOrderDetailPage() {
   const { id } = useParams();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const queryKey = ['me', 'orders', 'detail', id];
-  const justPlaced = params.get('new') === '1';
+  // Şerit yalnızca ilk açılışta gösterilir; ?new=1 adresten silinir, yenileme ya da geri dönüşte tekrar çıkmaz.
+  const [justPlaced] = useState(() => params.get('new') === '1');
+  usePageTitle('Sipariş Detayı');
+
+  useEffect(() => {
+    if (!params.has('new')) return;
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete('new');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [params, setParams]);
 
   const {
     data: order,
     error,
     isPending,
+    isFetching,
+    refetch,
   } = useQuery({
     queryKey,
     queryFn: async () => (await api.get<MyOrderDetail>(`/me/orders/${id}`)).data,
@@ -75,12 +93,23 @@ export function MyOrderDetailPage() {
       </div>
     );
   }
-  if (error || !order) {
+  if (error) {
+    const notFound = error instanceof ApiError && error.status === 404;
     return (
       <Result
-        status="404"
-        title="Sipariş bulunamadı"
-        extra={<Button onClick={() => navigate('/shop/orders')}>Siparişlerime Dön</Button>}
+        status={notFound ? '404' : 'error'}
+        title={notFound ? 'Sipariş bulunamadı' : 'Sipariş yüklenemedi'}
+        subTitle={notFound ? undefined : errorMessage(error)}
+        extra={
+          <Space>
+            {notFound ? null : (
+              <Button type="primary" onClick={() => void refetch()} loading={isFetching}>
+                Tekrar Dene
+              </Button>
+            )}
+            <Button onClick={() => navigate('/shop/orders')}>Siparişlerime Dön</Button>
+          </Space>
+        }
       />
     );
   }

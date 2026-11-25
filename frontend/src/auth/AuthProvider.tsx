@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AUTH_EXPIRED_EVENT, api, tokenStorage } from '@/api/client';
+import { ApiError, AUTH_EXPIRED_EVENT, api, tokenStorage } from '@/api/client';
 import type { CurrentUser, TokenResponse } from '@/api/types';
 import { cartStore } from '@/cart/cartStore';
 import { AuthContext, ME_QUERY_KEY, type AuthContextValue } from './context';
@@ -54,16 +54,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession();
   }, [clearSession]);
 
+  const { refetch } = meQuery;
+  const retry = useCallback(() => void refetch(), [refetch]);
+
+  // 401 oturumu istemci katmanında sonlandırır; ağ ya da sunucu hatasında oturum korunur ve tekrar denenebilir.
+  const meFailed =
+    Boolean(token) && meQuery.isError && !(meQuery.error instanceof ApiError && meQuery.error.status === 401);
+  const retrying = meFailed && meQuery.isFetching;
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: token ? (meQuery.data ?? null) : null,
-      isLoading: Boolean(token) && meQuery.isPending,
+      isLoading: (Boolean(token) && meQuery.isPending) || retrying,
+      unavailable: meFailed && !retrying && !meQuery.data,
       sessionExpired,
       signedOut,
       login,
       logout,
+      retry,
     }),
-    [token, meQuery.data, meQuery.isPending, sessionExpired, signedOut, login, logout],
+    [token, meQuery.data, meQuery.isPending, meFailed, retrying, sessionExpired, signedOut, login, logout, retry],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

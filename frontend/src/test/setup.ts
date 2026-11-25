@@ -7,6 +7,12 @@ afterEach(() => {
   localStorage.clear();
 });
 
+// ProLayout menüsü daralma durumunu 400 ms'lik bir zamanlayıcıyla günceller. Dosya bitmeden bu
+// zamanlayıcıların çalışmasını beklemezsek jsdom kapandıktan sonra "window is not defined" hatası verir.
+afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 450));
+});
+
 // Ant Design bileşenlerinin jsdom'da ihtiyaç duyduğu tarayıcı API'leri
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
