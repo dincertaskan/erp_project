@@ -11,7 +11,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 | A01 | Erişim denetimi hataları | Uygun (testlerle doğrulandı) |
 | A02 | Kriptografik hatalar | Düzeltildi |
 | A03 | Enjeksiyon | Uygun; Excel formül enjeksiyonu Düzeltildi |
-| A04 | Güvensiz tasarım | Uygun |
+| A04 | Güvensiz tasarım | Düzeltildi (kalan risk belgelendi) |
 | A05 | Güvenlik yanlış yapılandırması | Düzeltildi |
 | A06 | Zafiyetli ve güncel olmayan bileşenler | Uygun |
 | A07 | Kimlik doğrulama hataları | Uygun (sınırlamalarla) |
@@ -45,7 +45,9 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 ### A04 – Güvensiz tasarım
 
 - Sipariş tutarı sunucudaki fiyatlarla hesaplanır; sepet sunucuda yeniden doğrulanır. Stok güncellemeleri kilitlenir (kötümser kilit). Yeni kayıtlar her zaman müşteri rolüyle açılır.
-- Sonuç: **Uygun**.
+- **Düzeltildi:** Kayıt olurken ya da kullanıcı müşteri rolüne alınırken aynı e-postalı müşteri kartı hesaba otomatik bağlanıyordu. Olist'ten aktarılan kartların e-postaları tahmin edilebilir (`olist-00001@example.com`) olduğundan bu kartlar artık hiçbir hesaba bağlanmaz; bu e-postayla kayıt 409 döner (`tests/test_auth.py`, `tests/test_users.py`).
+- **Kalan risk:** E-posta doğrulaması olmadığı için yöneticinin uygulamada eklediği bir müşteri kartı, o e-postayla ilk kayıt olan kişiye bağlanır ve kişi kartın sipariş geçmişini görür. Gerçek kullanımda kayıt sonrası e-posta doğrulaması ya da bağlamanın yönetici onayıyla yapılması gerekir; bu proje kapsamında kabul edilmiştir.
+- Sonuç: **Düzeltildi**; kalan risk yukarıda belgelendi.
 
 ### A05 – Güvenlik yanlış yapılandırması
 

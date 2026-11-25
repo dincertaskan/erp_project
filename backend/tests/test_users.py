@@ -6,7 +6,7 @@ from sqlalchemy import delete, func, select
 from app.core.database import SessionLocal
 from app.core.errors import ConflictError
 from app.core.security import hash_password
-from app.models import User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 from tests.conftest import auth_headers
@@ -139,6 +139,19 @@ def test_concurrent_demotions_cannot_remove_every_admin(two_committed_admins):
     assert result["outcome"] == "LAST_ADMIN"
     with SessionLocal() as session:
         assert session.scalar(active) == 1
+
+
+def test_role_change_never_links_an_olist_customer_card(db, admin, make_user):
+    staff = make_user(UserRole.WAREHOUSE, email="olist-00002@example.com")
+    card = Customer(full_name="Olist Müşterisi", email="olist-00002@example.com", source=RecordSource.OLIST)
+    db.add(card)
+    db.flush()
+
+    with pytest.raises(ConflictError) as caught:
+        UserService(db).set_role(admin, staff.id, UserRole.CUSTOMER)
+
+    assert caught.value.code == "EMAIL_TAKEN"
+    assert (staff.role, card.user_id) == (UserRole.WAREHOUSE, None)
 
 
 def test_unknown_user_returns_404(client, admin):

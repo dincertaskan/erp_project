@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from app.core import security
-from app.models import Customer, User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from tests.conftest import TEST_PASSWORD, auth_headers
 
 REGISTER = {"full_name": "Can Demir", "email": "Can@Example.com", "password": "Guclu1234"}
@@ -51,6 +51,20 @@ def test_register_links_existing_customer_card(client, db):
     assert response.status_code == 201
     db.refresh(card)
     assert card.user_id == response.json()["id"]
+
+
+def test_register_never_links_an_olist_customer_card(client, db):
+    card = Customer(full_name="Olist Müşterisi", email="olist-00001@example.com", source=RecordSource.OLIST)
+    db.add(card)
+    db.flush()
+
+    response = client.post("/auth/register", json=REGISTER | {"email": "OLIST-00001@example.com"})
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "EMAIL_TAKEN"
+    db.refresh(card)
+    assert card.user_id is None
+    assert db.scalar(select(User).where(User.email == "olist-00001@example.com")) is None
 
 
 def test_login_returns_token_and_user(client, admin):

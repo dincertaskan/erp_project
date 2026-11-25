@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import AppError, ConflictError, ForbiddenError, TooManyRequestsError, UnauthorizedError
 from app.core.login_throttle import login_throttle
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Customer, User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, PasswordChangeRequest, ProfileUpdateRequest, RegisterRequest
 
@@ -21,7 +21,10 @@ class AuthService:
         """Yeni kayıtlar her zaman müşteri rolüyle oluşturulur (FR-01)."""
         # bcrypt veritabanı işlemi açılmadan çalışır; yavaş özetleme sırasında havuzdan bağlantı tutulmaz.
         password_hash = hash_password(data.password)
-        if self.users.get_by_email(data.email):
+        # Yöneticinin daha önce aynı e-postayla eklediği bir müşteri kartı varsa hesaba bağlanır.
+        # Olist kartlarının e-postaları tahmin edilebilir (olist-00001@example.com); bunlar hiçbir hesaba bağlanmaz.
+        customer = self.users.get_customer_by_email(data.email)
+        if self.users.get_by_email(data.email) or (customer is not None and customer.source == RecordSource.OLIST):
             raise ConflictError(
                 "Bu e-posta adresi zaten kayıtlı.",
                 code="EMAIL_TAKEN",
@@ -36,8 +39,6 @@ class AuthService:
         self.db.add(user)
         self.db.flush()
 
-        # Yöneticinin daha önce aynı e-postayla eklediği bir müşteri kartı varsa hesaba bağlanır.
-        customer = self.users.get_customer_by_email(data.email)
         if customer is None:
             customer = Customer(full_name=data.full_name, email=data.email, phone=data.phone)
             self.db.add(customer)

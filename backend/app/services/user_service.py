@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Customer, User, UserRole
+from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.common import Page, PageParams
 from app.schemas.user import UserOut
@@ -46,9 +46,16 @@ class UserService:
         if role != UserRole.ADMIN:
             self._ensure_not_last_admin(user)
 
+        needs_card = role == UserRole.CUSTOMER and user.customer is None
+        customer = self.users.get_customer_by_email(user.email) if needs_card else None
+        if customer is not None and customer.source == RecordSource.OLIST:
+            # Olist kartı hesaba bağlanmaz; aynı e-postayla ikinci kart da açılamaz.
+            raise ConflictError(
+                "Bu e-posta adresi Olist verisinden aktarılan bir müşteri kartında kullanılıyor.", code="EMAIL_TAKEN"
+            )
+
         user.role = role
-        if role == UserRole.CUSTOMER and user.customer is None:
-            customer = self.users.get_customer_by_email(user.email)
+        if needs_card:
             if customer is None:
                 customer = Customer(full_name=user.full_name, email=user.email)
                 self.db.add(customer)
