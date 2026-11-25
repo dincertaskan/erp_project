@@ -15,6 +15,7 @@ import { ActiveTag, RoleTag } from '@/components/StatusTag';
 import { formatDate, formatDateTime } from '@/utils/format';
 import { roleLabels, type UserRole } from '@/utils/labels';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface UserFilters {
   keyword?: string;
@@ -28,6 +29,7 @@ const SELF_HINT = 'Kendi hesabınızda bu işlem yapılamaz.';
 
 /** E-26 Kullanıcılar (yalnızca yönetici). Personel hesapları kayıt + rol atama ile oluşur (karar 10). */
 export function UsersPage() {
+  usePageTitle('Kullanıcılar');
   const { user: me } = useAuth();
   const { message } = App.useApp();
   const actionRef = useRef<ActionType>(null);

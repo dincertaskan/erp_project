@@ -7,6 +7,7 @@ import { applyServerErrors } from '@/utils/forms';
 import { confirmRules, passwordRules } from '@/utils/password';
 import { AuthLayout } from './AuthLayout';
 import type { LoginLocationState } from './LoginPage';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface RegisterForm {
   full_name: string;
@@ -19,6 +20,7 @@ interface RegisterForm {
 
 /** E-02 Kayıt Ol. Yeni hesaplar her zaman müşteri rolüyle açılır; rol seçimi yoktur. */
 export function RegisterPage() {
+  usePageTitle('Kayıt Ol');
   const navigate = useNavigate();
   const [form] = Form.useForm<RegisterForm>();
   const password = Form.useWatch('password', form);

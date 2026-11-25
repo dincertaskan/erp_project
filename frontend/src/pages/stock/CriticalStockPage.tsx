@@ -13,9 +13,11 @@ import { StockStatusTag } from '@/components/StatusTag';
 import { StockMovementModal, type MovementProduct } from '@/components/StockMovementModal';
 import { formatNumber } from '@/utils/format';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 /** E-18 Kritik Stok: stoğu minimumun altındaki ürünler, en kritik olan önce. */
 export function CriticalStockPage() {
+  usePageTitle('Kritik Stok');
   const actionRef = useRef<ActionType>(null);
   const { data: categories = [] } = useCategories();
   const { data: count, isPending } = useCriticalCount();

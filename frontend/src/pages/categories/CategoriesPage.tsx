@@ -19,6 +19,7 @@ import { ColorDot } from '@/components/CategoryTag';
 import { ActiveTag } from '@/components/StatusTag';
 import { applyServerErrors } from '@/utils/forms';
 import { formatDate, formatNumber } from '@/utils/format';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CategoryForm {
   name: string;
@@ -30,6 +31,7 @@ const DEFAULT_COLOR = '#4F46E5';
 
 /** E-14 Kategoriler (yalnızca yönetici). Kategoriler silinmez, pasife alınır. */
 export function CategoriesPage() {
+  usePageTitle('Kategoriler');
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const actionRef = useRef<ActionType>(null);

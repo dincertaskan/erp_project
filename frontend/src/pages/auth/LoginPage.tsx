@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { applyServerErrors } from '@/utils/forms';
 import { AuthLayout } from './AuthLayout';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface LoginForm {
   email: string;
@@ -17,6 +18,7 @@ export interface LoginLocationState {
 
 /** E-01 Giriş. Başarılı girişte yönlendirmeyi PublicOnly koruması yapar. */
 export function LoginPage() {
+  usePageTitle('Giriş Yap');
   const { login, sessionExpired } = useAuth();
   const location = useLocation();
   const registeredEmail = (location.state as LoginLocationState | null)?.registeredEmail;

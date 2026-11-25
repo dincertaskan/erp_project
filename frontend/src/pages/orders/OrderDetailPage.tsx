@@ -11,6 +11,7 @@ import { ProductThumb } from '@/components/ProductThumb';
 import { MovementQuantity, MovementTypeTag, OrderStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDateTime, formatNumber } from '@/utils/format';
 import { orderStatusLabels, paymentMethodLabels, type OrderStatus } from '@/utils/labels';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const FLOW: OrderStatus[] = ['pending', 'preparing', 'shipped', 'completed'];
 
@@ -59,6 +60,8 @@ export function OrderDetailPage() {
     queryKey,
     queryFn: async () => (await api.get<OrderDetail>(`/orders/${id}`)).data,
   });
+
+  usePageTitle(order ? `Sipariş ${order.order_code}` : 'Sipariş Detayı');
 
   if (isPending) return <FullPageSpinner />;
   if (error || !order) {

@@ -14,6 +14,7 @@ import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { stockStatusLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface ProductFilters {
   keyword?: string;
@@ -26,6 +27,7 @@ interface ProductFilters {
 
 /** E-11 Ürün Listesi. Depo personeli salt okur ve maliyeti görmez. */
 export function ProductsPage() {
+  usePageTitle('Ürünler');
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { message } = App.useApp();

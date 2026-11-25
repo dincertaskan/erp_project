@@ -6,6 +6,7 @@ import { api } from '@/api/client';
 import { PasswordStrength } from '@/components/PasswordStrength';
 import { applyServerErrors } from '@/utils/forms';
 import { confirmRules, passwordRules } from '@/utils/password';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface PasswordForm {
   current_password: string;
@@ -15,6 +16,7 @@ interface PasswordForm {
 
 /** E-04 Şifre Değiştir */
 export function ChangePasswordPage() {
+  usePageTitle('Şifre Değiştir');
   const { message } = App.useApp();
   const navigate = useNavigate();
   const [form] = Form.useForm<PasswordForm>();

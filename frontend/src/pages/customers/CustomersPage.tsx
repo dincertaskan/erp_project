@@ -11,6 +11,7 @@ import { CustomerFormModal } from '@/components/CustomerFormModal';
 import { ActiveTag } from '@/components/StatusTag';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CustomerFilters {
   keyword?: string;
@@ -23,6 +24,7 @@ interface CustomerFilters {
 
 /** E-22 Müşteri Listesi (yalnızca yönetici) */
 export function CustomersPage() {
+  usePageTitle('Müşteriler');
   const actionRef = useRef<ActionType>(null);
   const [editing, setEditing] = useState<CustomerListItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);

@@ -16,6 +16,7 @@ import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatDateTime, formatNumber } from '@/utils/format';
 import { movementTypeLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface MovementFilters {
   movement_type?: string;
@@ -53,6 +54,8 @@ export function ProductDetailPage() {
     queryKey,
     queryFn: async () => (await api.get<ProductDetail>(`/products/${id}`)).data,
   });
+
+  usePageTitle(product?.name ?? 'Ürün Detayı');
 
   if (isPending) return <FullPageSpinner />;
   if (error || !product) {
