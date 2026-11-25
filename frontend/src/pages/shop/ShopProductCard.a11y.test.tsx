@@ -111,7 +111,7 @@ describe('AvailabilityText', () => {
   it.each([
     ['in_stock', 30, 'Stokta', 'rgb(4, 120, 87)'],
     ['low_stock', 2, 'Son 2 ürün', 'rgb(180, 83, 9)'],
-    ['out_of_stock', 0, 'Stokta Yok', 'rgb(107, 114, 128)'],
+    ['out_of_stock', 0, 'Stokta Yok', 'rgb(100, 116, 139)'],
   ] as const)('uses readable colours for %s', (availability, qty, text, color) => {
     render(<AvailabilityText product={{ availability, available_qty: qty }} />);
 

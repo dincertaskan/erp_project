@@ -151,7 +151,7 @@ describe('CategoriesPage form', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
 
     await waitFor(() =>
-      expect(post).toHaveBeenCalledWith('/categories', { name: 'Kırtasiye', color: '#4F46E5', is_active: true }),
+      expect(post).toHaveBeenCalledWith('/categories', { name: 'Kırtasiye', color: '#2563EB', is_active: true }),
     );
     expect(await screen.findByText('Kategori kaydedildi.')).toBeInTheDocument();
   });

@@ -28,7 +28,7 @@ interface CategoryForm {
   is_active: boolean;
 }
 
-const DEFAULT_COLOR = '#4F46E5';
+const DEFAULT_COLOR = '#2563EB';
 
 /** E-14 Kategoriler (yalnızca yönetici). Kategoriler silinmez, pasife alınır. */
 export function CategoriesPage() {
@@ -181,7 +181,7 @@ export function CategoriesPage() {
             presets={[
               {
                 label: 'Önerilen',
-                colors: ['#4F46E5', '#2563EB', '#0E7490', '#10B981', '#D97706', '#EC4899', '#7C3AED', '#4B5563'],
+                colors: ['#2563EB', '#1E3A8A', '#0E7490', '#10B981', '#D97706', '#EC4899', '#7C3AED', '#4B5563'],
               },
             ]}
           />
