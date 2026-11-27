@@ -40,7 +40,7 @@ Tüm hatalar aynı gövdeyle döner:
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri). Aynı e-postalı, hesabı olmayan bir müşteri kartı varsa yöneticinin ürettiği `invite_code` gerekir; doğru kodla hesap karta bağlanır | `EMAIL_TAKEN` (409), `INVITE_CODE_REQUIRED` (400), `INVALID_INVITE_CODE` (400, yanlış, süresi geçmiş ya da kullanılmış kod) |
+| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri). Aynı e-postalı, hesabı olmayan bir müşteri kartı varsa yöneticinin ürettiği `invite_code` gerekir; doğru kodla hesap karta bağlanır | `EMAIL_TAKEN` (409), `INVITE_CODE_REQUIRED` (400), `INVALID_INVITE_CODE` (400, yanlış, süresi geçmiş ya da kullanılmış kod), `TOO_MANY_REQUESTS` (429, aynı IP'den 10 dakikada 5'ten fazla deneme; `Retry-After` başlığı ve `details.retry_after` saniye cinsinden bekleme süresini verir. Sınır `REGISTER_RATE_LIMIT` ve `REGISTER_RATE_WINDOW_MINUTES` ile ayarlanır) |
 | POST | `/auth/login` | Herkes | E-posta ve şifreyle giriş; JWT döndürür | `INVALID_CREDENTIALS` (401), `ACCOUNT_INACTIVE` (403), `TOO_MANY_REQUESTS` (429, 15 dakikada 5 hatalı deneme) |
 | GET | `/auth/me` | Giriş yapmış kullanıcı | Oturumdaki kullanıcının bilgileri | `INVALID_TOKEN` (401) |
 | PATCH | `/auth/me` | Giriş yapmış kullanıcı | Profil bilgilerini günceller | `NOT_A_CUSTOMER` (400, müşteriye özgü alanlar personel tarafından gönderilirse) |

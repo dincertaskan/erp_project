@@ -57,6 +57,8 @@ class UnprocessableError(AppError):
 
 
 class TooManyRequestsError(AppError):
+    """details["retry_after"] (saniye) yanıtta Retry-After başlığı olarak da gönderilir."""
+
     status_code = 429
     code = "TOO_MANY_REQUESTS"
 
@@ -109,7 +111,11 @@ def _clean_message(msg: str) -> str:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(_: Request, exc: AppError):
-        headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
+        headers = None
+        if exc.status_code == 401:
+            headers = {"WWW-Authenticate": "Bearer"}
+        elif isinstance(exc, TooManyRequestsError) and isinstance(exc.details, dict) and "retry_after" in exc.details:
+            headers = {"Retry-After": str(exc.details["retry_after"])}
         return JSONResponse(
             status_code=exc.status_code, content=error_body(exc.code, exc.message, exc.details), headers=headers
         )

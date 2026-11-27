@@ -142,6 +142,18 @@ describe('RegisterPage', () => {
     expect(fieldError.closest('.ant-form-item')).toHaveTextContent('Davet kodu');
   });
 
+  it('shows the rate limit message when there are too many registrations', async () => {
+    const message = 'Çok fazla deneme yapıldı, 10 dakika sonra tekrar deneyin.';
+    vi.spyOn(api, 'post').mockRejectedValue(new ApiError(429, 'TOO_MANY_REQUESTS', message, { retry_after: 600 }));
+    renderRoutes(routes, '/register');
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Hesap Oluştur' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByRole('button', { name: 'Hesap Oluştur' })).toBeEnabled();
+  });
+
   it('opens the login page with the e-mail filled in after registering', async () => {
     const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} });
     const { router } = renderRoutes(routes, '/register');

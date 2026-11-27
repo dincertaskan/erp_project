@@ -1,4 +1,6 @@
-"""Art arda hatalı giriş denemelerini sınırlar.
+"""Bir anahtar (e-posta, IP) için kayan pencerede deneme sayısını sınırlar.
+
+Hatalı giriş denemeleri e-posta başına, kayıt denemeleri IP başına sayılır.
 
 Sayaçlar bellekte tutulur; uygulama yeniden başlatılınca sıfırlanır ve her
 uvicorn süreci kendi sayacını tutar. Bu projenin ölçeği için yeterlidir.
@@ -7,6 +9,8 @@ uvicorn süreci kendi sayacını tutar. Bu projenin ölçeği için yeterlidir.
 import time
 from collections import defaultdict, deque
 from threading import Lock
+
+from app.core.config import settings
 
 MAX_FAILED_ATTEMPTS = 5
 WINDOW_SECONDS = 15 * 60
@@ -34,6 +38,19 @@ class LoginThrottle:
                 return 0
             return int(self.window_seconds - (now - attempts[0])) + 1
 
+    def hit(self, key: str) -> int:
+        """Denemeyi sayar ve 0 döndürür; sınır dolmuşsa saymadan beklenecek saniyeyi döndürür.
+
+        Kontrol ve sayma aynı kilit altında yapılır; eşzamanlı istekler sınırı aşamaz.
+        """
+        with self._lock:
+            now = time.monotonic()
+            attempts = self._prune(key, now)
+            if len(attempts) >= self.max_attempts:
+                return int(self.window_seconds - (now - attempts[0])) + 1
+            attempts.append(now)
+            return 0
+
     def record_failure(self, key: str) -> None:
         with self._lock:
             self._failures[key].append(time.monotonic())
@@ -47,3 +64,4 @@ class LoginThrottle:
 
 
 login_throttle = LoginThrottle()
+register_throttle = LoginThrottle(settings.REGISTER_RATE_LIMIT, settings.REGISTER_RATE_WINDOW_MINUTES * 60)

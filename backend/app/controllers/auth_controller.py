@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, status
+import math
+
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.errors import TooManyRequestsError
+from app.core.login_throttle import register_throttle
 from app.core.routing import SessionReleasingRoute
 from app.models import User
 from app.schemas.user import (
@@ -19,8 +23,16 @@ router = APIRouter(prefix="/auth", tags=["Kimlik"], route_class=SessionReleasing
 
 
 @router.post("/register", response_model=CurrentUserOut, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    """Yeni müşteri hesabı oluşturur."""
+def register(data: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    """Yeni müşteri hesabı oluşturur. IP başına sınırlıdır (REGISTER_RATE_LIMIT / REGISTER_RATE_WINDOW_MINUTES)."""
+    # Başarılı ya da başarısız her deneme sayılır: hepsi bcrypt çalıştırır, davet kodu tahminini de yavaşlatır.
+    # Proxy arkasında gerçek istemci adresini uvicorn X-Forwarded-For'dan alır (FORWARDED_ALLOW_IPS).
+    retry_after = register_throttle.hit(request.client.host if request.client else "unknown")
+    if retry_after:
+        minutes = math.ceil(retry_after / 60)
+        raise TooManyRequestsError(
+            f"Çok fazla deneme yapıldı, {minutes} dakika sonra tekrar deneyin.", details={"retry_after": retry_after}
+        )
     return AuthService(db).register(data)
 
 

@@ -1,9 +1,13 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.core import invite_codes, security
+from app.core.config import Settings, settings
+from app.core.login_throttle import register_throttle
+from app.main import app
 from app.models import Customer, RecordSource, User, UserRole
 from tests.conftest import TEST_PASSWORD, auth_headers
 
@@ -191,6 +195,61 @@ def test_login_is_blocked_after_repeated_failures(client, admin):
 
     assert response.status_code == 429
     assert response.json()["details"]["retry_after"] > 0
+    assert int(response.headers["retry-after"]) == response.json()["details"]["retry_after"]
+
+
+# --- Kayıt hız sınırı ---
+
+
+@pytest.fixture
+def low_register_limit(monkeypatch):
+    """Testlerde sınır düşük tutulur: 10 dakikada 2 deneme."""
+    monkeypatch.setattr(register_throttle, "max_attempts", 2)
+    monkeypatch.setattr(register_throttle, "window_seconds", 10 * 60)
+
+
+def register_as(test_client, n: int):
+    return test_client.post("/auth/register", json=REGISTER | {"email": f"kayit{n}@example.com"})
+
+
+def test_register_is_rate_limited_per_ip(client, low_register_limit):
+    assert [register_as(client, n).status_code for n in range(2)] == [201, 201]
+
+    response = register_as(client, 3)
+
+    assert response.status_code == 429
+    body = response.json()
+    assert body["code"] == "TOO_MANY_REQUESTS"
+    assert body["message"] == "Çok fazla deneme yapıldı, 10 dakika sonra tekrar deneyin."
+    assert 0 < int(response.headers["retry-after"]) <= 600
+    assert int(response.headers["retry-after"]) == body["details"]["retry_after"]
+
+
+def test_register_limit_does_not_block_other_ips(client, low_register_limit):
+    for n in range(3):
+        register_as(client, n)
+
+    with TestClient(app, client=("203.0.113.7", 50000)) as other_ip:
+        assert register_as(other_ip, 9).status_code == 201
+
+
+def test_failed_registrations_count_towards_the_limit(client, low_register_limit, customer):
+    # Başarısız denemeler de bcrypt çalıştırır ve davet kodu tahmininde kullanılabilir.
+    for _ in range(2):
+        assert client.post("/auth/register", json=REGISTER | {"email": customer.email}).status_code == 409
+
+    assert register_as(client, 1).status_code == 429
+
+
+def test_register_limit_is_read_from_environment(monkeypatch):
+    monkeypatch.setenv("REGISTER_RATE_LIMIT", "3")
+    monkeypatch.setenv("REGISTER_RATE_WINDOW_MINUTES", "1")
+
+    configured = Settings(DATABASE_URL="postgresql://u:p@localhost/db", SECRET_KEY="x" * 32, _env_file=None)
+
+    assert (configured.REGISTER_RATE_LIMIT, configured.REGISTER_RATE_WINDOW_MINUTES) == (3, 1)
+    assert register_throttle.max_attempts == settings.REGISTER_RATE_LIMIT
+    assert register_throttle.window_seconds == settings.REGISTER_RATE_WINDOW_MINUTES * 60
 
 
 def test_me_requires_token(client):

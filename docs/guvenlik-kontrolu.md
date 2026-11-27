@@ -54,7 +54,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
   - Kod yaklaşık 49 bit rastgeledir. Veritabanında düz hali değil, `SECRET_KEY` ile anahtarlanmış HMAC-SHA256 özeti saklanır (`app/core/invite_codes.py`).
   - Testler: `tests/test_auth.py`, `tests/test_customers.py`.
 - Yönetici bir personel hesabını Müşteri rolüne aldığında aynı e-postalı kart bağlanır. Bu bağlamayı yönetici kendisi yaptığı için yönetici onayı sayılır. Kartı olmayan hesaplar yalnızca personel hesaplarıdır; kayıt olan her hesabın kartı vardır.
-- **Kalan risk:** Kayıt ucu, kartı olan bir e-postayı "davet kodu gerekli" yanıtıyla belli eder (e-posta adresinin sistemde olup olmadığı zaten `EMAIL_TAKEN` ile anlaşılabiliyordu). Kod tahmini için kayıt ucunda deneme sınırı yoktur; 7 günlük süre ve kodun büyüklüğü bunu pratikte önler.
+- **Kalan risk:** Kayıt ucu, kartı olan bir e-postayı "davet kodu gerekli" yanıtıyla belli eder (e-posta adresinin sistemde olup olmadığı zaten `EMAIL_TAKEN` ile anlaşılabiliyordu). Kod tahmini kayıt ucunun IP başına deneme sınırı (A07), 7 günlük süre ve kodun büyüklüğüyle pratikte önlenir.
 - Sonuç: **Düzeltildi**; kalan risk yukarıda belgelendi.
 
 ### A05 – Güvenlik yanlış yapılandırması
@@ -79,8 +79,10 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 ### A07 – Kimlik doğrulama hataları
 
 - Şifre kuralı: en az 8 karakter, büyük harf, küçük harf ve rakam; en fazla 128 karakter. Aynı e-posta için 15 dakikada 5 hatalı denemeden sonra giriş geçici olarak engellenir (429). Token süresi 60 dakikadır; pasif hesaplar reddedilir.
+- **Düzeltildi:** Kayıt ucunda hız sınırı yoktu; her kayıt bcrypt yüzünden yaklaşık 250 ms CPU harcadığından betikle binlerce hesap açılabilir, sunucu yorulabilirdi. Artık aynı IP'den 10 dakikada en fazla 5 kayıt denemesi yapılabilir (`REGISTER_RATE_LIMIT`, `REGISTER_RATE_WINDOW_MINUTES`). Başarısız denemeler de sayılır. Sınır aşılınca 429 `TOO_MANY_REQUESTS` ve `Retry-After` başlığı döner; giriş ucunun 429 yanıtı da bu başlığı taşır (`tests/test_auth.py`).
+- Gerçek istemci adresi: arka uç nginx'in (üretim) ya da Vite'ın (geliştirme) arkasındadır. nginx `X-Forwarded-For` başlığını istemcinin bağlantı adresiyle ezer, uvicorn adresi bu başlıktan alır (`FORWARDED_ALLOW_IPS`). İstemcinin kendi eklediği başlık dikkate alınmaz; böylece sınır sahte adreslerle aşılamaz.
 - Testler: bozuk, yanlış anahtarla imzalanmış, süresi dolmuş, `exp` alanı olmayan, `alg: none` ve var olmayan kullanıcıya ait tokenlar 401 alır.
-- Sınırlamalar (düzeltilmedi, düşük risk): deneme sayacı bellekte ve süreç başınadır, IP bazlı sınır yoktur; kayıtta e-postanın kullanımda olduğu bildirilir (kullanıcı deneyimi gereği); token önyüzde `localStorage`'da tutulur (XSS durumunda okunabilir, A03 ve CSP ile birlikte değerlendirilmelidir). Token iptali (çıkış sonrası geçersiz kılma) yoktur; kısa süreli token ile sınırlanır.
+- Sınırlamalar (düzeltilmedi, düşük risk): deneme sayaçları bellekte ve süreç başınadır (birden fazla uvicorn worker'ında sınır worker sayısıyla çarpılır); girişte IP bazlı sınır yoktur; kayıtta e-postanın kullanımda olduğu bildirilir (kullanıcı deneyimi gereği); token önyüzde `localStorage`'da tutulur (XSS durumunda okunabilir, A03 ve CSP ile birlikte değerlendirilmelidir). Token iptali (çıkış sonrası geçersiz kılma) yoktur; kısa süreli token ile sınırlanır.
 - Sonuç: **Uygun** (sınırlamalarla).
 
 ### A08 – Yazılım ve veri bütünlüğü

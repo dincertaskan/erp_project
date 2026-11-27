@@ -31,7 +31,7 @@ from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.core.database import engine, get_db  # noqa: E402
-from app.core.login_throttle import login_throttle  # noqa: E402
+from app.core.login_throttle import login_throttle, register_throttle  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Category, Customer, Product, User, UserRole  # noqa: E402
@@ -75,8 +75,10 @@ TEST_PASSWORD = "Test1234"
 @pytest.fixture(autouse=True)
 def reset_login_throttle():
     login_throttle.reset()
+    register_throttle.reset()
     yield
     login_throttle.reset()
+    register_throttle.reset()
 
 
 @pytest.fixture
