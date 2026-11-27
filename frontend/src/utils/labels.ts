@@ -37,7 +37,7 @@ export const stockStatusLabels: Record<StockStatus, string> = {
   out_of_stock: 'Stokta Yok',
 };
 
-/** Kritik stok: stok, minimum stok seviyesinin altında. */
+/** Arka uçtaki stock_repository tanımlarıyla aynı: stok 0 ise tükendi, 0 < stok < minimum ise kritik. */
 export function getStockStatus(stock: number, minStock: number): StockStatus {
   if (stock <= 0) return 'out_of_stock';
   if (stock < minStock) return 'critical';

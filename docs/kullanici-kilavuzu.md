@@ -83,7 +83,7 @@ Sol menü: "Ürünler", "Stok" ("Stok İşlemleri", "Stok Hareketleri", "Kritik 
 2. Ürünü "Ürün adı veya SKU ile arayın" kutusuyla bulun; gerekirse "Kategori" ve "Stok durumu" ile süzün.
 3. Satırdaki "Giriş" ya da "Çıkış" butonuna basın. "Stok İşlemi" penceresi açılır.
 4. "İşlem Türü" ve "Miktar" alanlarını doldurun. "Açıklama" girişte isteğe bağlı, çıkışta zorunludur (ör. sayım farkı, fire).
-5. "Kaydet" ile işlemi tamamlayın. İşlem sonucunda ürün kritik stoka düşecekse pencerede "İşlem sonrası ürün kritik stoka düşecek." uyarısı görünür.
+5. "Kaydet" ile işlemi tamamlayın. İşlem sonucunda ürün kritik stoka düşecekse pencerede "İşlem sonrası ürün kritik stoka düşecek.", stok 0'a inecekse "İşlem sonrası ürün tükenecek." uyarısı görünür.
 
 Mevcut stoktan fazla çıkış yapılamaz; bu durumda "Yetersiz stok. Mevcut: ..." hatası gösterilir. Aynı işlem ürün detayındaki "Stok Girişi/Çıkışı" butonuyla da yapılabilir. Satırdaki "Geçmiş" bağlantısı ürünün hareket geçmişini açar.
 
@@ -99,9 +99,19 @@ Mevcut stoktan fazla çıkış yapılamaz; bu durumda "Yetersiz stok. Mevcut: ..
 
 ### Kritik stok
 
-1. "Kritik Stok" sayfası, stoğu minimum seviyenin altına düşen aktif ürünleri en kritik olan önce listeler.
+Sistem stok durumunu her ekranda aynı kuralla belirler:
+
+| Durum | Kural |
+|---|---|
+| Stokta Yok | Stok 0 |
+| Kritik | Stok 0'dan büyük ama minimum stok seviyesinin altında (0 < stok < minimum) |
+| Yeterli | Stok, minimum stok seviyesine eşit ya da üstünde |
+
+"Genel Bakış"taki "Kritik Stoktaki Ürün" kartı, menüdeki rozet, "Kritik Stok" sayfası ve "Ürünler" sayfasındaki "Kritik" filtresi aynı ürünleri sayar. Stokta olmayan ürünler kritik sayılmaz; bunları "Ürünler" sayfasında "Stok durumu" filtresinden "Stokta Yok" seçerek görün.
+
+1. "Kritik Stok" sayfası, kritik durumdaki aktif ürünleri en kritik olan önce listeler.
 2. "Eksik Miktar" ve "Son 30 Gün Satış" sütunları ne kadar giriş gerektiğine karar vermeye yardımcı olur.
-3. Satırdaki "Stok Girişi" butonuyla doğrudan giriş yapın. Liste boşsa "Tüm ürünlerin stoğu yeterli." mesajı görünür.
+3. Satırdaki "Stok Girişi" butonuyla doğrudan giriş yapın. Liste boşsa "Kritik stokta ürün yok." mesajı görünür.
 
 ![Kritik stok](images/23-depo-kritik-stok.jpg)
 

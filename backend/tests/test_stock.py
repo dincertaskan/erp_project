@@ -9,6 +9,8 @@ from app.core.database import SessionLocal
 from app.core.errors import ConflictError
 from app.core.security import hash_password
 from app.models import Category, Product, StockMovement, StockMovementType, User, UserRole
+from app.repositories.catalog_repository import STOCK_STATUS_FILTERS
+from app.schemas.catalog import stock_status
 from app.schemas.stock import StockMovementRequest
 from app.services.stock_service import StockService
 from tests.conftest import auth_headers
@@ -172,17 +174,55 @@ def test_movement_list_filters(client, db, admin, warehouse, make_product):
 
 def test_critical_list_puts_the_most_critical_first(client, db, warehouse, make_product):
     make_product(sku="K-HALF", stock=5, min_stock=10)
-    make_product(sku="K-EMPTY", stock=0, min_stock=4)
+    make_product(sku="K-LOW", stock=1, min_stock=4)
     make_product(sku="K-OK", stock=10, min_stock=10)
+    make_product(sku="K-EMPTY", stock=0, min_stock=4)
     make_product(sku="K-ZERO-MIN", stock=0, min_stock=0)
-    make_product(sku="K-PASSIVE", stock=0, min_stock=5, is_active=False)
+    make_product(sku="K-PASSIVE", stock=1, min_stock=5, is_active=False)
 
     body = client.get("/stock/critical", headers=auth_headers(warehouse)).json()
 
-    assert [(p["sku"], p["shortage"]) for p in body["items"]] == [("K-EMPTY", 4), ("K-HALF", 5)]
-    assert body["items"][0]["stock_status"] == "out_of_stock"
+    # Stoğu 0 olan ürün kritik değil, tükenmiştir; kritik listede yer almaz.
+    assert [(p["sku"], p["shortage"]) for p in body["items"]] == [("K-LOW", 3), ("K-HALF", 5)]
+    assert {p["stock_status"] for p in body["items"]} == {"critical"}
     count = client.get("/stock/critical/count", headers=auth_headers(warehouse)).json()
     assert count == {"count": 2}
+
+
+# (stok, minimum) sınır durumları: tükendi, kritik ve yeterli arasındaki tüm geçişler.
+STOCK_CASES = [(0, 0), (0, 5), (1, 5), (4, 5), (5, 5), (6, 5), (3, 0)]
+
+
+def test_stock_status_label_matches_repository_definitions(db, make_product):
+    # Ekrandaki etiket (stock_status) ile sorgulardaki tanımlar (stock_repository) aynı kuralı uygular.
+    products = [make_product(stock=stock, min_stock=min_stock) for stock, min_stock in STOCK_CASES]
+    ids = [p.id for p in products]
+
+    for status, condition in STOCK_STATUS_FILTERS.items():
+        matched = set(db.scalars(select(Product.id).where(Product.id.in_(ids), condition)))
+        expected = {p.id for p in products if stock_status(p.stock, p.min_stock) == status}
+        assert matched == expected, status
+
+
+def test_critical_count_is_the_same_on_every_screen(client, admin, make_product):
+    make_product(stock=1, min_stock=5)
+    make_product(stock=4, min_stock=5)
+    make_product(stock=0, min_stock=5)
+    make_product(stock=5, min_stock=5)
+    make_product(stock=2, min_stock=5, is_active=False)
+    headers = auth_headers(admin)
+
+    counts = {
+        "dashboard": client.get("/dashboard/summary", headers=headers).json()["critical_stock_count"],
+        "rozet": client.get("/stock/critical/count", headers=headers).json()["count"],
+        "kritik stok sayfası": client.get("/stock/critical", headers=headers).json()["total"],
+        "stok özeti": client.get("/stock/summary", headers=headers).json()["critical_count"],
+        "ürün filtresi": client.get(
+            "/products", headers=headers, params={"stock_status": "critical", "is_active": "true"}
+        ).json()["total"],
+    }
+
+    assert counts == dict.fromkeys(counts, 2)
 
 
 def test_summary_counts(client, db, warehouse, make_product):

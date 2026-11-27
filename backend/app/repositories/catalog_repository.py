@@ -8,7 +8,14 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models import Category, Product, StockMovement, StockMovementType
 from app.repositories.search import contains_pattern, escape_like
+from app.repositories.stock_repository import CRITICAL, OUT_OF_STOCK, SUFFICIENT
 from app.schemas.catalog import ProductSort, StockStatus
+
+STOCK_STATUS_FILTERS = {
+    StockStatus.OUT_OF_STOCK: OUT_OF_STOCK,
+    StockStatus.CRITICAL: CRITICAL,
+    StockStatus.SUFFICIENT: SUFFICIENT,
+}
 
 
 class CategoryRepository:
@@ -76,12 +83,8 @@ class ProductRepository:
             query = query.where(Product.category_id.in_(category_ids))
         if is_active is not None:
             query = query.where(Product.is_active.is_(is_active))
-        if stock_status == StockStatus.OUT_OF_STOCK:
-            query = query.where(Product.stock <= 0)
-        elif stock_status == StockStatus.CRITICAL:
-            query = query.where(Product.stock > 0, Product.stock < Product.min_stock)
-        elif stock_status == StockStatus.SUFFICIENT:
-            query = query.where(Product.stock > 0, Product.stock >= Product.min_stock)
+        if stock_status is not None:
+            query = query.where(STOCK_STATUS_FILTERS[stock_status])
 
         total = self.db.scalar(select(func.count()).select_from(query.subquery()))
         column = getattr(Product, sort.value)

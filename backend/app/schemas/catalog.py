@@ -20,7 +20,10 @@ class StockStatus(StrEnum):
 
 
 def stock_status(stock: int, min_stock: int) -> StockStatus:
-    """Önyüzdeki getStockStatus ile aynı kural (karar 5: stok < minimum ise kritik)."""
+    """stock_repository'deki tanımların Python karşılığı: stok 0 ise tükendi, 0 < stok < minimum ise kritik.
+
+    Önyüzdeki getStockStatus de aynı kuralı uygular.
+    """
     if stock <= 0:
         return StockStatus.OUT_OF_STOCK
     if stock < min_stock:

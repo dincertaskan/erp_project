@@ -67,7 +67,7 @@ Tüm hatalar aynı gövdeyle döner:
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| GET | `/products` | Personel | Ürün listesi (sayfalı; `search`, `category_id`, `stock_status`, `is_active`, `sort`). Depo personeli yanıtında `cost_price` yoktur | `INVALID_SORT` (400) |
+| GET | `/products` | Personel | Ürün listesi (sayfalı; `search`, `category_id`, `stock_status`, `is_active`, `sort`). `stock_status`: `out_of_stock` (stok = 0), `critical` (0 < stok < minimum), `sufficient` (stok ≥ minimum). Depo personeli yanıtında `cost_price` yoktur | `INVALID_SORT` (400) |
 | POST | `/products` | Yönetici | Ürün ekler (başlangıç stoku yalnızca burada girilir) | `SKU_TAKEN` (409), `CATEGORY_NOT_FOUND`, `CATEGORY_INACTIVE` (400) |
 | GET | `/products/next-sku` | Yönetici | Seçilen kategori için SKU önerir | |
 | GET | `/products/{product_id}` | Personel | Ürün detayı | `NOT_FOUND` (404) |
@@ -81,8 +81,8 @@ Tüm hatalar aynı gövdeyle döner:
 |---|---|---|---|---|
 | POST | `/stock/movements` | Personel | Elle stok girişi ya da çıkışı; işlemi yapan oturumdan alınır | `INSUFFICIENT_STOCK` (409), `STOCK_CONFLICT` (409), `PRODUCT_INACTIVE` (400) |
 | GET | `/stock/movements` | Personel | Stok hareketleri (sayfalı; `from`, `to`, `product_id`, `type`, `user_id`, `order_code`) | |
-| GET | `/stock/critical` | Personel | Stoğu minimumun altındaki aktif ürünler, en kritik olan önce (sayfalı) | |
-| GET | `/stock/critical/count` | Personel | Kritik stoktaki ürün sayısı | |
+| GET | `/stock/critical` | Personel | Kritik stoktaki (0 < stok < minimum) aktif ürünler, en kritik olan önce (sayfalı). Stoğu 0 olanlar dahil değildir | |
+| GET | `/stock/critical/count` | Personel | Kritik stoktaki aktif ürün sayısı (`/stock/critical` ile aynı tanım) | |
 | GET | `/stock/summary` | Personel | Stok özeti (aktif ürün, kritik stok, bugünkü hareket) | |
 
 ## Siparişler
