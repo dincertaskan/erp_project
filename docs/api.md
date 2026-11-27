@@ -1,6 +1,6 @@
 # API Özeti
 
-Akıllı ERP arka ucunun uç noktalarının özeti. Ayrıntılı istek ve yanıt şemaları için çalışan uygulamada Swagger arayüzünü kullanın: http://localhost:8000/docs (OpenAPI belgesi: `/openapi.json`).
+Akıllı ERP arka ucunun uç noktalarının özeti. Ayrıntılı istek ve yanıt şemaları için çalışan uygulamada Swagger arayüzünü kullanın: http://localhost:8000/docs (OpenAPI belgesi: `/openapi.json`). Bu sayfalar `ENABLE_DOCS` ayarıyla açılıp kapatılır: geliştirmede varsayılan olarak açıktır, `docker-compose.prod.yml` ile kurulan üretim ortamında kapalıdır ve 404 döner.
 
 ## Genel kurallar
 

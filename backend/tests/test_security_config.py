@@ -1,9 +1,13 @@
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.core.config import Settings, settings
+from app.main import create_app
 
 PREFLIGHT = {"Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization"}
+DOCS_PATHS = ["/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"]
+VALID = {"DATABASE_URL": "postgresql://u:p@localhost/db", "SECRET_KEY": "x" * 32}
 
 
 def test_cors_allows_frontend_origin_without_credentials(client):
@@ -36,3 +40,30 @@ def test_secret_key_of_32_characters_is_accepted():
 def test_only_hmac_jwt_algorithms_are_accepted(algorithm):
     with pytest.raises(ValidationError):
         Settings(DATABASE_URL="postgresql://u:p@localhost/db", SECRET_KEY="x" * 32, ALGORITHM=algorithm)
+
+
+def test_docs_are_enabled_by_default(monkeypatch):
+    monkeypatch.delenv("ENABLE_DOCS", raising=False)
+
+    assert Settings(**VALID, _env_file=None).ENABLE_DOCS is True
+
+
+def test_docs_can_be_disabled_from_environment(monkeypatch):
+    monkeypatch.setenv("ENABLE_DOCS", "false")
+
+    assert Settings(**VALID, _env_file=None).ENABLE_DOCS is False
+
+
+@pytest.mark.parametrize("path", DOCS_PATHS)
+def test_docs_are_served_when_enabled(client, path):
+    assert client.get(path).status_code == 200
+
+
+@pytest.mark.parametrize("path", DOCS_PATHS)
+def test_docs_return_404_when_disabled(monkeypatch, path):
+    monkeypatch.setattr(settings, "ENABLE_DOCS", False)
+
+    with TestClient(create_app()) as docs_disabled_client:
+        response = docs_disabled_client.get(path)
+
+    assert response.status_code == 404

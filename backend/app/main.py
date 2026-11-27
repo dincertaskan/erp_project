@@ -41,30 +41,39 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="Akıllı ERP API", lifespan=lifespan)
+def create_app() -> FastAPI:
+    """Uygulamayı geçerli ayarlarla kurar. Testler farklı ayarlarla ayrı bir örnek oluşturabilir."""
+    # ENABLE_DOCS kapalıyken belge yolları hiç kaydedilmez; /docs, /redoc ve /openapi.json 404 döner.
+    docs = {} if settings.ENABLE_DOCS else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    application = FastAPI(title="Akıllı ERP API", lifespan=lifespan, **docs)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    # Kimlik doğrulama Authorization başlığıyla yapılır, çerez kullanılmaz; kimlik bilgili CORS gerekmez.
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# En son eklenen ara katman en dışta çalışır; başlıklar CORS ön kontrol yanıtlarına da eklenir.
-app.add_middleware(SecurityHeadersMiddleware)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        # Kimlik doğrulama Authorization başlığıyla yapılır, çerez kullanılmaz; kimlik bilgili CORS gerekmez.
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    # En son eklenen ara katman en dışta çalışır; başlıklar CORS ön kontrol yanıtlarına da eklenir.
+    application.add_middleware(SecurityHeadersMiddleware)
 
-register_error_handlers(app)
+    register_error_handlers(application)
 
-app.include_router(health_controller.router)
-app.include_router(auth_controller.router)
-app.include_router(user_controller.router)
-app.include_router(category_controller.router)
-app.include_router(product_controller.router)
-app.include_router(stock_controller.router)
-app.include_router(customer_controller.router)
-app.include_router(order_controller.router)
-app.include_router(dashboard_controller.router)
-app.include_router(shop_controller.catalog_router)
-app.include_router(shop_controller.me_router)
-app.include_router(report_controller.router)
+    application.include_router(health_controller.router)
+    application.include_router(auth_controller.router)
+    application.include_router(user_controller.router)
+    application.include_router(category_controller.router)
+    application.include_router(product_controller.router)
+    application.include_router(stock_controller.router)
+    application.include_router(customer_controller.router)
+    application.include_router(order_controller.router)
+    application.include_router(dashboard_controller.router)
+    application.include_router(shop_controller.catalog_router)
+    application.include_router(shop_controller.me_router)
+    application.include_router(report_controller.router)
+
+    return application
+
+
+app = create_app()

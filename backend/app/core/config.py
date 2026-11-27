@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = Field(10, ge=0)
     DB_POOL_TIMEOUT: int = Field(30, ge=1)
     STOCK_STRATEGY: Literal["pessimistic", "optimistic", "none"] = "pessimistic"
+    # Swagger (/docs), ReDoc (/redoc) ve OpenAPI şeması (/openapi.json). Üretimde kapatılır;
+    # kapalıyken bu yollar hiç kaydedilmez ve 404 döner.
+    ENABLE_DOCS: bool = True
 
     @field_validator("DATABASE_URL")
     @classmethod
