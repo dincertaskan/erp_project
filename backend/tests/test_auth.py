@@ -376,6 +376,58 @@ def test_change_password_requires_current_password(client, customer):
     ok = client.post(
         "/auth/me/password", headers=headers, json={"current_password": TEST_PASSWORD, "new_password": "Yeni12345"}
     )
-    assert ok.status_code == 204
+    assert ok.status_code == 200
     login = client.post("/auth/login", json={"email": customer.email, "password": "Yeni12345"})
     assert login.status_code == 200
+
+
+# --- Token iptali ---
+
+
+def login_token(test_client, email: str, password: str = TEST_PASSWORD) -> dict[str, str]:
+    token = test_client.post("/auth/login", json={"email": email, "password": password}).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_old_tokens_are_rejected_after_password_change(client, customer):
+    other_device = login_token(client, customer.email)
+    this_device = login_token(client, customer.email)
+
+    response = client.post(
+        "/auth/me/password", headers=this_device, json={"current_password": TEST_PASSWORD, "new_password": "Yeni12345"}
+    )
+
+    assert response.status_code == 200
+    # Şifreyi değiştiren oturum yanıttaki yeni token'la sürer; eski token'lar (bu cihazınki dahil) reddedilir.
+    new_token = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    assert response.json()["user"]["email"] == customer.email
+    assert client.get("/auth/me", headers=new_token).status_code == 200
+    for old in (other_device, this_device):
+        rejected = client.get("/auth/me", headers=old)
+        assert rejected.status_code == 401
+        assert rejected.json()["code"] == "INVALID_TOKEN"
+
+
+def test_logout_revokes_the_token_on_the_server(client, customer):
+    headers = login_token(client, customer.email)
+
+    assert client.post("/auth/logout", headers=headers).status_code == 204
+
+    response = client.get("/auth/me", headers=headers)
+    assert response.status_code == 401
+    assert response.json()["message"] == "Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın."
+    assert client.post("/auth/logout", headers=headers).status_code == 401
+
+
+def test_logout_ends_sessions_on_all_devices_and_allows_logging_in_again(client, customer):
+    phone = login_token(client, customer.email)
+    laptop = login_token(client, customer.email)
+
+    client.post("/auth/logout", headers=laptop)
+
+    assert client.get("/auth/me", headers=phone).status_code == 401
+    assert client.get("/auth/me", headers=login_token(client, customer.email)).status_code == 200
+
+
+def test_logout_requires_a_token(client):
+    assert client.post("/auth/logout").status_code == 401

@@ -19,7 +19,7 @@ export function UserMenu() {
   const onClick = ({ key }: { key: string }) => {
     if (key === 'logout') {
       // Giriş ekranına yönlendirmeyi RequireAuth yapar.
-      logout();
+      void logout();
     } else {
       navigate(key);
     }

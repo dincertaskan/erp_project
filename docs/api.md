@@ -5,7 +5,7 @@ Akıllı ERP arka ucunun uç noktalarının özeti. Ayrıntılı istek ve yanıt
 ## Genel kurallar
 
 - **Adres:** Uç noktalar kök dizindedir (ör. `GET /products`). Önyüz geliştirme sunucusu `/api` önekiyle gelen istekleri öneki kaldırarak arka uca iletir.
-- **Kimlik doğrulama:** `POST /auth/login` bir JWT döndürür (`access_token`, `token_type: "bearer"`, `user`). Korunan uçlarda `Authorization: Bearer <token>` başlığı gönderilir. Token süresi varsayılan olarak 60 dakikadır (`ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **Kimlik doğrulama:** `POST /auth/login` bir JWT döndürür (`access_token`, `token_type: "bearer"`, `user`). Korunan uçlarda `Authorization: Bearer <token>` başlığı gönderilir. Token süresi varsayılan olarak 60 dakikadır (`ACCESS_TOKEN_EXPIRE_MINUTES`). Token kullanıcının token sürümünü (`ver`) taşır; çıkış ve şifre değişikliği sürümü artırır ve o kullanıcının önceki tüm token'ları 401 `INVALID_TOKEN` alır.
 - **Roller:** `admin` (Yönetici), `warehouse` (Depo Personeli), `customer` (Müşteri). Aşağıdaki tablolarda "Personel" Yönetici ve Depo Personelini birlikte ifade eder.
 - **Sayfalama:** Sayfalı listeler `page` (varsayılan 1) ve `page_size` (varsayılan 20, en fazla 100) parametrelerini alır ve `{items, total, page, page_size}` biçiminde döner.
 - **Sıralama:** `sort` parametresi alan adını alır; azalan sıra için başına `-` eklenir (ör. `sort=-stock`).
@@ -44,7 +44,8 @@ Tüm hatalar aynı gövdeyle döner:
 | POST | `/auth/login` | Herkes | E-posta ve şifreyle giriş; JWT döndürür | `INVALID_CREDENTIALS` (401), `ACCOUNT_INACTIVE` (403), `TOO_MANY_REQUESTS` (429, 15 dakika içinde aynı e-postaya 5 ya da aynı IP'den 20 hatalı deneme; `Retry-After` başlığı bekleme süresini saniye olarak verir) |
 | GET | `/auth/me` | Giriş yapmış kullanıcı | Oturumdaki kullanıcının bilgileri | `INVALID_TOKEN` (401) |
 | PATCH | `/auth/me` | Giriş yapmış kullanıcı | Profil bilgilerini günceller | `NOT_A_CUSTOMER` (400, müşteriye özgü alanlar personel tarafından gönderilirse) |
-| POST | `/auth/me/password` | Giriş yapmış kullanıcı | Şifre değiştirir (204) | `INVALID_PASSWORD` (400) |
+| POST | `/auth/me/password` | Giriş yapmış kullanıcı | Şifre değiştirir; önceki tüm token'lar geçersizleşir. Bu oturumun devam etmesi için yeni token döndürür (`access_token`, `token_type`, `user`) | `INVALID_PASSWORD` (400) |
+| POST | `/auth/logout` | Giriş yapmış kullanıcı | Kullanıcının tüm cihazlardaki oturumlarını sonlandırır (204); önceki token'lar 401 alır | |
 
 ## Kullanıcılar
 

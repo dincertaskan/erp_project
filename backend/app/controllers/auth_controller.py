@@ -57,6 +57,14 @@ def update_me(data: ProfileUpdateRequest, user: User = Depends(get_current_user)
     return AuthService(db).update_profile(user, data)
 
 
-@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Kullanıcının tüm cihazlardaki oturumlarını sonlandırır; daha önce verilen token'lar 401 alır."""
+    AuthService(db).logout(user)
+
+
+@router.post("/me/password", response_model=TokenOut)
 def change_password(data: PasswordChangeRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    AuthService(db).change_password(user, data)
+    """Şifre değişince öteki oturumlar sonlanır; bu oturum yanıttaki yeni token'la sürer."""
+    token = AuthService(db).change_password(user, data)
+    return TokenOut(access_token=token, user=CurrentUserOut.model_validate(user))

@@ -36,7 +36,7 @@ def committed_customer():
 
 def test_me_returns_customer_profile_with_real_sessions(committed_customer):
     app.dependency_overrides.clear()
-    token = create_access_token(committed_customer, UserRole.CUSTOMER.value)
+    token = create_access_token(committed_customer, UserRole.CUSTOMER.value, 0)
 
     with TestClient(app) as client:
         response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})

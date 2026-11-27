@@ -16,14 +16,17 @@ def get_current_user(
 ) -> User:
     if credentials is None:
         raise UnauthorizedError("Bu işlem için giriş yapmalısınız.")
-    user_id = decode_access_token(credentials.credentials)
-    user = db.get(User, user_id) if user_id is not None else None
+    claims = decode_access_token(credentials.credentials)
+    user = db.get(User, claims[0]) if claims is not None else None
     # Okuma işlemi hemen kapatılır: bağımlılık ile uç nokta arasında iş parçacığı beklenirken bağlantı
     # havuza döner. Tutulursa yoğun yükte bağlantıyı tutan istekler iş parçacığı, iş parçacığını tutanlar
     # bağlantı bekler ve istekler havuz zaman aşımına kadar kilitlenir. (expire_on_commit=False: user geçerli kalır.)
     db.commit()
     if user is None:
         raise UnauthorizedError("Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.", code="INVALID_TOKEN")
+    # Çıkış yapıldıysa ya da şifre değiştiyse kullanıcının sürümü artmıştır; eski token'lar kullanılamaz.
+    if claims[1] != user.token_version:
+        raise UnauthorizedError("Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.", code="INVALID_TOKEN")
     if not user.is_active:
         raise UnauthorizedError("Hesabınız pasif durumda.", code="ACCOUNT_INACTIVE")
     return user

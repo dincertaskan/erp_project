@@ -104,7 +104,7 @@ def make_user(db):
 
 
 def auth_headers(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role.value)}"}
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.role.value, user.token_version)}"}
 
 
 @pytest.fixture

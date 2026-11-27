@@ -92,7 +92,7 @@ class AuthService:
         throttle.reset(data.email)
         user.last_login_at = datetime.now(UTC)
         self.db.commit()
-        return create_access_token(user.id, user.role.value), user
+        return create_access_token(user.id, user.role.value, user.token_version), user
 
     def update_profile(self, user: User, data: ProfileUpdateRequest) -> User:
         changes = data.model_dump(exclude_unset=True)
@@ -111,7 +111,8 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def change_password(self, user: User, data: PasswordChangeRequest) -> None:
+    def change_password(self, user: User, data: PasswordChangeRequest) -> str:
+        """Şifreyi değiştirir ve kullanıcının tüm oturumlarını sonlandırır; bu oturum için yeni token döndürür."""
         if not verify_password(data.current_password, user.password_hash):
             raise AppError(
                 "Mevcut şifre hatalı.",
@@ -119,4 +120,15 @@ class AuthService:
                 details=[{"field": "current_password", "message": "Mevcut şifre hatalı."}],
             )
         user.password_hash = hash_password(data.new_password)
+        self._end_sessions(user)
+        return create_access_token(user.id, user.role.value, user.token_version)
+
+    def logout(self, user: User) -> None:
+        """Kullanıcının tüm cihazlardaki oturumlarını sonlandırır (token sürümü artar)."""
+        self._end_sessions(user)
+
+    def _end_sessions(self, user: User) -> None:
+        # Artırma veritabanında yapılır; eşzamanlı iki istek aynı sürümü yazıp birbirini ezmez.
+        user.token_version = User.token_version + 1
         self.db.commit()
+        self.db.refresh(user)

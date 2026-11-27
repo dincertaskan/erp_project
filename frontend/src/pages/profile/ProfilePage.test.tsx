@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import { api, ApiError } from '@/api/client';
+import { api, ApiError, tokenStorage } from '@/api/client';
 import type { CurrentUser } from '@/api/types';
 import type { AuthContextValue } from '@/auth/context';
 import { renderRoutes } from '@/test/render';
@@ -88,5 +88,25 @@ describe('ChangePasswordPage', () => {
 
     const fieldError = await screen.findByText('Mevcut şifre hatalı.');
     expect(fieldError.closest('.ant-form-item')).toHaveTextContent('Mevcut Şifre');
+  });
+
+  it('keeps this session with the new token after changing the password', async () => {
+    auth.user = baseUser;
+    tokenStorage.set('eski-token');
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { access_token: 'yeni-token', token_type: 'bearer', user: baseUser } });
+    renderRoutes(routes, '/profile/password');
+
+    fireEvent.change(screen.getByLabelText('Mevcut Şifre'), { target: { value: 'Eski1234' } });
+    fireEvent.change(screen.getByLabelText('Yeni Şifre'), { target: { value: 'Yeni1234' } });
+    fireEvent.change(screen.getByLabelText('Yeni Şifre Tekrarı'), { target: { value: 'Yeni1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Şifreyi Güncelle' }));
+
+    expect(
+      await screen.findByText('Şifreniz güncellendi. Diğer cihazlardaki oturumlarınız kapatıldı.'),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith('/auth/me/password', { current_password: 'Eski1234', new_password: 'Yeni1234' });
+    expect(tokenStorage.get()).toBe('yeni-token');
   });
 });

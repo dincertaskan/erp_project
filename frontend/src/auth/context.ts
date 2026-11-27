@@ -15,7 +15,8 @@ export interface AuthContextValue {
   /** Oturum bilgisini yeniden ister */
   retry?: () => void;
   login: (email: string, password: string) => Promise<CurrentUser>;
-  logout: () => void;
+  /** Sunucudaki oturumu sonlandırır ve yerel oturumu kapatır */
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

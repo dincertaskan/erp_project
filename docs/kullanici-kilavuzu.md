@@ -13,7 +13,7 @@ Demo hesapları için `README.md` dosyasındaki "Demo hesaplar" tablosuna bakın
 1. Uygulama adresini açın (yerelde http://localhost:5173). "Hesabınıza giriş yapın" ekranı gelir.
 2. "E-posta" ve "Şifre" alanlarını doldurup "Giriş Yap" butonuna basın.
 3. Rolünüze göre açılış sayfasına yönlendirilirsiniz: Müşteri mağazaya, Depo Personeli ve Yönetici yönetim paneline.
-4. Çıkmak için sağ üstteki kullanıcı menüsünden "Çıkış Yap" seçin.
+4. Çıkmak için sağ üstteki kullanıcı menüsünden "Çıkış Yap" seçin. Çıkış, hesabınızın açık olduğu tüm cihazlardaki oturumları kapatır.
 
 Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir ve kaç dakika sonra tekrar denenebileceği gösterilir. Oturum süresi dolduğunda "Oturumunuzun süresi doldu" uyarısıyla giriş ekranına dönülür.
 
@@ -22,7 +22,7 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 ### Profil ve şifre
 
 - Kullanıcı menüsünden "Profilim" ile "Kişisel Bilgiler" (ad soyad; müşteride ayrıca telefon, firma, şehir ve teslimat adresi) güncellenir ve "Kaydet" ile saklanır.
-- "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır.
+- "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır. Kullandığınız cihazda oturumunuz sürer; diğer cihazlardaki oturumlarınız kapatılır.
 
 ![Profil ekranı](images/42-profil.jpg)
 

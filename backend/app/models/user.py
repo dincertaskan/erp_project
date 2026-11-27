@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, String, Text, text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
@@ -21,6 +21,8 @@ class User(TimestampMixin, Base):
     role: Mapped[UserRole] = mapped_column(pg_enum(UserRole, "user_role"), default=UserRole.CUSTOMER)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # JWT'ye "ver" olarak yazılır; çıkışta ve şifre değişince artırılır, eski sürümlü token'lar reddedilir.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     # Kullanıcıyla birlikte yüklenir: oturum yanıt serileştirilmeden kapandığı için sonradan yüklenemez.
     customer: Mapped["Customer | None"] = relationship(back_populates="user", lazy="joined")
