@@ -1,14 +1,15 @@
+import math
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from app.core import invite_codes
 from app.core.errors import AppError, ConflictError, ForbiddenError, TooManyRequestsError, UnauthorizedError
-from app.core.login_throttle import login_throttle
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models import Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, PasswordChangeRequest, ProfileUpdateRequest, RegisterRequest
+from app.services.login_throttle import LoginThrottle
 
 CUSTOMER_ONLY_FIELDS = ("phone", "company_name", "address", "city")
 INVITE_REQUIRED = (
@@ -68,10 +69,11 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def login(self, data: LoginRequest) -> tuple[str, User]:
-        retry_after = login_throttle.retry_after(data.email)
+    def login(self, data: LoginRequest, ip_address: str) -> tuple[str, User]:
+        throttle = LoginThrottle(self.db)
+        retry_after = throttle.retry_after(data.email, ip_address)
         if retry_after:
-            minutes = max(1, retry_after // 60)
+            minutes = math.ceil(retry_after / 60)
             raise TooManyRequestsError(
                 f"Çok fazla hatalı deneme yapıldı. {minutes} dakika sonra tekrar deneyin.",
                 details={"retry_after": retry_after},
@@ -81,12 +83,13 @@ class AuthService:
         # Okuma işlemi bcrypt'ten önce kapatılır; bağlantı doğrulama süresince havuza döner.
         self.db.commit()
         if user is None or not verify_password(data.password, user.password_hash):
-            login_throttle.record_failure(data.email)
+            throttle.record_failure(data.email, ip_address)
+            self.db.commit()
             raise UnauthorizedError("E-posta veya şifre hatalı.", code="INVALID_CREDENTIALS")
         if not user.is_active:
             raise ForbiddenError("Hesabınız pasif durumda. Yöneticiyle iletişime geçin.", code="ACCOUNT_INACTIVE")
 
-        login_throttle.reset(data.email)
+        throttle.reset(data.email)
         user.last_login_at = datetime.now(UTC)
         self.db.commit()
         return create_access_token(user.id, user.role.value), user

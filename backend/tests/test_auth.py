@@ -2,13 +2,15 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core import invite_codes, security
 from app.core.config import Settings, settings
-from app.core.login_throttle import register_throttle
-from app.main import app
-from app.models import Customer, RecordSource, User, UserRole
+from app.core.database import get_db
+from app.core.rate_limit import register_throttle
+from app.main import app, create_app
+from app.models import Customer, LoginAttempt, RecordSource, User, UserRole
+from app.services.login_throttle import LoginThrottle
 from tests.conftest import TEST_PASSWORD, auth_headers
 
 REGISTER = {"full_name": "Can Demir", "email": "Can@Example.com", "password": "Guclu1234"}
@@ -196,6 +198,76 @@ def test_login_is_blocked_after_repeated_failures(client, admin):
     assert response.status_code == 429
     assert response.json()["details"]["retry_after"] > 0
     assert int(response.headers["retry-after"]) == response.json()["details"]["retry_after"]
+
+
+def fail_login(test_client, email: str):
+    return test_client.post("/auth/login", json={"email": email, "password": "Yanlis1234"})
+
+
+def test_ip_is_blocked_after_20_failures_with_different_emails(client, admin):
+    for n in range(19):
+        assert fail_login(client, f"tahmin{n}@example.com").status_code == 401
+    # 19 hatalı denemede IP henüz engelli değil. Kendi hesabına girmek IP sayacını temizlemez.
+    assert client.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD}).status_code == 200
+    fail_login(client, "tahmin19@example.com")
+
+    response = client.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD})
+
+    assert response.status_code == 429
+    assert response.json()["message"] == "Çok fazla hatalı deneme yapıldı. 15 dakika sonra tekrar deneyin."
+    assert 14 * 60 < int(response.headers["retry-after"]) <= 15 * 60 + 1
+    with TestClient(app, client=("203.0.113.7", 50000)) as other_ip:
+        assert other_ip.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD}).status_code == 200
+
+
+def test_email_is_blocked_from_every_ip_after_5_failures(client, admin):
+    for _ in range(5):
+        fail_login(client, admin.email.upper())
+
+    with TestClient(app, client=("203.0.113.7", 50000)) as other_ip:
+        response = other_ip.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD})
+
+    assert response.status_code == 429
+
+
+@pytest.mark.parametrize(("minutes_ago", "blocked"), [(14, True), (16, False)])
+def test_ip_block_lasts_15_minutes(db, minutes_ago, blocked):
+    at = datetime.now(UTC) - timedelta(minutes=minutes_ago)
+    db.add_all(LoginAttempt(email=f"t{n}@example.com", ip_address="198.51.100.1", created_at=at) for n in range(20))
+    db.flush()
+
+    retry_after = LoginThrottle(db).retry_after("yeni@example.com", "198.51.100.1")
+
+    assert (retry_after > 0) is blocked
+    if blocked:
+        assert retry_after <= 60 + 1
+
+
+def test_login_failures_survive_an_application_restart(client, db, admin):
+    for _ in range(5):
+        fail_login(client, admin.email)
+
+    # Yeni uygulama örneği bellekte hiçbir sayaç taşımaz; sayaç veritabanından okunur.
+    restarted = create_app()
+    restarted.dependency_overrides[get_db] = lambda: db
+    with TestClient(restarted) as fresh_client:
+        response = fresh_client.post("/auth/login", json={"email": admin.email, "password": TEST_PASSWORD})
+
+    assert response.status_code == 429
+    assert db.scalar(select(func.count()).where(LoginAttempt.email == admin.email.lower())) == 5
+
+
+def test_expired_login_attempts_are_cleaned_up(client, db):
+    db.add(
+        LoginAttempt(
+            email="eski@example.com", ip_address="198.51.100.1", created_at=datetime.now(UTC) - timedelta(hours=1)
+        )
+    )
+    db.flush()
+
+    fail_login(client, "yeni@example.com")
+
+    assert db.scalars(select(LoginAttempt.email)).all() == ["yeni@example.com"]
 
 
 # --- Kayıt hız sınırı ---

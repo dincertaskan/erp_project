@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
@@ -51,3 +51,22 @@ class Customer(TimestampMixin, Base):
     invite_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user: Mapped[User | None] = relationship(back_populates="customer")
+
+
+class LoginAttempt(Base):
+    """Hatalı giriş denemesi. Giriş sınırı (app.services.login_throttle) e-posta ve IP başına bunları sayar.
+
+    Sayaç veritabanında tutulduğu için uygulama yeniden başlayınca korunur ve tüm uvicorn süreçleri aynı sayacı görür.
+    Pencereden eski kayıtlar yeni deneme yazılırken silinir.
+    """
+
+    __tablename__ = "login_attempts"
+    __table_args__ = (
+        Index("ix_login_attempts_email_created_at", "email", "created_at"),
+        Index("ix_login_attempts_ip_address_created_at", "ip_address", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    email: Mapped[str] = mapped_column(String(255))
+    ip_address: Mapped[str] = mapped_column(String(45))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
