@@ -16,7 +16,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 | A06 | Zafiyetli ve güncel olmayan bileşenler | Uygun |
 | A07 | Kimlik doğrulama hataları | Uygun (sınırlamalarla) |
 | A08 | Yazılım ve veri bütünlüğü hataları | Uygun |
-| A09 | Güvenlik günlüğü ve izleme eksikleri | Açık |
+| A09 | Güvenlik günlüğü ve izleme eksikleri | Uygun (sınırlamalarla) |
 | A10 | Sunucu taraflı istek sahteciliği (SSRF) | Uygun |
 
 ## Ayrıntılar
@@ -105,8 +105,12 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 
 ### A09 – Günlük ve izleme
 
-- Yalnızca beklenmeyen hatalar ve bağlantı havuzu doluluğu loglanır. Başarısız giriş, yetkisiz erişim (401/403) ve rol değişikliği gibi güvenlik olayları loglanmaz; merkezi izleme ve uyarı yoktur.
-- Sonuç: **Açık** – proje ölçeğinde (tek sunucu, demo) önceliklendirilmedi.
+- **Düzeltildi:** Yönetim işlemlerinin kim tarafından ne zaman yapıldığı yalnızca stok hareketleri ve sipariş geçmişi için izlenebiliyordu. Artık `audit_logs` tablosu (denetim günlüğü) şu olayları kaydeder: rol atama, kullanıcı ve müşteri durum değişikliği (pasife alma ve aktifleştirme), ürün satış fiyatı ya da maliyeti değişikliği, sipariş iptali (yönetici ya da müşteri) ve başarısız giriş.
+- Her kayıtta işlemi yapan kullanıcı, zaman, olay türü, ilgili kayıt (tür, kimlik ve o anki okunur adı: e-posta, SKU ya da sipariş kodu), eski ve yeni değer bulunur. Başarısız girişlerde işlemi yapan bilinmez; denenen e-posta, neden (yanlış şifre ya da kayıtlı olmayan e-posta) ve istemci IP'si tutulur.
+- Kayıt, işlemin kendi veritabanı işlemiyle birlikte yazılır: işlem geri alınırsa kayıt da oluşmaz, reddedilen işlemler (ör. kendi rolünü değiştirme) kayıt üretmez. Günlüğü değiştiren ya da silen bir uç nokta yoktur (`app/services/audit.py`).
+- Yalnızca yönetici "İşlem Geçmişi" sayfasında (`GET /audit-logs`) kayıtları tarih, kullanıcı ve olay türüne göre süzerek görür; depo personeli ve müşteri 403 alır (`tests/test_audit.py`, `tests/test_security_access.py`).
+- Sınırlamalar: yetkisiz erişim denemeleri (401/403) günlüğe yazılmaz; merkezi izleme ve uyarı (ör. çok sayıda başarısız giriş için bildirim) yoktur; günlük için saklama süresi tanımlı değildir, tablo zamanla büyür. Günlük uygulama veritabanındadır; veritabanı yöneticisi kayıtları değiştirebilir.
+- Sonuç: **Uygun (sınırlamalarla)**.
 
 ### A10 – SSRF
 

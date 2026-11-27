@@ -3,6 +3,13 @@ export type OrderStatus = 'pending' | 'preparing' | 'shipped' | 'completed' | 'c
 export type PaymentMethod = 'credit_card' | 'bank_transfer' | 'cash_on_delivery';
 export type StockMovementType = 'in' | 'out' | 'order_out' | 'cancel_return';
 export type StockStatus = 'sufficient' | 'critical' | 'out_of_stock';
+export type AuditEvent =
+  | 'role_changed'
+  | 'user_status_changed'
+  | 'customer_status_changed'
+  | 'product_price_changed'
+  | 'order_cancelled'
+  | 'login_failed';
 
 export const roleLabels: Record<UserRole, string> = {
   admin: 'Yönetici',
@@ -29,6 +36,15 @@ export const movementTypeLabels: Record<StockMovementType, string> = {
   out: 'Çıkış',
   order_out: 'Sipariş Çıkışı',
   cancel_return: 'İptal İadesi',
+};
+
+export const auditEventLabels: Record<AuditEvent, string> = {
+  role_changed: 'Rol Değişikliği',
+  user_status_changed: 'Kullanıcı Durumu',
+  customer_status_changed: 'Müşteri Durumu',
+  product_price_changed: 'Fiyat Değişikliği',
+  order_cancelled: 'Sipariş İptali',
+  login_failed: 'Başarısız Giriş',
 };
 
 export const stockStatusLabels: Record<StockStatus, string> = {

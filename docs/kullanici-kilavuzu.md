@@ -211,3 +211,13 @@ Yeni personel önce kayıt formundan hesap açar; ardından yönetici rol atar.
 Yönetici kendi rolünü değiştiremez ve kendi hesabını pasife alamaz. Sistemdeki son aktif yönetici değiştirilemez. Müşteri rolüne alınan kullanıcı için müşteri kaydı oluşturulur.
 
 ![Kullanıcılar](images/41-yonetici-kullanicilar.jpg)
+
+### İşlem geçmişi
+
+"Yönetim" menüsündeki "İşlem Geçmişi" sayfası, kritik işlemlerin kim tarafından ne zaman yapıldığını gösterir: rol değişikliği, kullanıcı ve müşteri durumu (pasife alma, aktifleştirme), ürün fiyatı ya da maliyeti değişikliği, sipariş iptali ve başarısız giriş denemeleri.
+
+1. Sayfa son 7 günün kayıtlarıyla açılır, en yeni kayıt en üsttedir.
+2. "Tarih" aralığı, "Olay" (birden fazla seçilebilir) ve "Kullanıcı" (işlemi yapan kişi, ada ya da e-postaya göre aranır) ile süzüp "Filtrele" butonuna basın.
+3. "Değişiklik" sütunu eski ve yeni değeri gösterir, ör. "Rol: Müşteri → Depo Personeli". "Kayıt" sütunundaki müşteri, ürün ve sipariş bağlantıları ilgili sayfayı açar.
+
+Başarısız girişlerde "Kullanıcı" sütunu "Bilinmiyor" olur; denenen e-posta "Kayıt", istemci adresi "IP" sütununda görünür. Bu sayfayı yalnızca yönetici görür.

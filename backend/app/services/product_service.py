@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Category, Product, StockMovement, StockMovementType, User, UserRole
+from app.models import AuditEvent, Category, Product, StockMovement, StockMovementType, User, UserRole
 from app.repositories.catalog_repository import CategoryRepository, ProductRepository
 from app.repositories.stock_repository import StockRepository
 from app.schemas.catalog import (
@@ -21,6 +21,7 @@ from app.schemas.catalog import (
     stock_status,
 )
 from app.schemas.common import Page, PageParams
+from app.services import audit
 from app.services.sku import next_sku, sku_prefix
 
 SKU_TAKEN = "Bu SKU kullanılıyor."
@@ -171,6 +172,21 @@ class ProductService:
         product = self._get(product_id)
         category = self._category_for(data.category_id, product)
         self._ensure_sku_free(data.sku, product.id)
+
+        old_prices = {"sale_price": product.sale_price, "cost_price": product.cost_price}
+        new_prices = {"sale_price": data.sale_price, "cost_price": data.cost_price}
+        changed = [key for key in old_prices if old_prices[key] != new_prices[key]]
+        if changed:
+            audit.record(
+                self.db,
+                AuditEvent.PRODUCT_PRICE_CHANGED,
+                actor=actor,
+                entity_type="product",
+                entity_id=product.id,
+                entity_label=product.sku,
+                old={key: old_prices[key] for key in changed},
+                new={key: new_prices[key] for key in changed},
+            )
 
         # Stok miktarı burada değişmez; yalnızca stok işlemleriyle değişir.
         product.sku = data.sku

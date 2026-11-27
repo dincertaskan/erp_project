@@ -23,8 +23,18 @@ ANY_ROLE_ROUTES = {
     ("POST", "/auth/me/password"),
     ("POST", "/auth/logout"),
 }
-STAFF_PREFIXES = ("/users", "/products", "/stock", "/orders", "/customers", "/dashboard", "/reports", "/categories")
-ADMIN_ONLY_PREFIXES = ("/users", "/customers", "/dashboard", "/reports")
+STAFF_PREFIXES = (
+    "/users",
+    "/products",
+    "/stock",
+    "/orders",
+    "/customers",
+    "/dashboard",
+    "/reports",
+    "/categories",
+    "/audit-logs",
+)
+ADMIN_ONLY_PREFIXES = ("/users", "/customers", "/dashboard", "/reports", "/audit-logs")
 
 
 def _allowed_roles(route: APIRoute) -> frozenset[UserRole] | None:

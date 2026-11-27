@@ -73,10 +73,10 @@ def update_customer(
 def set_customer_status(
     customer_id: int,
     data: StatusUpdateRequest,
-    _: User = Depends(admin_only),
+    actor: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
-    return CustomerService(db).set_status(customer_id, data.is_active)
+    return CustomerService(db).set_status(actor, customer_id, data.is_active)
 
 
 @router.post("/{customer_id}/invite", response_model=CustomerInvite, status_code=201)

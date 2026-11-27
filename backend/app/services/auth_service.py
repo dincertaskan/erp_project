@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from app.core import invite_codes
 from app.core.errors import AppError, ConflictError, ForbiddenError, TooManyRequestsError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Customer, RecordSource, User, UserRole
+from app.models import AuditEvent, Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, PasswordChangeRequest, ProfileUpdateRequest, RegisterRequest
+from app.services import audit
 from app.services.login_throttle import LoginThrottle
 
 CUSTOMER_ONLY_FIELDS = ("phone", "company_name", "address", "city")
@@ -84,6 +85,16 @@ class AuthService:
         self.db.commit()
         if user is None or not verify_password(data.password, user.password_hash):
             throttle.record_failure(data.email, ip_address)
+            audit.record(
+                self.db,
+                AuditEvent.LOGIN_FAILED,
+                actor=None,
+                entity_type="user",
+                entity_id=user.id if user is not None else None,
+                entity_label=data.email,
+                new={"reason": "unknown_email" if user is None else "wrong_password"},
+                ip_address=ip_address,
+            )
             self.db.commit()
             raise UnauthorizedError("E-posta veya şifre hatalı.", code="INVALID_CREDENTIALS")
         if not user.is_active:

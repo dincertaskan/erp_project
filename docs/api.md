@@ -54,6 +54,7 @@ Tüm hatalar aynı gövdeyle döner:
 | GET | `/users` | Yönetici | Kullanıcı listesi (sayfalı; `search`, `role`, `is_active`) | |
 | PATCH | `/users/{user_id}/role` | Yönetici | Kullanıcıya rol atar | `SELF_CHANGE` (400), `LAST_ADMIN` (409) |
 | PATCH | `/users/{user_id}/status` | Yönetici | Hesabı aktif ya da pasif yapar | `SELF_CHANGE` (400), `LAST_ADMIN` (409) |
+| GET | `/audit-logs` | Yönetici | İşlem geçmişi (denetim günlüğü), en yeni önce (sayfalı; `from`, `to`, `actor_id`, `event_type` birden fazla verilebilir). Olaylar: `role_changed`, `user_status_changed`, `customer_status_changed`, `product_price_changed`, `order_cancelled`, `login_failed`. Her kayıtta `actor` (başarısız girişte boş), `entity_type`, `entity_id`, `entity_label`, `old_value`, `new_value`, `ip_address` | |
 
 ## Kategoriler
 

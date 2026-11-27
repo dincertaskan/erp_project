@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core import invite_codes
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Customer, RecordSource
+from app.models import AuditEvent, Customer, RecordSource, User
 from app.repositories.customer_repository import CustomerFilters, CustomerRepository
 from app.repositories.order_repository import OrderFilters, OrderRepository
 from app.schemas.common import Page, PageParams
@@ -19,6 +19,7 @@ from app.schemas.customer import (
     CustomerSort,
     CustomerStats,
 )
+from app.services import audit
 
 EMAIL_TAKEN = "Bu e-posta adresiyle kayıtlı bir müşteri var."
 EMAIL_LOCKED = "Müşterinin giriş hesabı olduğu için e-posta adresi değiştirilemez."
@@ -130,8 +131,19 @@ class CustomerService:
         self.db.commit()
         return self.detail(customer.id)
 
-    def set_status(self, customer_id: int, is_active: bool) -> CustomerDetail:
+    def set_status(self, actor: User, customer_id: int, is_active: bool) -> CustomerDetail:
         customer = self._get(customer_id)
+        if customer.is_active != is_active:
+            audit.record(
+                self.db,
+                AuditEvent.CUSTOMER_STATUS_CHANGED,
+                actor=actor,
+                entity_type="customer",
+                entity_id=customer.id,
+                entity_label=customer.email,
+                old={"is_active": customer.is_active},
+                new={"is_active": is_active},
+            )
         customer.is_active = is_active
         self.db.commit()
         return self.detail(customer.id)

@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Customer, RecordSource, User, UserRole
+from app.models import AuditEvent, Customer, RecordSource, User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.common import Page, PageParams
 from app.schemas.user import UserOut
+from app.services import audit
 
 
 class UserService:
@@ -57,6 +58,16 @@ class UserService:
                 "Bu e-posta adresi Olist verisinden aktarılan bir müşteri kartında kullanılıyor.", code="EMAIL_TAKEN"
             )
 
+        audit.record(
+            self.db,
+            AuditEvent.ROLE_CHANGED,
+            actor=actor,
+            entity_type="user",
+            entity_id=user.id,
+            entity_label=user.email,
+            old={"role": user.role.value},
+            new={"role": role.value},
+        )
         user.role = role
         if needs_card:
             if customer is None:
@@ -73,6 +84,17 @@ class UserService:
             raise AppError("Kendi hesabınızı pasife alamazsınız.", code="SELF_CHANGE")
         if not is_active:
             self._ensure_not_last_admin(user)
+        if user.is_active != is_active:
+            audit.record(
+                self.db,
+                AuditEvent.USER_STATUS_CHANGED,
+                actor=actor,
+                entity_type="user",
+                entity_id=user.id,
+                entity_label=user.email,
+                old={"is_active": user.is_active},
+                new={"is_active": is_active},
+            )
         user.is_active = is_active
         self.db.commit()
         self.db.refresh(user)

@@ -1,5 +1,6 @@
 // Personel (yönetici ve depo) sayfaları tek parça olarak, ilk ihtiyaç duyulduğunda yüklenir.
 export { AdminLayout } from '@/layouts/AdminLayout';
+export { AuditLogsPage } from '@/pages/audit/AuditLogsPage';
 export { CategoriesPage } from '@/pages/categories/CategoriesPage';
 export { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage';
 export { CustomersPage } from '@/pages/customers/CustomersPage';

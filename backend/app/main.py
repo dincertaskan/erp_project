@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.controllers import (
+    audit_controller,
     auth_controller,
     category_controller,
     customer_controller,
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     application.include_router(shop_controller.catalog_router)
     application.include_router(shop_controller.me_router)
     application.include_router(report_controller.router)
+    application.include_router(audit_controller.router)
 
     return application
 

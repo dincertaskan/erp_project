@@ -13,7 +13,7 @@ Küçük ve orta ölçekli e-ticaret işletmeleri için ürün, stok, sipariş v
 
 - **Müşteri:** kayıt olma, ürün kataloğunda arama ve filtreleme, sepet, sipariş verme, siparişleri izleme ve onay beklerken iptal etme.
 - **Depo Personeli:** stok girişi ve çıkışı, stok hareketleri, kritik stok listesi, hazırlanan siparişleri kargoya verme.
-- **Yönetici:** dashboard, ürün ve kategori yönetimi, sipariş onayı ve durum takibi, müşteri adına sipariş, müşteri yönetimi, satış/stok/sipariş raporları ve Excel'e aktarma, kullanıcı rolü atama.
+- **Yönetici:** dashboard, ürün ve kategori yönetimi, sipariş onayı ve durum takibi, müşteri adına sipariş, müşteri yönetimi, satış/stok/sipariş raporları ve Excel'e aktarma, kullanıcı rolü atama, işlem geçmişi (denetim günlüğü).
 
 ## Gereksinimler
 
