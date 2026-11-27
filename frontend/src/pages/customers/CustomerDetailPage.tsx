@@ -1,11 +1,25 @@
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Button, Card, Col, Descriptions, Popconfirm, Result, Row, Space, Statistic } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Modal,
+  Popconfirm,
+  Result,
+  Row,
+  Space,
+  Statistic,
+  Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError, api, errorMessage } from '@/api/client';
-import type { CustomerDetail, CustomerOrder } from '@/api/customers';
+import type { CustomerDetail, CustomerInvite, CustomerOrder } from '@/api/customers';
 import type { Page } from '@/api/types';
 import { FullPageSpinner } from '@/auth/guards';
 import { CustomerFormModal } from '@/components/CustomerFormModal';
@@ -29,6 +43,8 @@ export function CustomerDetailPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [invite, setInvite] = useState<CustomerInvite | null>(null);
+  const [creatingInvite, setCreatingInvite] = useState(false);
   const queryKey = ['customers', id];
 
   const {
@@ -55,6 +71,21 @@ export function CustomerDetailPage() {
   }
 
   const editable = customer.source === 'app';
+  // Kayıt olan kişi bu karta yalnızca davet koduyla bağlanır; kod hesabı olmayan aktif uygulama kartları için üretilir.
+  const canInvite = editable && customer.is_active && !customer.has_account;
+
+  const createInvite = async () => {
+    setCreatingInvite(true);
+    try {
+      const { data } = await api.post<CustomerInvite>(`/customers/${customer.id}/invite`);
+      setInvite(data);
+      queryClient.setQueryData<CustomerDetail>(queryKey, { ...customer, invite_expires_at: data.expires_at });
+    } catch (err) {
+      message.error(errorMessage(err));
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
 
   const setStatus = async (isActive: boolean) => {
     try {
@@ -117,6 +148,26 @@ export function CustomerDetailPage() {
         >
           Bu Müşteri Adına Sipariş Oluştur
         </Button>,
+        ...(canInvite
+          ? [
+              customer.invite_expires_at ? (
+                <Popconfirm
+                  key="invite"
+                  title="Yeni davet kodu oluşturulsun mu?"
+                  description="Müşteriye daha önce iletilen kod geçersiz olur."
+                  okText="Oluştur"
+                  cancelText="Vazgeç"
+                  onConfirm={createInvite}
+                >
+                  <Button loading={creatingInvite}>Yeni Davet Kodu</Button>
+                </Popconfirm>
+              ) : (
+                <Button key="invite" loading={creatingInvite} onClick={createInvite}>
+                  Davet Kodu Oluştur
+                </Button>
+              ),
+            ]
+          : []),
         ...(editable
           ? [
               <Button key="edit" onClick={() => setEditOpen(true)}>
@@ -151,7 +202,13 @@ export function CustomerDetailPage() {
             <Descriptions.Item label="Firma">{customer.company_name || '–'}</Descriptions.Item>
             <Descriptions.Item label="Şehir">{customer.city || '–'}</Descriptions.Item>
             <Descriptions.Item label="Kayıt Tarihi">{formatDate(customer.created_at)}</Descriptions.Item>
-            <Descriptions.Item label="Giriş Hesabı">{customer.has_account ? 'Var' : 'Yok'}</Descriptions.Item>
+            <Descriptions.Item label="Giriş Hesabı">
+              {customer.has_account
+                ? 'Var'
+                : customer.invite_expires_at
+                  ? `Yok (davet kodu ${formatDateTime(customer.invite_expires_at)} tarihine kadar geçerli)`
+                  : 'Yok'}
+            </Descriptions.Item>
             <Descriptions.Item label="Adres" span={3}>
               {customer.address || '–'}
             </Descriptions.Item>
@@ -204,6 +261,38 @@ export function CustomerDetailPage() {
           }}
         />
       </Space>
+
+      <Modal
+        open={invite !== null}
+        title="Davet Kodu"
+        destroyOnHidden
+        onCancel={() => setInvite(null)}
+        footer={
+          <Button type="primary" onClick={() => setInvite(null)}>
+            Tamam
+          </Button>
+        }
+      >
+        {invite ? (
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Typography.Paragraph style={{ margin: 0 }}>
+              Kodu müşteriye iletin. Müşteri <strong>{customer.email}</strong> adresiyle kayıt olurken &quot;Davet
+              kodu&quot; alanına girdiğinde hesabı bu kayda bağlanır ve sipariş geçmişini görür.
+            </Typography.Paragraph>
+            <Typography.Text copyable={{ text: invite.code }} strong style={{ fontSize: 24, letterSpacing: 2 }}>
+              {invite.code}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              Son geçerlilik: {formatDateTime(invite.expires_at)}. Kod tek kullanımlıktır.
+            </Typography.Text>
+            <Alert
+              type="warning"
+              showIcon
+              message="Kod yalnızca şimdi gösterilir. Kaybolursa yeni kod oluşturun; eskisi geçersiz olur."
+            />
+          </Space>
+        ) : null}
+      </Modal>
 
       <CustomerFormModal
         open={editOpen}

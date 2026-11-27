@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
+from app.core import invite_codes
 from app.core.errors import AppError, ConflictError, ForbiddenError, TooManyRequestsError, UnauthorizedError
 from app.core.login_throttle import login_throttle
 from app.core.security import create_access_token, hash_password, verify_password
@@ -10,6 +11,14 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, PasswordChangeRequest, ProfileUpdateRequest, RegisterRequest
 
 CUSTOMER_ONLY_FIELDS = ("phone", "company_name", "address", "city")
+INVITE_REQUIRED = (
+    "Bu e-posta adresine ait bir müşteri kaydı var. Hesabınızı bağlamak için mağazadan aldığınız davet kodunu girin."
+)
+INVITE_INVALID = "Davet kodu geçersiz ya da süresi dolmuş. Mağazadan yeni bir kod isteyin."
+
+
+def _invite_error(message: str, code: str) -> AppError:
+    return AppError(message, code=code, details=[{"field": "invite_code", "message": message}])
 
 
 class AuthService:
@@ -21,15 +30,22 @@ class AuthService:
         """Yeni kayıtlar her zaman müşteri rolüyle oluşturulur (FR-01)."""
         # bcrypt veritabanı işlemi açılmadan çalışır; yavaş özetleme sırasında havuzdan bağlantı tutulmaz.
         password_hash = hash_password(data.password)
-        # Yöneticinin daha önce aynı e-postayla eklediği bir müşteri kartı varsa hesaba bağlanır.
-        # Olist kartlarının e-postaları tahmin edilebilir (olist-00001@example.com); bunlar hiçbir hesaba bağlanmaz.
         customer = self.users.get_customer_by_email(data.email)
-        if self.users.get_by_email(data.email) or (customer is not None and customer.source == RecordSource.OLIST):
+        # Olist kartlarının e-postaları tahmin edilebilir (olist-00001@example.com); bunlar hiçbir hesaba bağlanmaz.
+        taken = customer is not None and (customer.source == RecordSource.OLIST or customer.user_id is not None)
+        if self.users.get_by_email(data.email) or taken:
             raise ConflictError(
                 "Bu e-posta adresi zaten kayıtlı.",
                 code="EMAIL_TAKEN",
                 details=[{"field": "email", "message": "Bu e-posta adresi zaten kayıtlı."}],
             )
+        # Yöneticinin uygulamada açtığı kart, e-posta sahipliği kanıtlanmadan bağlanırsa kartın sipariş geçmişi,
+        # adresi ve telefonu kayıt olan kişiye açılır. Kanıt olarak yöneticinin müşteriye ilettiği davet kodu istenir.
+        if customer is not None and data.invite_code is None:
+            raise _invite_error(INVITE_REQUIRED, "INVITE_CODE_REQUIRED")
+        if data.invite_code is not None and (customer is None or not invite_codes.accepts(customer, data.invite_code)):
+            raise _invite_error(INVITE_INVALID, "INVALID_INVITE_CODE")
+
         user = User(
             full_name=data.full_name,
             email=data.email,
@@ -42,8 +58,10 @@ class AuthService:
         if customer is None:
             customer = Customer(full_name=data.full_name, email=data.email, phone=data.phone)
             self.db.add(customer)
-        elif data.phone and not customer.phone:
-            customer.phone = data.phone
+        else:
+            invite_codes.revoke(customer)  # tek kullanımlık
+            if data.phone and not customer.phone:
+                customer.phone = data.phone
         customer.user_id = user.id
 
         self.db.commit()

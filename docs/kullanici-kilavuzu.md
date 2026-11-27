@@ -33,11 +33,11 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 ### Kayıt olma
 
 1. Giriş ekranında "Kayıt Ol" bağlantısına tıklayın.
-2. "Ad Soyad", "E-posta", isteğe bağlı "Telefon (isteğe bağlı)", "Şifre" ve "Şifre Tekrarı" alanlarını doldurun.
+2. "Ad Soyad", "E-posta", isteğe bağlı "Telefon (isteğe bağlı)", "Şifre" ve "Şifre Tekrarı" alanlarını doldurun. Mağaza sizin için daha önce müşteri kaydı açtıysa size iletilen kodu "Davet kodu (isteğe bağlı)" alanına girin; hesabınız bu kayda bağlanır ve önceki siparişlerinizi "Siparişlerim"de görürsünüz.
 3. "Demo sistem olduğunu biliyorum, gerçek kişisel veri girmeyeceğim." kutusunu işaretleyip "Hesap Oluştur" butonuna basın.
 4. "Hesabınız oluşturuldu" mesajıyla giriş ekranına dönülür; yeni hesapla giriş yapın.
 
-Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir.
+Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir. E-postanıza ait bir müşteri kaydı varsa davet kodu girmeden kayıt olamazsınız; kodunuz yoksa ya da "Davet kodu geçersiz ya da süresi dolmuş." uyarısı alırsanız mağazadan yeni kod isteyin.
 
 ![Kayıt ekranı](images/02-kayit.jpg)
 
@@ -176,6 +176,14 @@ Onay sırasında bir kalemde bile stok yetmezse sipariş onaylanmaz ve hiçbir s
 ### Müşteriler
 
 "Müşteriler" sayfasında müşteriler sipariş sayısı, "Toplam Harcama" ve "Son Sipariş" bilgileriyle listelenir. "Yeni Müşteri" ile kayıt eklenir, "Düzenle" ile güncellenir. Giriş hesabı olan müşterinin e-postası değiştirilemez. Pasif müşteri adına sipariş oluşturulamaz.
+
+Giriş hesabı olmayan bir müşterinin, kendi e-postasıyla kayıt olup bu karta bağlanabilmesi için davet kodu gerekir:
+
+1. Müşteri detayında "Davet Kodu Oluştur" butonuna basın.
+2. Açılan pencerede kodu ("Kopyala" simgesiyle) alıp müşteriye iletin. Kod yalnızca bu pencerede gösterilir, tek kullanımlıktır ve 7 gün geçerlidir.
+3. Müşteri, kartta yazan e-postayla kayıt olurken kodu "Davet kodu" alanına girer. Kayıt tamamlanınca "Giriş Hesabı" alanı "Var" olur.
+
+Geçerli bir kod varken "Giriş Hesabı" alanında kodun son geçerlilik tarihi görünür. "Yeni Davet Kodu" ile yeni kod üretilirse eskisi geçersizleşir. Müşterinin e-postası değiştirilirse de kod geçersizleşir. Hesabı olan, pasif ya da Olist'ten aktarılan müşteriler için kod üretilemez.
 
 ![Müşteri listesi](images/38-yonetici-musteriler.jpg)
 

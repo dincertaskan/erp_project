@@ -44,6 +44,14 @@ class CustomerStats(ApiModel):
 
 class CustomerDetail(CustomerListItem):
     stats: CustomerStats
+    # Kullanılmamış ve süresi dolmamış bir davet kodu varsa son geçerlilik zamanı.
+    # Kodun kendisi yalnızca üretilirken döner.
+    invite_expires_at: datetime | None = None
+
+
+class CustomerInvite(ApiModel):
+    code: str
+    expires_at: datetime
 
 
 class CustomerRequest(RequestModel):

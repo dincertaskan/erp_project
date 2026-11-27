@@ -19,6 +19,8 @@ export interface CustomerListItem {
 }
 
 export interface CustomerDetail extends CustomerListItem {
+  /** Kullanılmamış ve süresi dolmamış davet kodunun son geçerlilik zamanı */
+  invite_expires_at: string | null;
   stats: {
     order_count: number;
     revenue_order_count: number;
@@ -26,6 +28,12 @@ export interface CustomerDetail extends CustomerListItem {
     average_basket: string;
     last_order_at: string | null;
   };
+}
+
+/** Kayıt olan kişinin müşteri kartına bağlanması için tek kullanımlık davet kodu; yalnızca üretilirken döner. */
+export interface CustomerInvite {
+  code: string;
+  expires_at: string;
 }
 
 export interface CustomerOrder {

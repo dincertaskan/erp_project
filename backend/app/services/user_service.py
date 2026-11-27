@@ -47,6 +47,9 @@ class UserService:
             self._ensure_not_last_admin(user)
 
         needs_card = role == UserRole.CUSTOMER and user.customer is None
+        # Aynı e-postalı uygulama kartı varsa bağlanır: kayıttaki davet kodunun aksine burada bağlamayı yönetici
+        # kendisi yapar (yönetici onayı). Kartı olmayan hesaplar yalnızca personel hesaplarıdır; kayıt olan herkesin
+        # kartı vardır.
         customer = self.users.get_customer_by_email(user.email) if needs_card else None
         if customer is not None and customer.source == RecordSource.OLIST:
             # Olist kartı hesaba bağlanmaz; aynı e-postayla ikinci kart da açılamaz.

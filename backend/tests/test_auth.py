@@ -1,6 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
+import pytest
 from sqlalchemy import select
 
-from app.core import security
+from app.core import invite_codes, security
 from app.models import Customer, RecordSource, User, UserRole
 from tests.conftest import TEST_PASSWORD, auth_headers
 
@@ -41,16 +44,80 @@ def test_register_rejects_duplicate_email_case_insensitively(client, customer):
     assert response.json()["code"] == "EMAIL_TAKEN"
 
 
-def test_register_links_existing_customer_card(client, db):
+@pytest.fixture
+def card(db):
+    """Yöneticinin uygulamada açtığı, henüz hesabı olmayan müşteri kartı."""
     card = Customer(full_name="Can Demir", email="can@example.com", city="Ankara")
     db.add(card)
     db.flush()
+    return card
 
+
+def test_register_does_not_link_an_app_card_without_invite_code(client, db, card):
     response = client.post("/auth/register", json=REGISTER)
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "INVITE_CODE_REQUIRED"
+    db.refresh(card)
+    assert card.user_id is None
+    assert db.scalar(select(User).where(User.email == "can@example.com")) is None
+
+
+def test_register_links_an_app_card_with_its_invite_code(client, db, card):
+    code = invite_codes.issue(card)
+    db.flush()
+
+    response = client.post("/auth/register", json=REGISTER | {"invite_code": code, "phone": "0532 000 00 00"})
 
     assert response.status_code == 201
     db.refresh(card)
     assert card.user_id == response.json()["id"]
+    assert card.phone == "0532 000 00 00"
+
+
+def test_invite_code_is_single_use(client, db, card):
+    code = invite_codes.issue(card)
+    db.flush()
+    client.post("/auth/register", json=REGISTER | {"invite_code": code})
+
+    db.refresh(card)
+    assert (card.invite_code_digest, card.invite_expires_at) == (None, None)
+    assert not invite_codes.accepts(card, code)
+
+
+@pytest.mark.parametrize("case", ["wrong", "expired", "inactive_card", "no_card"])
+def test_register_rejects_an_unusable_invite_code_with_400(client, db, card, case):
+    code = invite_codes.issue(card)
+    email = REGISTER["email"]
+    if case == "wrong":
+        code = "AAAAA-AAAAA"
+    elif case == "expired":
+        card.invite_expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    elif case == "inactive_card":
+        card.is_active = False
+    else:
+        email = "baska@example.com"
+    db.flush()
+
+    response = client.post("/auth/register", json=REGISTER | {"email": email, "invite_code": code})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["code"] == "INVALID_INVITE_CODE"
+    assert body["message"] == "Davet kodu geçersiz ya da süresi dolmuş. Mağazadan yeni bir kod isteyin."
+    assert body["details"] == [{"field": "invite_code", "message": body["message"]}]
+    db.refresh(card)
+    assert card.user_id is None
+
+
+def test_register_rejects_an_email_whose_card_already_has_an_account(client, db, customer):
+    # Hesaba bağlı kart, farklı e-postalı bir hesaba bağlı olsa bile ikinci bir hesaba verilmez.
+    customer.customer.email = "kart@example.com"
+    db.flush()
+
+    response = client.post("/auth/register", json=REGISTER | {"email": "kart@example.com"})
+
+    assert (response.status_code, response.json()["code"]) == (409, "EMAIL_TAKEN")
 
 
 def test_register_never_links_an_olist_customer_card(client, db):

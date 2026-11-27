@@ -48,6 +48,8 @@ class RegisterRequest(RequestModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(max_length=128)
     phone: str | None = Field(None, max_length=30)
+    # Mağazanın açtığı müşteri kartına bağlanmak için yöneticiden alınan davet kodu.
+    invite_code: str | None = Field(None, max_length=20)
 
     @field_validator("email")
     @classmethod
@@ -58,6 +60,11 @@ class RegisterRequest(RequestModel):
     @classmethod
     def strong_password(cls, value: str) -> str:
         return validate_password_strength(value)
+
+    @field_validator("invite_code")
+    @classmethod
+    def blank_invite_code_is_none(cls, value: str | None) -> str | None:
+        return value or None
 
 
 class LoginRequest(RequestModel):

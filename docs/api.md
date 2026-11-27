@@ -40,7 +40,7 @@ Tüm hatalar aynı gövdeyle döner:
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri) | `EMAIL_TAKEN` (409) |
+| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri). Aynı e-postalı, hesabı olmayan bir müşteri kartı varsa yöneticinin ürettiği `invite_code` gerekir; doğru kodla hesap karta bağlanır | `EMAIL_TAKEN` (409), `INVITE_CODE_REQUIRED` (400), `INVALID_INVITE_CODE` (400, yanlış, süresi geçmiş ya da kullanılmış kod) |
 | POST | `/auth/login` | Herkes | E-posta ve şifreyle giriş; JWT döndürür | `INVALID_CREDENTIALS` (401), `ACCOUNT_INACTIVE` (403), `TOO_MANY_REQUESTS` (429, 15 dakikada 5 hatalı deneme) |
 | GET | `/auth/me` | Giriş yapmış kullanıcı | Oturumdaki kullanıcının bilgileri | `INVALID_TOKEN` (401) |
 | PATCH | `/auth/me` | Giriş yapmış kullanıcı | Profil bilgilerini günceller | `NOT_A_CUSTOMER` (400, müşteriye özgü alanlar personel tarafından gönderilirse) |
@@ -108,9 +108,10 @@ Durumlar: `pending` (Onay Bekliyor), `preparing` (Hazırlanıyor), `shipped` (Ka
 | GET | `/customers` | Yönetici | Müşteri listesi; sipariş sayısı, toplam harcama, son sipariş (sayfalı) | |
 | POST | `/customers` | Yönetici | Müşteri kaydı ekler | `EMAIL_TAKEN` (409) |
 | GET | `/customers/cities` | Yönetici | Şehir filtresi için kayıtlı şehirler | |
-| GET | `/customers/{customer_id}` | Yönetici | Müşteri detayı | `NOT_FOUND` (404) |
+| GET | `/customers/{customer_id}` | Yönetici | Müşteri detayı. Geçerli bir davet kodu varsa `invite_expires_at` son geçerlilik zamanını verir | `NOT_FOUND` (404) |
 | PUT | `/customers/{customer_id}` | Yönetici | Müşteriyi günceller | `EMAIL_TAKEN` (409), `EMAIL_LOCKED` (400, giriş hesabı olan müşterinin e-postası), `READ_ONLY` (400, Olist kaydı) |
 | PATCH | `/customers/{customer_id}/status` | Yönetici | Müşteriyi aktif ya da pasif yapar | |
+| POST | `/customers/{customer_id}/invite` | Yönetici | Kayıtta bu karta bağlanmak için tek kullanımlık, 7 gün geçerli davet kodu üretir (`code`, `expires_at`); önceki kod geçersizleşir. Kod yalnızca bu yanıtta döner | `HAS_ACCOUNT` (409), `CUSTOMER_INACTIVE` (400), `READ_ONLY` (400, Olist kaydı) |
 | GET | `/customers/{customer_id}/orders` | Yönetici | Müşterinin siparişleri (sayfalı; `status`, `from`, `to`) | |
 
 ## Dashboard

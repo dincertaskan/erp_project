@@ -45,5 +45,9 @@ class Customer(TimestampMixin, Base):
         pg_enum(RecordSource, "record_source"), default=RecordSource.APP, server_default=RecordSource.APP.value
     )
     external_id: Mapped[str | None] = mapped_column(String(64), unique=True)
+    # Kayıtta bu karta bağlanmak için yöneticinin ürettiği tek kullanımlık davet kodu (app.core.invite_codes).
+    # Kodun kendisi saklanmaz, yalnızca özeti; kullanıldığında ya da yenisi üretildiğinde eskisi geçersizleşir.
+    invite_code_digest: Mapped[str | None] = mapped_column(String(64))
+    invite_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user: Mapped[User | None] = relationship(back_populates="customer")

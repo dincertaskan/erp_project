@@ -41,6 +41,7 @@ const can: CustomerDetail = {
   source: 'app',
   created_at: '2026-11-01T10:00:00Z',
   has_account: true,
+  invite_expires_at: null,
   order_count: 4,
   total_spent: '1500.00',
   last_order_at: '2026-11-20T10:00:00Z',

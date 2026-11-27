@@ -27,6 +27,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 - Müşteri tokenı personel uçlarında (`/users`, `/products`, `/stock`, `/orders`, `/customers`, `/dashboard`, `/reports`, `/categories`) 403 alır. Depo personeli yalnızca yönetici uçlarında 403 alır. Personel mağaza uçlarında (`/catalog`, `/me`) 403 alır.
 - Rol kısıtı olmayan korumalı uç yalnızca profil uçlarıdır (`/auth/me`, `/auth/me/password`). Yeni bir uç rol belirtmeden eklenirse test kırılır.
 - IDOR: müşteri başka müşterinin siparişini `/me/orders/{id}` ile göremez, iptal edemez ve listede bulamaz (404). Sorgular oturumdaki müşteriyle sınırlanır.
+- Müşteri kartına bağlanma: yöneticinin uygulamada açtığı bir kartın e-postasıyla kayıt olan kişi, davet kodu girmeden karta bağlanamaz ve kartın siparişlerini göremez (aşağıda A04). Hesaba bağlı bir kartın e-postasıyla yeni kayıt 409 döner; kart önceki sahibinden alınamaz (`tests/test_auth.py`, `tests/test_customers.py`).
 - Sonuç: **Uygun**.
 
 ### A02 – Kriptografik hatalar
@@ -46,7 +47,14 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 
 - Sipariş tutarı sunucudaki fiyatlarla hesaplanır; sepet sunucuda yeniden doğrulanır. Stok güncellemeleri kilitlenir (kötümser kilit). Yeni kayıtlar her zaman müşteri rolüyle açılır.
 - **Düzeltildi:** Kayıt olurken ya da kullanıcı müşteri rolüne alınırken aynı e-postalı müşteri kartı hesaba otomatik bağlanıyordu. Olist'ten aktarılan kartların e-postaları tahmin edilebilir (`olist-00001@example.com`) olduğundan bu kartlar artık hiçbir hesaba bağlanmaz; bu e-postayla kayıt 409 döner (`tests/test_auth.py`, `tests/test_users.py`).
-- **Kalan risk:** E-posta doğrulaması olmadığı için yöneticinin uygulamada eklediği bir müşteri kartı, o e-postayla ilk kayıt olan kişiye bağlanır ve kişi kartın sipariş geçmişini görür. Gerçek kullanımda kayıt sonrası e-posta doğrulaması ya da bağlamanın yönetici onayıyla yapılması gerekir; bu proje kapsamında kabul edilmiştir.
+- **Düzeltildi:** Yöneticinin uygulamada eklediği müşteri kartı, aynı e-postayla ilk kayıt olan kişiye otomatik bağlanıyordu; kişi kartın sipariş geçmişini, adresini ve telefonunu görüyordu. E-posta gönderimi kapsam dışı olduğundan e-posta doğrulaması yerine **davet kodu** kullanılır:
+  - Yönetici müşteri detayında "Davet Kodu Oluştur" ile kod üretir (`POST /customers/{id}/invite`) ve müşteriye kendisi iletir.
+  - Kart varken kodsuz kayıt `INVITE_CODE_REQUIRED` (400) ile reddedilir; hesap açılmaz, kart bağlanmaz.
+  - Kod tek kullanımlıktır, 7 gün geçerlidir; yeni kod üretmek ve kartın e-postasını değiştirmek eski kodu geçersiz kılar. Yanlış, süresi geçmiş, kullanılmış ya da pasif karta ait kod `INVALID_INVITE_CODE` (400) döner.
+  - Kod yaklaşık 49 bit rastgeledir. Veritabanında düz hali değil, `SECRET_KEY` ile anahtarlanmış HMAC-SHA256 özeti saklanır (`app/core/invite_codes.py`).
+  - Testler: `tests/test_auth.py`, `tests/test_customers.py`.
+- Yönetici bir personel hesabını Müşteri rolüne aldığında aynı e-postalı kart bağlanır. Bu bağlamayı yönetici kendisi yaptığı için yönetici onayı sayılır. Kartı olmayan hesaplar yalnızca personel hesaplarıdır; kayıt olan her hesabın kartı vardır.
+- **Kalan risk:** Kayıt ucu, kartı olan bir e-postayı "davet kodu gerekli" yanıtıyla belli eder (e-posta adresinin sistemde olup olmadığı zaten `EMAIL_TAKEN` ile anlaşılabiliyordu). Kod tahmini için kayıt ucunda deneme sınırı yoktur; 7 günlük süre ve kodun büyüklüğü bunu pratikte önler.
 - Sonuç: **Düzeltildi**; kalan risk yukarıda belgelendi.
 
 ### A05 – Güvenlik yanlış yapılandırması
