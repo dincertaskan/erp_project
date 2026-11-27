@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from app.core.clock import BUSINESS_TZ
-from app.models import Order, OrderItem, OrderStatus, PaymentMethod
+from app.models import Order, OrderItem, OrderStatus, PaymentMethod, RecordSource
 from app.schemas.dashboard import Granularity, Period
 from app.services.dashboard_service import DashboardService
 from tests.conftest import auth_headers
@@ -70,6 +70,15 @@ def test_summary_counts_only_approved_orders_in_business_time(db, sales, make_pr
     assert summary.prev_month_sales == Decimal("70")
     assert summary.pending_orders == 1
     assert summary.critical_stock_count == 1
+
+
+def test_pending_count_excludes_olist_orders(db, add_order, make_product):
+    product = make_product()
+    add_order(local(2026, 11, 20), OrderStatus.PENDING, [(product, 1, "10")])
+    add_order(local(2026, 11, 20), OrderStatus.PENDING, [(product, 1, "10")]).source = RecordSource.OLIST
+    db.flush()
+
+    assert DashboardService(db, now=NOW).summary().pending_orders == 1
 
 
 def test_daily_trend_fills_empty_days(db, sales):

@@ -1,7 +1,6 @@
-import { adminNavigation, navigationForRole, selectedMenuKey, type NavItem } from './navigation';
+import { adminNavigation, navigationForRole, selectedMenuKey, type NavGroup } from './navigation';
 
-const paths = (items: NavItem[]): string[] =>
-  items.flatMap((item) => [item.path, ...(item.children ? paths(item.children) : [])]);
+const paths = (groups: NavGroup[]): string[] => groups.flatMap((group) => group.items.map((item) => item.path));
 
 describe('navigationForRole', () => {
   it('shows every module to admins', () => {
@@ -13,11 +12,18 @@ describe('navigationForRole', () => {
   it('limits warehouse staff to products, stock and orders', () => {
     expect(paths(navigationForRole(adminNavigation, 'warehouse'))).toEqual([
       '/products',
-      '/stock-menu',
       '/stock',
       '/stock/movements',
       '/stock/critical',
       '/orders',
+    ]);
+  });
+
+  it('hides groups left without items', () => {
+    expect(navigationForRole(adminNavigation, 'warehouse').map((group) => group.key)).toEqual([
+      'catalog',
+      'stock',
+      'sales',
     ]);
   });
 });

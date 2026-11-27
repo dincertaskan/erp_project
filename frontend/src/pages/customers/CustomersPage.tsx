@@ -11,6 +11,8 @@ import { CustomerFormModal } from '@/components/CustomerFormModal';
 import { ActiveTag } from '@/components/StatusTag';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import { tablePagination } from '@/utils/table';
+import { ActionLink } from '@/components/ActionLink';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CustomerFilters {
   keyword?: string;
@@ -23,6 +25,7 @@ interface CustomerFilters {
 
 /** E-22 Müşteri Listesi (yalnızca yönetici) */
 export function CustomersPage() {
+  usePageTitle('Müşteriler');
   const actionRef = useRef<ActionType>(null);
   const [editing, setEditing] = useState<CustomerListItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -124,9 +127,9 @@ export function CustomersPage() {
       width: 130,
       render: (_, row) => [
         row.source === 'app' ? (
-          <a key="edit" onClick={() => openModal(row)}>
+          <ActionLink key="edit" onClick={() => openModal(row)}>
             Düzenle
-          </a>
+          </ActionLink>
         ) : null,
         <Link key="detail" to={`/customers/${row.id}`}>
           Detay

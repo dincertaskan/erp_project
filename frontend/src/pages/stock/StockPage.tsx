@@ -14,6 +14,7 @@ import { StockMovementModal, type ManualMovementType, type MovementProduct } fro
 import { formatDateTime, formatNumber } from '@/utils/format';
 import { stockStatusLabels, type StockStatus } from '@/utils/labels';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface StockFilters {
   keyword: string;
@@ -23,6 +24,7 @@ interface StockFilters {
 
 /** E-15 Stok İşlemleri: ürünü bulup giriş ya da çıkış yapmak. Barkod okuyucuyla da kullanılabilir. */
 export function StockPage() {
+  usePageTitle('Stok İşlemleri');
   const { message } = App.useApp();
   const actionRef = useRef<ActionType>(null);
   const { data: categories = [] } = useCategories();
@@ -110,7 +112,7 @@ export function StockPage() {
           key="in"
           size="small"
           icon={<PlusOutlined />}
-          style={{ color: '#059669', borderColor: '#A7F3D0' }}
+          style={{ color: '#047857', borderColor: '#A7F3D0' }}
           onClick={() => setModal({ product: row, type: 'in' })}
         >
           Giriş
@@ -160,6 +162,7 @@ export function StockPage() {
                 <Statistic
                   title="Kritik Stok"
                   value={summary?.critical_count ?? '–'}
+                  groupSeparator="."
                   valueStyle={summary?.critical_count ? { color: '#DC2626' } : undefined}
                 />
               </Card>

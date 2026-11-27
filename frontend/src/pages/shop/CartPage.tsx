@@ -23,6 +23,8 @@ import type { CartIssue, CartValidation, MyOrderDetail } from '@/api/shop';
 import { useAuth } from '@/auth/useAuth';
 import type { CartLine } from '@/cart/cartStore';
 import { useCart } from '@/cart/useCart';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { colors } from '@/theme';
 import { formatCurrency } from '@/utils/format';
 import { paymentMethodLabels, type PaymentMethod } from '@/utils/labels';
@@ -46,16 +48,38 @@ export function CartPage() {
   const [form] = Form.useForm<CheckoutForm>();
   const savedAddress = [user?.customer?.address, user?.customer?.city].filter(Boolean).join(', ');
 
+  usePageTitle('Sepetim');
+  // Adet değişirken her tuşta istek atılmaz; doğrulama 400 ms bekledikten sonra yapılır.
+  const items = toItems(lines);
+  const itemsKey = JSON.stringify(items);
+  const validatedKey = useDebouncedValue(itemsKey, 400);
+  const awaitingValidation = itemsKey !== validatedKey;
+
   const validation = useQuery({
-    queryKey: ['cart', 'validate', toItems(lines)],
-    queryFn: async () => (await api.post<CartValidation>('/me/cart/validate', { items: toItems(lines) })).data,
-    enabled: lines.length > 0,
+    queryKey: ['cart', 'validate', validatedKey],
+    queryFn: async () =>
+      (await api.post<CartValidation>('/me/cart/validate', { items: JSON.parse(validatedKey) as typeof items })).data,
+    enabled: lines.length > 0 && validatedKey !== '[]',
+    placeholderData: (previous) => previous,
   });
   const issues = new Map<number, CartIssue>((validation.data?.issues ?? []).map((issue) => [issue.product_id, issue]));
   const blocked = issues.size > 0;
+  const productsById = new Map((validation.data?.products ?? []).map((product) => [product.id, product]));
+  // Satışta olmayan ya da stoğu tükenen satırlar alınamaz; güncellemede sepetten çıkarılır.
+  const unbuyable = (line: CartLine) => {
+    const issue = issues.get(line.productId);
+    if (!issue) return false;
+    const available = productsById.get(line.productId)?.available_qty ?? issue.available_qty ?? 0;
+    return issue.issue === 'not_available' || available <= 0;
+  };
+  const removable = lines.filter(unbuyable);
 
   const acceptChanges = () => {
-    for (const product of validation.data?.products ?? []) refresh(product);
+    for (const line of lines) {
+      const product = productsById.get(line.productId);
+      if (unbuyable(line)) remove(line.productId);
+      else if (product) refresh(product);
+    }
   };
 
   const placeOrder = useMutation({
@@ -103,7 +127,11 @@ export function CartPage() {
               showIcon
               style={{ marginBottom: 16 }}
               message="Sepetinizdeki bazı ürünler değişti."
-              description="İşaretli satırları kontrol edin. Güncel fiyat ve stokla devam etmek için güncelleyin."
+              description={
+                removable.length > 0
+                  ? `İşaretli satırları kontrol edin. Güncellediğinizde satışta olmayan ya da stoğu tükenen ${removable.length} ürün sepetten çıkarılacak, diğerleri güncel fiyat ve stokla yenilenecek.`
+                  : 'İşaretli satırları kontrol edin. Güncel fiyat ve stokla devam etmek için güncelleyin.'
+              }
               action={
                 <Button size="small" onClick={acceptChanges}>
                   Güncelle
@@ -238,7 +266,7 @@ export function CartPage() {
                 block
                 htmlType="submit"
                 loading={placeOrder.isPending}
-                disabled={blocked || validation.isFetching}
+                disabled={blocked || awaitingValidation || validation.isFetching}
               >
                 Siparişi Tamamla
               </Button>

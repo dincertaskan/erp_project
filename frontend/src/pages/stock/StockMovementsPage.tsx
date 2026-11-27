@@ -9,6 +9,7 @@ import { MovementQuantity, MovementTypeTag } from '@/components/StatusTag';
 import { formatDateTime, formatNumber } from '@/utils/format';
 import { movementTypeLabels } from '@/utils/labels';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface MovementFilters {
   created_at?: [string, string];
@@ -36,6 +37,7 @@ async function loadUsers() {
 
 /** E-17 Stok Hareketleri: tüm ürünlerin hareket geçmişi. Kullanıcı filtresi yalnızca yöneticide (kullanıcı listesi yöneticiye açık). */
 export function StockMovementsPage() {
+  usePageTitle('Stok Hareketleri');
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 

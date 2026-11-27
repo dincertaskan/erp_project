@@ -10,6 +10,10 @@ export interface AuthContextValue {
   sessionExpired: boolean;
   /** Kullanıcı kendi isteğiyle çıkış yaptıysa true (giriş ekranına geri dönüş adresi eklenmez) */
   signedOut: boolean;
+  /** Oturum bilgisi ağ ya da sunucu hatası yüzünden alınamadıysa true (oturum sonlandırılmaz) */
+  unavailable?: boolean;
+  /** Oturum bilgisini yeniden ister */
+  retry?: () => void;
   login: (email: string, password: string) => Promise<CurrentUser>;
   logout: () => void;
 }

@@ -131,6 +131,28 @@ def test_create_validation(client, admin, customer, payload, field):
     assert field in {d["field"] for d in response.json()["details"]}
 
 
+def test_amounts_beyond_the_numeric_column_are_rejected(client, db, admin, customer, make_product):
+    expensive = make_product(sale_price="9999999.99")
+    big = make_product(sale_price="6000000000.00")
+
+    line = create_order(client, admin, customer, [(big, 1), (expensive, 1001)])
+    total = create_order(client, admin, customer, [(big, 1), (expensive, 500)])
+
+    assert line.status_code == 422
+    assert line.json()["code"] == "VALIDATION_ERROR"
+    assert line.json()["details"][0]["field"] == "items.1.quantity"
+    assert total.status_code == 422
+    assert total.json()["details"][0]["field"] == "items"
+    assert db.scalar(select(Order).where(Order.customer_id == customer.customer.id)) is None
+
+
+def test_page_number_is_bounded(client, admin):
+    response = client.get("/orders", headers=auth_headers(admin), params={"page": 100_001})
+
+    assert response.status_code == 422
+    assert response.json()["details"][0]["field"] == "page"
+
+
 def test_duplicate_products_are_rejected(client, admin, customer, make_product):
     product = make_product()
 
@@ -325,6 +347,31 @@ def test_warehouse_only_sees_preparing_and_shipped(client, admin, warehouse, cus
     assert body["counts_by_status"] == {"preparing": 1}
     assert body["items"][0]["allowed_actions"] == ["ship"]
     assert client.get(f"/orders/{pending['id']}", headers=auth_headers(warehouse)).status_code == 403
+
+
+def test_warehouse_queue_excludes_olist_orders(client, db, admin, warehouse, customer, make_product):
+    product = make_product(stock=100)
+    approved = create_order(client, admin, customer, [(product, 1)]).json()
+    act(client, admin, approved["id"], "approve")
+    olist = Order(
+        order_code="OLIST-PREP",
+        customer_id=customer.customer.id,
+        status=OrderStatus.PREPARING,
+        total_amount=Decimal("10"),
+        payment_method="credit_card",
+        source=RecordSource.OLIST,
+    )
+    db.add(olist)
+    db.flush()
+
+    body = client.get("/orders", headers=auth_headers(warehouse)).json()
+    admin_body = client.get("/orders", headers=auth_headers(admin)).json()
+
+    assert [o["id"] for o in body["items"]] == [approved["id"]]
+    assert (body["total"], body["counts_by_status"]) == (1, {"preparing": 1})
+    assert client.get(f"/orders/{olist.id}", headers=auth_headers(warehouse)).status_code == 403
+    # Yönetici listesi aktarılan siparişleri de gösterir; sayılar listeyle tutarlıdır.
+    assert (admin_body["total"], admin_body["counts_by_status"]) == (2, {"preparing": 2})
 
 
 def test_customers_cannot_use_panel_orders(client, customer):

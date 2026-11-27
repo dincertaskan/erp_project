@@ -1,7 +1,8 @@
 """SUS puanlaması ve 68 eşiğine karşı tek örneklem t-testi.
 
 Girdi CSV sütunları: participant, role, q1 … q10 (1-5). Görev sütunları varsa (ör. task_M1_done,
-task_M1_seconds) görev başarı oranı ve ortalama süre de raporlanır.
+task_M1_seconds) görev başarı oranı ve ortalama süre de raporlanır. Ortalama SUS için %95 güven aralığı
+verilir; yaklaşık 10 katılımcıyla 68'e karşı t-testinin gücü sınırlıdır, birincil çıktı güven aralığıdır.
 
 Kullanım: python sus_score.py yanitlar.csv
 """
@@ -38,6 +39,8 @@ def main(path: Path) -> None:
     print(data.groupby("role")["sus"].agg(["count", "mean", "std"]).round(1).to_string())
 
     if len(data) >= 2:
+        low, high = stats.t.interval(0.95, len(data) - 1, loc=data["sus"].mean(), scale=stats.sem(data["sus"]))
+        print(f"Ortalama için %95 güven aralığı: {low:.1f}–{high:.1f}")
         test = stats.ttest_1samp(data["sus"], BENCHMARK)
         print(f"\nTek örneklem t-testi (H0: ortalama = {BENCHMARK}): t={test.statistic:.2f}, p={test.pvalue:.4f}")
 
@@ -47,6 +50,8 @@ def main(path: Path) -> None:
         for column in done_columns:
             task = column.removeprefix("task_").removesuffix("_done")
             answered = data[column].dropna()
+            if answered.empty:  # şablonda her rolün yalnızca kendi görev sütunları doludur
+                continue
             rate = (answered.astype(str).str.lower().isin(["evet", "1", "true"])).mean()
             seconds = data.get(f"task_{task}_seconds")
             mean_seconds = (

@@ -1,10 +1,12 @@
-                    sorgu  indeksli_medyan_ms  indekssiz_medyan_ms  hizlanma_kat  wilcoxon_p
-      dashboard_ay_satisi               0.154               12.403         80.54     0.00000
-   dashboard_en_cok_satan               0.680               11.662         17.14     0.00000
-   dashboard_gunluk_trend               0.205               12.933         63.09     0.00000
-      musteri_siparisleri               0.119                7.438         62.50     0.00000
-rapor_musteri_istatistigi             109.245              100.621          0.92     0.07672
-       rapor_urun_bazinda               0.452               12.252         27.11     0.00000
-    siparis_listesi_durum               0.106                7.449         69.94     0.00000
-    siparis_listesi_tarih               0.112               12.109        108.12     0.00000
-       urun_satis_gecmisi              13.959                5.489          0.39     0.00000
+                    sorgu     n  indeksli_medyan_ms  indekssiz_medyan_ms  hizlanma_kat hizlanma_GA95     U mannwhitney_p  cliffs_delta  p_Holm
+      dashboard_ay_satisi 30/30               0.154               12.403         80.54   73.90–88.71 900.0         3e-11          1.00 2.7e-10
+   dashboard_en_cok_satan 30/30               0.680               11.662         17.14   16.08–18.90 900.0         3e-11          1.00 2.7e-10
+   dashboard_gunluk_trend 30/30               0.205               12.933         63.09   57.44–69.30 900.0         3e-11          1.00 2.7e-10
+      musteri_siparisleri 30/30               0.119                7.438         62.50   58.88–74.74 900.0         3e-11          1.00 2.7e-10
+rapor_musteri_istatistigi 30/30             109.245              100.621          0.92     0.88–1.02 319.0         0.054         -0.29   0.054
+       rapor_urun_bazinda 30/30               0.452               12.252         27.11   24.36–30.74 900.0         3e-11          1.00 2.7e-10
+    siparis_listesi_durum 30/30               0.106                7.449         69.94   67.75–75.83 900.0         3e-11          1.00 2.7e-10
+    siparis_listesi_tarih 30/30               0.112               12.109        108.12 100.03–118.06 900.0         3e-11          1.00 2.7e-10
+       urun_satis_gecmisi 30/30              13.959                5.489          0.39     0.36–0.44   0.0         3e-11         -1.00 2.7e-10
+
+Not: yalnızca sıcak önbellek ölçüldü (tüm ölçümlerde shared_read = 0); süre = planlama + yürütme (EXPLAIN ANALYZE), uçtan uca HTTP süresi değil.

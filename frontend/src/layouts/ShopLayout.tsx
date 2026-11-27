@@ -1,69 +1,75 @@
 import { ShoppingCartOutlined } from '@ant-design/icons';
-import { Badge, Layout, Menu, Space, Typography } from 'antd';
+import { Badge } from 'antd';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useCart } from '@/cart/useCart';
-import { colors } from '@/theme';
-import { LogoMark } from './Logo';
+import { LoadingIndicator } from './LoadingIndicator';
+import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 
-const navItems = [
-  { key: '/shop', label: <Link to="/shop">Ürünler</Link> },
-  { key: '/shop/orders', label: <Link to="/shop/orders">Siparişlerim</Link> },
-];
+/** Sayfa kaydırıldığında üst çubuğa yarı saydam zemin ve gölge verilir */
+function useScrolled(offset = 4) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > offset);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, [offset]);
+  return scrolled;
+}
 
 /** Müşteri arayüzü: sol menü yok, mağaza tipi üst çubuk */
 export function ShopLayout() {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const { count: cartCount } = useCart();
-  const { pathname } = location;
+  const scrolled = useScrolled();
   // Sepet ve profil menüde olmadığı için hiçbir öğe seçili görünmez.
   const selected = pathname.startsWith('/shop/orders')
-    ? ['/shop/orders']
+    ? '/shop/orders'
     : pathname === '/shop' || pathname.startsWith('/shop/products')
-      ? ['/shop']
-      : [];
+      ? '/shop'
+      : undefined;
+  const navItems = [
+    { to: '/shop', label: 'Ürünler' },
+    { to: '/shop/orders', label: 'Siparişlerim' },
+  ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          height: 56,
-          lineHeight: '56px',
-          padding: '0 24px',
-          borderBottom: `1px solid ${colors.border}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 32,
-        }}
-      >
-        <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <LogoMark />
-          <Typography.Text strong>Akıllı ERP</Typography.Text>
+    <div className="shop-shell">
+      <LoadingIndicator />
+      {/* İç boşluk ve aralıklar styles.css'te: sm altında daralır */}
+      <header className={scrolled ? 'shop-header is-scrolled' : 'shop-header'}>
+        <Link to="/shop" className="brand-link">
+          <Logo variant="shop" />
         </Link>
-        <Menu
-          mode="horizontal"
-          selectedKeys={selected}
-          items={navItems}
-          style={{ flex: 1, borderBottom: 'none', minWidth: 0 }}
-        />
-        <Space size={24}>
-          <Link to="/shop/cart" aria-label="Sepet">
+        <nav aria-label="Mağaza menüsü" className="shop-nav">
+          {navItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="shop-nav__link"
+              aria-current={selected === item.to ? 'page' : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="shop-header-actions">
+          <Link to="/shop/cart" aria-label="Sepet" className="icon-link">
             <Badge count={cartCount} size="small">
-              <ShoppingCartOutlined style={{ fontSize: 20, color: colors.text }} />
+              <ShoppingCartOutlined style={{ fontSize: 20 }} />
             </Badge>
           </Link>
           <UserMenu />
-        </Space>
-      </Layout.Header>
-      <Layout.Content style={{ padding: 24, width: '100%', maxWidth: 1200, margin: '0 auto' }}>
-        <Outlet />
-      </Layout.Content>
-      <Layout.Footer style={{ textAlign: 'center', color: colors.textMuted }}>
-        Akıllı ERP · Demo mağaza · Veriler Olist açık veri setinden alınmıştır
-      </Layout.Footer>
-    </Layout>
+        </div>
+      </header>
+      <main className="shop-content">
+        <div key={pathname} className="page-enter">
+          <Outlet />
+        </div>
+      </main>
+      <footer className="shop-footer">Akıllı ERP · Demo mağaza · Veriler Olist açık veri setinden alınmıştır</footer>
+    </div>
   );
 }

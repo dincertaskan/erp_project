@@ -18,7 +18,6 @@ Projede doğrudan kullanılan paketlerin ve dış kaynakların lisansları. Sür
 | pydantic-settings | 2.16.3 | MIT |
 | PyJWT | 2.15.1 | MIT |
 | python-dotenv | 1.2.4 | BSD-3-Clause |
-| python-multipart | 0.0.34 | Apache-2.0 |
 | SQLAlchemy | 2.1.9 | MIT |
 | tzdata | 2026.6 | Apache-2.0 |
 | uvicorn | 0.54.0 | BSD-3-Clause |

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { homePathByRole } from '@/auth/roles';
 import { useAuth } from '@/auth/useAuth';
 import { colors } from '@/theme';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const content = {
   403: {
@@ -18,6 +19,7 @@ const content = {
 
 /** E-05 Hata sayfaları (403 ve 404) */
 export function ErrorPage({ status }: { status: 403 | 404 }) {
+  usePageTitle(content[status].title);
   const { user } = useAuth();
   const navigate = useNavigate();
   const home = user ? homePathByRole[user.role] : '/login';

@@ -19,6 +19,8 @@ import { ColorDot } from '@/components/CategoryTag';
 import { ActiveTag } from '@/components/StatusTag';
 import { applyServerErrors } from '@/utils/forms';
 import { formatDate, formatNumber } from '@/utils/format';
+import { ActionLink } from '@/components/ActionLink';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface CategoryForm {
   name: string;
@@ -26,10 +28,11 @@ interface CategoryForm {
   is_active: boolean;
 }
 
-const DEFAULT_COLOR = '#4F46E5';
+const DEFAULT_COLOR = '#2563EB';
 
 /** E-14 Kategoriler (yalnızca yönetici). Kategoriler silinmez, pasife alınır. */
 export function CategoriesPage() {
+  usePageTitle('Kategoriler');
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const actionRef = useRef<ActionType>(null);
@@ -94,9 +97,9 @@ export function CategoriesPage() {
       valueType: 'option',
       width: 180,
       render: (_, row) => [
-        <a key="edit" onClick={() => openModal(row)}>
+        <ActionLink key="edit" onClick={() => openModal(row)}>
           Düzenle
-        </a>,
+        </ActionLink>,
         row.is_active ? (
           <Popconfirm
             key="status"
@@ -111,12 +114,12 @@ export function CategoriesPage() {
             okButtonProps={{ danger: true }}
             onConfirm={() => setStatus(row, false)}
           >
-            <a style={{ color: '#DC2626' }}>Pasife Al</a>
+            <ActionLink danger>Pasife Al</ActionLink>
           </Popconfirm>
         ) : (
-          <a key="status" onClick={() => setStatus(row, true)}>
+          <ActionLink key="status" onClick={() => setStatus(row, true)}>
             Aktifleştir
-          </a>
+          </ActionLink>
         ),
       ],
     },
@@ -151,7 +154,7 @@ export function CategoriesPage() {
         formRef={formRef}
         width={480}
         modalProps={{ destroyOnHidden: true, onCancel: () => setModalOpen(false) }}
-        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'İptal' } }}
+        submitter={{ searchConfig: { submitText: 'Kaydet', resetText: 'Vazgeç' } }}
         initialValues={editing ?? { name: '', color: DEFAULT_COLOR, is_active: true }}
         onOpenChange={setModalOpen}
         onFinish={onFinish}
@@ -178,7 +181,7 @@ export function CategoriesPage() {
             presets={[
               {
                 label: 'Önerilen',
-                colors: ['#4F46E5', '#2563EB', '#0E7490', '#10B981', '#D97706', '#EC4899', '#7C3AED', '#4B5563'],
+                colors: ['#2563EB', '#1E3A8A', '#0E7490', '#10B981', '#D97706', '#EC4899', '#7C3AED', '#4B5563'],
               },
             ]}
           />

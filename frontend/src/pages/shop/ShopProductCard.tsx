@@ -1,15 +1,27 @@
 import { PictureOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { App, Button, Card, Typography } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { availabilityColor, availabilityText, type CatalogProduct } from '@/api/shop';
 import { useCart } from '@/cart/useCart';
 import { CategoryTag } from '@/components/CategoryTag';
 import { colors } from '@/theme';
 import { formatCurrency } from '@/utils/format';
 
+/** Ürün görseli; adres yoksa ya da görsel yüklenemezse yer tutucu ikon gösterilir. */
 export function ProductImage({ src, alt, height }: { src: string | null; alt: string; height: number }) {
-  return src ? (
-    <img src={src} alt={alt} style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
+  // Hangi adresin yüklenemediği tutulur; adres değişince görsel yeniden denenir.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  return src && failedSrc !== src ? (
+    <img
+      src={src}
+      alt={alt}
+      height={height}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailedSrc(src)}
+      style={{ width: '100%', height, objectFit: 'cover', display: 'block' }}
+    />
   ) : (
     <div
       aria-hidden
@@ -36,7 +48,7 @@ export function AvailabilityText({ product }: { product: Pick<CatalogProduct, 'a
   );
 }
 
-/** E-30 ürün kartı: tıklanınca detay açılır; stok yoksa sepete eklenemez. */
+/** E-30 ürün kartı: tıklanınca detay açılır (klavyede ürün adı bağlantısıyla); stok yoksa sepete eklenemez. */
 export function ShopProductCard({ product }: { product: CatalogProduct }) {
   const navigate = useNavigate();
   const { message } = App.useApp();
@@ -56,7 +68,15 @@ export function ShopProductCard({ product }: { product: CatalogProduct }) {
         <CategoryTag category={product.category} />
       </div>
       <Typography.Paragraph strong ellipsis={{ rows: 2 }} style={{ margin: 0, minHeight: 44 }}>
-        {product.name}
+        <Link
+          to={`/shop/products/${product.id}`}
+          className="shop-product-link"
+          style={{ color: 'inherit' }}
+          // Kartın kendi tıklaması da aynı sayfayı açar; iki kez yönlendirme olmasın.
+          onClick={(event) => event.stopPropagation()}
+        >
+          {product.name}
+        </Link>
       </Typography.Paragraph>
       <Typography.Text strong style={{ fontSize: 18 }}>
         {formatCurrency(product.sale_price)}

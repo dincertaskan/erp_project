@@ -28,7 +28,9 @@ function read(key: string): CartLine[] {
   if (cached && cached.raw === raw) return cached.lines;
   let lines: CartLine[] = [];
   try {
-    lines = raw ? (JSON.parse(raw) as CartLine[]) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    // Bozuk ya da elle değiştirilmiş kayıt sepeti kilitlemesin: dizi değilse sepet boş sayılır.
+    lines = Array.isArray(parsed) ? (parsed as CartLine[]) : [];
   } catch {
     lines = [];
   }

@@ -11,6 +11,7 @@ import { ProductThumb } from '@/components/ProductThumb';
 import { MovementQuantity, MovementTypeTag, OrderStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDateTime, formatNumber } from '@/utils/format';
 import { orderStatusLabels, paymentMethodLabels, type OrderStatus } from '@/utils/labels';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const FLOW: OrderStatus[] = ['pending', 'preparing', 'shipped', 'completed'];
 
@@ -44,6 +45,7 @@ function timelineItems(order: OrderDetail) {
 
 /** E-20 Sipariş Detayı */
 export function OrderDetailPage() {
+  usePageTitle('Sipariş Detayı');
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -59,6 +61,8 @@ export function OrderDetailPage() {
     queryKey,
     queryFn: async () => (await api.get<OrderDetail>(`/orders/${id}`)).data,
   });
+
+  usePageTitle(order ? `Sipariş ${order.order_code}` : 'Sipariş Detayı');
 
   if (isPending) return <FullPageSpinner />;
   if (error || !order) {

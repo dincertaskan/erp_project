@@ -13,6 +13,7 @@ import { ActiveTag, OrderStatusTag } from '@/components/StatusTag';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
 import { orderStatusLabels } from '@/utils/labels';
 import { tablePagination } from '@/utils/table';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface OrderFilters {
   status?: string;
@@ -38,6 +39,8 @@ export function CustomerDetailPage() {
     queryKey,
     queryFn: async () => (await api.get<CustomerDetail>(`/customers/${id}`)).data,
   });
+
+  usePageTitle(customer?.full_name ?? 'Müşteri Detayı');
 
   if (isPending) return <FullPageSpinner />;
   if (error || !customer) {

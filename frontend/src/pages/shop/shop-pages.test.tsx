@@ -78,7 +78,7 @@ describe('ShopProductCard', () => {
       '/',
     );
 
-    expect(screen.getByText('Stokta yok')).toBeInTheDocument();
+    expect(screen.getByText('Stokta Yok', { selector: '.ant-typography' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Stokta Yok/ })).toBeDisabled();
   });
 });

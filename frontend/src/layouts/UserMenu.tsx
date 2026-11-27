@@ -1,8 +1,15 @@
-import { KeyOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Dropdown, Space, Typography } from 'antd';
+import { DownOutlined, KeyOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { Button, Dropdown } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
-import { RoleTag } from '@/components/StatusTag';
+import { roleLabels } from '@/utils/labels';
+
+/** Ad ve soyadın baş harfleri (Türkçe büyük harfle): "ilkay Yılmaz" → "İY" */
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+  return letters.map((part) => part.charAt(0).toLocaleUpperCase('tr-TR')).join('');
+}
 
 export function UserMenu() {
   const { user, logout } = useAuth();
@@ -21,6 +28,7 @@ export function UserMenu() {
   return (
     <Dropdown
       trigger={['click']}
+      placement="bottomRight"
       menu={{
         onClick,
         items: [
@@ -31,13 +39,17 @@ export function UserMenu() {
         ],
       }}
     >
-      <Space style={{ cursor: 'pointer' }} size={8}>
-        <Avatar size="small" style={{ backgroundColor: '#4F46E5' }}>
-          {user.full_name.charAt(0).toLocaleUpperCase('tr-TR')}
-        </Avatar>
-        <Typography.Text>{user.full_name}</Typography.Text>
-        <RoleTag role={user.role} />
-      </Space>
+      {/* Gerçek düğme: Tab ile odaklanır, Enter/Boşluk menüyü açar. Dar ekranda yalnızca baş harfler kalır. */}
+      <Button type="text" aria-label="Kullanıcı menüsü" className="user-button">
+        <span className="user-button__avatar" aria-hidden="true">
+          {initials(user.full_name)}
+        </span>
+        <span className="user-button__text">
+          <span className="user-button__name hide-below-sm">{user.full_name}</span>
+          <span className="user-button__role hide-below-sm">{roleLabels[user.role]}</span>
+        </span>
+        <DownOutlined className="user-button__chevron" aria-hidden="true" />
+      </Button>
     </Dropdown>
   );
 }

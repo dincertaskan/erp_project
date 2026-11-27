@@ -11,6 +11,7 @@ import { RoleTag } from '@/components/StatusTag';
 import { colors } from '@/theme';
 import { applyServerErrors } from '@/utils/forms';
 import { formatDate, formatDateTime } from '@/utils/format';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface ProfileForm {
   full_name: string;
@@ -24,6 +25,7 @@ const emptyToNull = (value?: string | null) => (value ? value : null);
 
 /** E-03 Profilim. Telefon, firma ve adres alanları yalnızca müşteri hesaplarında bulunur. */
 export function ProfilePage() {
+  usePageTitle('Profilim');
   const { user } = useAuth();
   const { message } = App.useApp();
   const queryClient = useQueryClient();

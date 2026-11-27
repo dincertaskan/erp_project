@@ -1,10 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
+import { useQueryClient } from '@tanstack/react-query';
 import { App, Button, Popconfirm } from 'antd';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toSortParam, useCategories } from '@/api/catalog';
 import { api, errorMessage } from '@/api/client';
+import { invalidateStock } from '@/api/stock';
 import type { Page, Product } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { CategoryTag } from '@/components/CategoryTag';
@@ -14,6 +16,9 @@ import { tablePagination } from '@/utils/table';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import { stockStatusLabels } from '@/utils/labels';
 import { ProductFormModal } from './ProductFormModal';
+import { DEACTIVATE_PRODUCT_DESCRIPTION, DEACTIVATE_PRODUCT_TITLE } from './productTexts';
+import { ActionLink } from '@/components/ActionLink';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 interface ProductFilters {
   keyword?: string;
@@ -26,9 +31,11 @@ interface ProductFilters {
 
 /** E-11 Ürün Listesi. Depo personeli salt okur ve maliyeti görmez. */
 export function ProductsPage() {
+  usePageTitle('Ürünler');
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const actionRef = useRef<ActionType>(null);
   const { data: categories = [] } = useCategories();
   const [editing, setEditing] = useState<Product | null>(null);
@@ -43,6 +50,8 @@ export function ProductsPage() {
     try {
       await api.patch(`/products/${product.id}/status`, { is_active: isActive });
       message.success(isActive ? 'Ürün aktifleştirildi.' : 'Ürün pasife alındı.');
+      // Pasif ürünler kritik stok sayısına girmez; rozet ve özet yenilenir.
+      invalidateStock(queryClient);
       actionRef.current?.reload();
     } catch (err) {
       message.error(errorMessage(err));
@@ -176,25 +185,25 @@ export function ProductsPage() {
         </Link>,
         ...(isAdmin
           ? [
-              <a key="edit" onClick={() => openModal(row)}>
+              <ActionLink key="edit" onClick={() => openModal(row)}>
                 Düzenle
-              </a>,
+              </ActionLink>,
               row.is_active ? (
                 <Popconfirm
                   key="status"
-                  title="Ürün pasife alınsın mı?"
-                  description="Pasif ürünler müşteri kataloğunda görünmez ve siparişe eklenemez."
+                  title={DEACTIVATE_PRODUCT_TITLE}
+                  description={DEACTIVATE_PRODUCT_DESCRIPTION}
                   okText="Pasife Al"
                   cancelText="Vazgeç"
                   okButtonProps={{ danger: true }}
                   onConfirm={() => setStatus(row, false)}
                 >
-                  <a style={{ color: '#DC2626' }}>Pasife Al</a>
+                  <ActionLink danger>Pasife Al</ActionLink>
                 </Popconfirm>
               ) : (
-                <a key="status" onClick={() => setStatus(row, true)}>
+                <ActionLink key="status" onClick={() => setStatus(row, true)}>
                   Aktifleştir
-                </a>
+                </ActionLink>
               ),
             ]
           : []),
