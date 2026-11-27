@@ -13,6 +13,7 @@ interface RegisterForm {
   full_name: string;
   email: string;
   phone?: string;
+  invite_code: string;
   password: string;
   password_confirm: string;
   consent: boolean;
@@ -27,11 +28,17 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onFinish = async ({ full_name, email, phone, password }: RegisterForm) => {
+  const onFinish = async ({ full_name, email, phone, invite_code, password }: RegisterForm) => {
     setError(null);
     setSubmitting(true);
     try {
-      await api.post('/auth/register', { full_name, email, password, phone: phone || null });
+      await api.post('/auth/register', {
+        full_name,
+        email,
+        password,
+        phone: phone || null,
+        invite_code: invite_code.trim() || null,
+      });
       const state: LoginLocationState = { registeredEmail: email.trim().toLowerCase() };
       navigate('/login', { state });
     } catch (err) {
@@ -47,6 +54,8 @@ export function RegisterPage() {
         form={form}
         layout="vertical"
         requiredMark={false}
+        // Davet kodu alanı boşken de formda bulunsun; sunucunun bu alana ait hatası alanın altında gösterilir.
+        initialValues={{ invite_code: '' }}
         onFinish={onFinish}
         onValuesChange={() => setError(null)}
       >
@@ -78,6 +87,14 @@ export function RegisterPage() {
           rules={[{ max: 30, message: 'Telefon en fazla 30 karakter olabilir.' }]}
         >
           <Input autoComplete="tel" placeholder="05xx xxx xx xx" />
+        </Form.Item>
+        <Form.Item
+          label="Davet kodu (isteğe bağlı)"
+          name="invite_code"
+          extra="Mağazamızda müşteri kaydınız varsa, hesabınızı bu kayda bağlamak için size iletilen kodu girin."
+          rules={[{ max: 20, message: 'Davet kodu en fazla 20 karakter olabilir.' }]}
+        >
+          <Input autoComplete="off" placeholder="ABCDE-FGH23" />
         </Form.Item>
         <Form.Item label="Şifre" name="password" rules={passwordRules}>
           <Input.Password autoComplete="new-password" />

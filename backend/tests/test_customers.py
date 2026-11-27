@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -149,15 +150,115 @@ def test_admin_creates_customer_without_account(client, admin):
     }
 
 
-def test_registration_links_to_the_admin_created_card(client, admin):
+# --- Davet koduyla karta bağlanma ---
+
+REGISTER_DENIZ = {"full_name": "Deniz Ak", "email": "deniz@firma.com", "password": "Guclu1234"}
+INVITE_CODE = re.compile(r"^[A-Z2-9]{5}-[A-Z2-9]{5}$")
+
+
+def login(client, email: str) -> dict[str, str]:
+    token = client.post("/auth/login", json={"email": email, "password": "Guclu1234"}).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_registration_without_invite_code_does_not_expose_the_admin_created_card(client, db, admin, make_order):
     created = client.post("/customers", headers=auth_headers(admin), json=customer_payload()).json()
+    make_order(db.get(Customer, created["id"]), OrderStatus.SHIPPED, "250.00")
 
-    client.post(
-        "/auth/register",
-        json={"full_name": "Deniz Ak", "email": "deniz@firma.com", "password": "Guclu1234"},
-    )
+    response = client.post("/auth/register", json=REGISTER_DENIZ)
 
-    assert client.get(f"/customers/{created['id']}", headers=auth_headers(admin)).json()["has_account"] is True
+    # Hesap açılmaz, kart bağlanmaz; kartın siparişlerini görecek bir oturum da oluşmaz.
+    assert response.status_code == 400
+    body = response.json()
+    assert body["code"] == "INVITE_CODE_REQUIRED"
+    assert body["details"][0]["field"] == "invite_code"
+    assert "davet kodu" in body["message"]
+    assert client.get(f"/customers/{created['id']}", headers=auth_headers(admin)).json()["has_account"] is False
+    login_attempt = client.post("/auth/login", json={"email": "deniz@firma.com", "password": "Guclu1234"})
+    assert login_attempt.status_code == 401
+
+
+def test_registration_with_invite_code_links_the_card_and_shows_past_orders(client, db, admin, make_order):
+    created = client.post("/customers", headers=auth_headers(admin), json=customer_payload()).json()
+    make_order(db.get(Customer, created["id"]), OrderStatus.SHIPPED, "250.00")
+
+    invite = client.post(f"/customers/{created['id']}/invite", headers=auth_headers(admin))
+    assert invite.status_code == 201
+    code = invite.json()["code"]
+    assert INVITE_CODE.match(code)
+    detail = client.get(f"/customers/{created['id']}", headers=auth_headers(admin)).json()
+    assert detail["invite_expires_at"] == invite.json()["expires_at"]
+
+    # Kod küçük harfle ve tiresiz yazılsa da kabul edilir.
+    response = client.post("/auth/register", json=REGISTER_DENIZ | {"invite_code": code.replace("-", "").lower()})
+
+    assert response.status_code == 201
+    orders = client.get("/me/orders", headers=login(client, "deniz@firma.com")).json()["items"]
+    assert [o["total_amount"] for o in orders] == ["250.00"]
+    detail = client.get(f"/customers/{created['id']}", headers=auth_headers(admin)).json()
+    assert (detail["has_account"], detail["invite_expires_at"]) == (True, None)
+
+
+def test_invite_code_is_valid_for_seven_days(client, admin, make_customer):
+    card = make_customer(email="deniz@firma.com")
+    before = datetime.now(UTC)
+
+    body = client.post(f"/customers/{card.id}/invite", headers=auth_headers(admin)).json()
+
+    expires_at = datetime.fromisoformat(body["expires_at"])
+    assert before + timedelta(days=7) <= expires_at <= datetime.now(UTC) + timedelta(days=7)
+
+
+def test_new_invite_code_replaces_the_previous_one(client, admin, make_customer):
+    card = make_customer(email="deniz@firma.com")
+    first = client.post(f"/customers/{card.id}/invite", headers=auth_headers(admin)).json()["code"]
+    second = client.post(f"/customers/{card.id}/invite", headers=auth_headers(admin)).json()["code"]
+
+    old = client.post("/auth/register", json=REGISTER_DENIZ | {"invite_code": first})
+    new = client.post("/auth/register", json=REGISTER_DENIZ | {"invite_code": second})
+
+    assert (old.status_code, old.json()["code"]) == (400, "INVALID_INVITE_CODE")
+    assert new.status_code == 201
+
+
+def test_changing_the_card_email_revokes_the_invite_code(client, admin, make_customer):
+    card = make_customer(email="eski@firma.com")
+    client.post(f"/customers/{card.id}/invite", headers=auth_headers(admin))
+
+    body = client.put(
+        f"/customers/{card.id}", headers=auth_headers(admin), json=customer_payload(email="yeni@firma.com")
+    ).json()
+
+    assert body["invite_expires_at"] is None
+
+
+@pytest.mark.parametrize(
+    ("fields", "status", "code"),
+    [
+        ({"source": RecordSource.OLIST}, 400, "READ_ONLY"),
+        ({"is_active": False}, 400, "CUSTOMER_INACTIVE"),
+    ],
+)
+def test_invite_code_cannot_be_created_for_olist_or_inactive_cards(client, admin, make_customer, fields, status, code):
+    card = make_customer(**fields)
+
+    response = client.post(f"/customers/{card.id}/invite", headers=auth_headers(admin))
+
+    assert (response.status_code, response.json()["code"]) == (status, code)
+
+
+def test_invite_code_cannot_be_created_for_a_card_with_an_account(client, admin, customer):
+    response = client.post(f"/customers/{customer.customer.id}/invite", headers=auth_headers(admin))
+
+    assert (response.status_code, response.json()["code"]) == (409, "HAS_ACCOUNT")
+
+
+def test_invite_code_is_admin_only(client, warehouse, make_customer):
+    card = make_customer()
+
+    response = client.post(f"/customers/{card.id}/invite", headers=auth_headers(warehouse))
+
+    assert response.status_code == 403
 
 
 def test_duplicate_email_conflicts(client, admin, make_customer):

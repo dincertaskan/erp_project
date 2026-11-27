@@ -56,8 +56,15 @@ function MovementDialog({
   const quantity = Form.useWatch('quantity', form) ?? 0;
 
   const newStock = type === 'in' ? currentStock + quantity : currentStock - quantity;
-  const fallsCritical =
-    type === 'out' && quantity > 0 && newStock >= 0 && getStockStatus(newStock, product.min_stock) !== 'sufficient';
+  // Kritik: 0 < stok < minimum; stok 0'a inerse ürün kritik değil, tükenmiş sayılır.
+  const statusAfter =
+    type === 'out' && quantity > 0 && newStock >= 0 ? getStockStatus(newStock, product.min_stock) : null;
+  const warning =
+    statusAfter === 'out_of_stock'
+      ? 'İşlem sonrası ürün tükenecek.'
+      : statusAfter === 'critical'
+        ? 'İşlem sonrası ürün kritik stoka düşecek.'
+        : null;
 
   const onFinish = async (values: MovementForm) => {
     setSaving(true);
@@ -172,9 +179,7 @@ function MovementDialog({
           Stok <strong>{formatNumber(currentStock)}</strong> → <strong>{formatNumber(newStock)}</strong> olacak.
         </Typography.Paragraph>
       ) : null}
-      {fallsCritical ? (
-        <Alert type="warning" showIcon message="İşlem sonrası ürün kritik stoka düşecek." style={{ marginBottom: 8 }} />
-      ) : null}
+      {warning ? <Alert type="warning" showIcon message={warning} style={{ marginBottom: 8 }} /> : null}
       <Typography.Text type="secondary">İşlemi yapan: {user?.full_name}</Typography.Text>
     </Modal>
   );

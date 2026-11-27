@@ -15,7 +15,7 @@ import { formatNumber } from '@/utils/format';
 import { tablePagination } from '@/utils/table';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
-/** E-18 Kritik Stok: stoğu minimumun altındaki ürünler, en kritik olan önce. */
+/** E-18 Kritik Stok: stoğu 0 ile minimum arasındaki (0 < stok < minimum) ürünler, en kritik olan önce. Tükenenler burada yer almaz. */
 export function CriticalStockPage() {
   usePageTitle('Kritik Stok');
   const actionRef = useRef<ActionType>(null);
@@ -99,7 +99,11 @@ export function CriticalStockPage() {
   return (
     <PageContainer title="Kritik Stok">
       {allFine ? (
-        <Result status="success" title="Tüm ürünlerin stoğu yeterli." />
+        <Result
+          status="success"
+          title="Kritik stokta ürün yok."
+          subTitle={'Stokta olmayan ürünleri Ürünler sayfasında "Stokta Yok" filtresiyle görebilirsiniz.'}
+        />
       ) : (
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           {count ? <Alert type="error" showIcon message={`${count} ürün kritik stok seviyesinde.`} /> : null}

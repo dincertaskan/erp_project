@@ -69,6 +69,15 @@ describe('StockMovementModal', () => {
     expect(screen.getByText('İşlemi yapan: Ayşe Kaya')).toBeInTheDocument();
   });
 
+  it('warns that the product runs out instead of falling critical when stock reaches zero', async () => {
+    renderModal(mouse, 'out');
+
+    fireEvent.change(screen.getByLabelText('Miktar'), { target: { value: '12' } });
+
+    expect(await screen.findByText('İşlem sonrası ürün tükenecek.')).toBeInTheDocument();
+    expect(screen.queryByText('İşlem sonrası ürün kritik stoka düşecek.')).not.toBeInTheDocument();
+  });
+
   it('requires a reason for stock out', async () => {
     const post = vi.spyOn(api, 'post');
     renderModal(mouse, 'out');
@@ -240,6 +249,6 @@ describe('CriticalStockPage', () => {
     });
     renderRoutes([{ path: '/stock/critical', element: <CriticalStockPage /> }], '/stock/critical');
 
-    expect(await screen.findByText('Tüm ürünlerin stoğu yeterli.')).toBeInTheDocument();
+    expect(await screen.findByText('Kritik stokta ürün yok.')).toBeInTheDocument();
   });
 });

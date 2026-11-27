@@ -28,6 +28,9 @@ services:
       # Worker başına bağlantı havuzu; worker × (havuz + taşma) < PostgreSQL max_connections (100)
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      # Önyüz konteynerindeki geliştirme sunucusu istemci adresini X-Forwarded-For ile iletir; kayıt sınırı
+      # IP başına uygulanır. Ekipçe elle test ederken sınır dar gelirse backend/.env içinde REGISTER_RATE_LIMIT artırılır.
+      FORWARDED_ALLOW_IPS: "*"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:

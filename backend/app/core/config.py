@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = Field(10, ge=0)
     DB_POOL_TIMEOUT: int = Field(30, ge=1)
     STOCK_STRATEGY: Literal["pessimistic", "optimistic", "none"] = "pessimistic"
+    # Swagger (/docs), ReDoc (/redoc) ve OpenAPI şeması (/openapi.json). Üretimde kapatılır;
+    # kapalıyken bu yollar hiç kaydedilmez ve 404 döner.
+    ENABLE_DOCS: bool = True
+    # Kayıt ucu için IP başına sınır: REGISTER_RATE_WINDOW_MINUTES dakikada en fazla REGISTER_RATE_LIMIT deneme.
+    # Her kayıt bcrypt yüzünden yaklaşık 250 ms CPU harcar; betikle toplu hesap açılmasını önler.
+    REGISTER_RATE_LIMIT: int = Field(5, ge=1)
+    REGISTER_RATE_WINDOW_MINUTES: int = Field(10, ge=1)
 
     @field_validator("DATABASE_URL")
     @classmethod

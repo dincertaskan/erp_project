@@ -4,19 +4,22 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.core import invite_codes
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.models import Customer, RecordSource
+from app.models import AuditEvent, Customer, RecordSource, User
 from app.repositories.customer_repository import CustomerFilters, CustomerRepository
 from app.repositories.order_repository import OrderFilters, OrderRepository
 from app.schemas.common import Page, PageParams
 from app.schemas.customer import (
     CustomerDetail,
+    CustomerInvite,
     CustomerListItem,
     CustomerOrder,
     CustomerRequest,
     CustomerSort,
     CustomerStats,
 )
+from app.services import audit
 
 EMAIL_TAKEN = "Bu e-posta adresiyle kayıtlı bir müşteri var."
 EMAIL_LOCKED = "Müşterinin giriş hesabı olduğu için e-posta adresi değiştirilemez."
@@ -91,6 +94,7 @@ class CustomerService:
                 "total_spent": total_spent,
                 "last_order_at": stats.last_order_at,
                 "stats": stats,
+                "invite_expires_at": invite_codes.active_until(customer),
             }
         )
 
@@ -101,7 +105,8 @@ class CustomerService:
 
     def create(self, data: CustomerRequest) -> CustomerDetail:
         self._ensure_email_free(data.email)
-        # Yöneticinin eklediği müşterinin giriş hesabı yoktur; aynı e-postayla kayıt olunursa hesaba bağlanır.
+        # Yöneticinin eklediği müşterinin giriş hesabı yoktur. Aynı e-postayla kayıt olan kişi karta ancak
+        # yöneticinin ürettiği davet koduyla bağlanır (create_invite).
         customer = Customer(**data.model_dump())
         self.db.add(customer)
         self.db.commit()
@@ -114,6 +119,9 @@ class CustomerService:
         if customer.user_id is not None and data.email != customer.email.lower():
             raise AppError(EMAIL_LOCKED, code="EMAIL_LOCKED", details=[{"field": "email", "message": EMAIL_LOCKED}])
         self._ensure_email_free(data.email, customer.id)
+        # Kod, kartın o anki e-posta sahibine verilmiştir; adres değişirse eski kod geçersizleşir.
+        if data.email != customer.email.lower():
+            invite_codes.revoke(customer)
 
         for key, value in data.model_dump().items():
             setattr(customer, key, value)
@@ -123,11 +131,39 @@ class CustomerService:
         self.db.commit()
         return self.detail(customer.id)
 
-    def set_status(self, customer_id: int, is_active: bool) -> CustomerDetail:
+    def set_status(self, actor: User, customer_id: int, is_active: bool) -> CustomerDetail:
         customer = self._get(customer_id)
+        if customer.is_active != is_active:
+            audit.record(
+                self.db,
+                AuditEvent.CUSTOMER_STATUS_CHANGED,
+                actor=actor,
+                entity_type="customer",
+                entity_id=customer.id,
+                entity_label=customer.email,
+                old={"is_active": customer.is_active},
+                new={"is_active": is_active},
+            )
         customer.is_active = is_active
         self.db.commit()
         return self.detail(customer.id)
+
+    def create_invite(self, customer_id: int) -> CustomerInvite:
+        """Kayıt olan kişinin bu karta bağlanması için tek kullanımlık, 7 gün geçerli davet kodu üretir.
+
+        Önceki kod geçersizleşir. Kod yalnızca bu yanıtta görünür; yönetici müşteriye kendisi iletir.
+        """
+        customer = self._get(customer_id)
+        if customer.source == RecordSource.OLIST:
+            raise AppError("Olist verisinden aktarılan müşteriler için davet kodu üretilemez.", code="READ_ONLY")
+        if customer.user_id is not None:
+            raise ConflictError("Müşterinin zaten bir giriş hesabı var.", code="HAS_ACCOUNT")
+        if not customer.is_active:
+            raise AppError("Pasif müşteri için davet kodu üretilemez.", code="CUSTOMER_INACTIVE")
+        code = invite_codes.issue(customer)
+        expires_at = customer.invite_expires_at
+        self.db.commit()
+        return CustomerInvite(code=code, expires_at=expires_at)
 
     def orders(self, customer_id: int, page: PageParams, filters: OrderFilters) -> Page[CustomerOrder]:
         customer = self._get(customer_id)

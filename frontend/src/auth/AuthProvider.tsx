@@ -47,7 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Sunucu token'ı (kullanıcının tüm cihazlarda) geçersiz kılar; çalınmış bir kopya da artık kullanılamaz.
+    // Sunucuya ulaşılamasa ya da token zaten geçersiz olsa da yerel oturum kapatılır.
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // yerel çıkış aşağıda yapılır
+    }
     setSessionExpired(false);
     setSignedOut(true);
     cartStore.clearAll();

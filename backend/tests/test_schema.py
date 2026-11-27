@@ -40,8 +40,3 @@ def test_sku_is_unique(db, category):
 
     with pytest.raises(IntegrityError, match="uq_products_sku"):
         db.flush()
-
-
-def test_critical_stock_means_below_minimum(category):
-    assert make_product(category, stock=4, min_stock=5).is_critical
-    assert not make_product(category, stock=5, min_stock=5).is_critical

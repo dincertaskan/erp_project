@@ -2,7 +2,10 @@ import { PageContainer } from '@ant-design/pro-components';
 import { Alert, App, Button, Card, Form, Input, Space } from 'antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { api, tokenStorage } from '@/api/client';
+import type { TokenResponse } from '@/api/types';
+import { ME_QUERY_KEY } from '@/auth/context';
 import { PasswordStrength } from '@/components/PasswordStrength';
 import { applyServerErrors } from '@/utils/forms';
 import { confirmRules, passwordRules } from '@/utils/password';
@@ -19,6 +22,7 @@ export function ChangePasswordPage() {
   usePageTitle('Şifre Değiştir');
   const { message } = App.useApp();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form] = Form.useForm<PasswordForm>();
   const newPassword = Form.useWatch('new_password', form);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +32,12 @@ export function ChangePasswordPage() {
     setError(null);
     setSaving(true);
     try {
-      await api.post('/auth/me/password', { current_password, new_password });
+      const { data } = await api.post<TokenResponse>('/auth/me/password', { current_password, new_password });
+      // Şifre değişince sunucu tüm eski token'ları geçersiz kılar; bu oturum yanıttaki yeni token'la sürer.
+      tokenStorage.set(data.access_token);
+      queryClient.setQueryData(ME_QUERY_KEY, data.user);
       form.resetFields();
-      message.success('Şifreniz güncellendi.');
+      message.success('Şifreniz güncellendi. Diğer cihazlardaki oturumlarınız kapatıldı.');
     } catch (err) {
       setError(applyServerErrors(form, err));
     } finally {

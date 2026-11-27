@@ -3,14 +3,22 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import datetime
 
-from sqlalchemy import Float, cast, func, select
+from sqlalchemy import Float, and_, cast, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Order, Product, StockMovement, StockMovementType
 from app.repositories.search import contains_pattern
 from app.schemas.stock import MovementFilters
 
-CRITICAL = Product.stock < Product.min_stock
+# Stok durumu tanımlarının tek kaynağı. Dashboard sayacı, menü rozeti, kritik stok sayfası ve ürün
+# listesindeki stok filtresi bunları kullanır; ekrandaki etiketi üreten schemas.catalog.stock_status
+# aynı kuralı Python'da uygular (testle eşitliği sınanır).
+#   Tükendi: stok = 0
+#   Kritik:  0 < stok < minimum
+#   Yeterli: stok > 0 ve stok >= minimum
+OUT_OF_STOCK = Product.stock <= 0
+CRITICAL = and_(Product.stock > 0, Product.stock < Product.min_stock)
+SUFFICIENT = and_(Product.stock > 0, Product.stock >= Product.min_stock)
 
 
 class StockRepository:
@@ -49,7 +57,7 @@ class StockRepository:
         if category_ids:
             query = query.where(Product.category_id.in_(category_ids))
         total = self.db.scalar(select(func.count()).select_from(query.subquery()))
-        # En kritik önce: stok / minimum oranı küçük olan üstte (min_stock > stock >= 0 olduğundan sıfıra bölünmez).
+        # En kritik önce: stok / minimum oranı küçük olan üstte (min_stock > stock > 0 olduğundan sıfıra bölünmez).
         ratio = cast(Product.stock, Float) / Product.min_stock
         products = self.db.scalars(
             query.options(joinedload(Product.category)).order_by(ratio, Product.name).offset(offset).limit(limit)

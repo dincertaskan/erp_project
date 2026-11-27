@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.models import (
+    AuditEvent,
     Customer,
     Order,
     OrderItem,
@@ -30,6 +31,7 @@ from app.schemas.order import (
     OrderPage,
     Shortage,
 )
+from app.services import audit
 from app.services.stock_ledger import (
     InsufficientStockError,
     apply_movement,
@@ -252,6 +254,17 @@ class OrderService:
         elif action == OrderAction.CANCEL and previous == OrderStatus.PREPARING:
             self._return_stock(actor, order)
 
+        if transition.target == OrderStatus.CANCELLED:
+            audit.record(
+                self.db,
+                AuditEvent.ORDER_CANCELLED,
+                actor=actor,
+                entity_type="order",
+                entity_id=order.id,
+                entity_label=order.order_code,
+                old={"status": previous.value},
+                new={"status": OrderStatus.CANCELLED.value},
+            )
         order.status = transition.target
         setattr(order, TIMESTAMP_FIELDS[transition.target], datetime.now(UTC))
         order.history.append(

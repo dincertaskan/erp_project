@@ -2,6 +2,7 @@ import {
   AppstoreOutlined,
   BarChartOutlined,
   DashboardOutlined,
+  HistoryOutlined,
   InboxOutlined,
   ShoppingCartOutlined,
   SwapOutlined,
@@ -64,7 +65,10 @@ export const adminNavigation: NavGroup[] = [
   {
     key: 'admin',
     title: 'Yönetim',
-    items: [{ path: '/users', name: 'Kullanıcılar', icon: <UserOutlined />, roles: ['admin'] }],
+    items: [
+      { path: '/users', name: 'Kullanıcılar', icon: <UserOutlined />, roles: ['admin'] },
+      { path: '/audit-logs', name: 'İşlem Geçmişi', icon: <HistoryOutlined />, roles: ['admin'] },
+    ],
   },
 ];
 

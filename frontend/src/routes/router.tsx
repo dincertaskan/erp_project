@@ -67,6 +67,7 @@ const appRoutes: RouteObject[] = [
               { path: '/customers/:id', lazy: lazyPage(adminPages, 'CustomerDetailPage') },
               { path: '/reports', lazy: lazyPage(reportsPage, 'ReportsPage') },
               { path: '/users', lazy: lazyPage(adminPages, 'UsersPage') },
+              { path: '/audit-logs', lazy: lazyPage(adminPages, 'AuditLogsPage') },
             ],
           },
         ],

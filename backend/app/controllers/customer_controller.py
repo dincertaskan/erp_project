@@ -8,7 +8,14 @@ from app.models import OrderStatus, User, UserRole
 from app.repositories.customer_repository import CustomerFilters
 from app.repositories.order_repository import OrderFilters
 from app.schemas.common import BusinessDateTime, Page, PageParams
-from app.schemas.customer import CustomerDetail, CustomerListItem, CustomerOrder, CustomerRequest, CustomerSort
+from app.schemas.customer import (
+    CustomerDetail,
+    CustomerInvite,
+    CustomerListItem,
+    CustomerOrder,
+    CustomerRequest,
+    CustomerSort,
+)
 from app.schemas.user import StatusUpdateRequest
 from app.services.customer_service import CustomerService
 
@@ -66,10 +73,19 @@ def update_customer(
 def set_customer_status(
     customer_id: int,
     data: StatusUpdateRequest,
-    _: User = Depends(admin_only),
+    actor: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
-    return CustomerService(db).set_status(customer_id, data.is_active)
+    return CustomerService(db).set_status(actor, customer_id, data.is_active)
+
+
+@router.post("/{customer_id}/invite", response_model=CustomerInvite, status_code=201)
+def create_invite(customer_id: int, _: User = Depends(admin_only), db: Session = Depends(get_db)):
+    """Kayıt olan kişinin bu müşteri kartına bağlanması için tek kullanımlık, 7 gün geçerli davet kodu.
+
+    Önceki kod geçersizleşir. Hesabı olan, pasif ya da Olist'ten aktarılan kartlar için üretilemez.
+    """
+    return CustomerService(db).create_invite(customer_id)
 
 
 @router.get("/{customer_id}/orders", response_model=Page[CustomerOrder])

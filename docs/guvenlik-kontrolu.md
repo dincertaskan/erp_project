@@ -16,7 +16,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 | A06 | Zafiyetli ve güncel olmayan bileşenler | Uygun |
 | A07 | Kimlik doğrulama hataları | Uygun (sınırlamalarla) |
 | A08 | Yazılım ve veri bütünlüğü hataları | Uygun |
-| A09 | Güvenlik günlüğü ve izleme eksikleri | Açık |
+| A09 | Güvenlik günlüğü ve izleme eksikleri | Uygun (sınırlamalarla) |
 | A10 | Sunucu taraflı istek sahteciliği (SSRF) | Uygun |
 
 ## Ayrıntılar
@@ -27,6 +27,7 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 - Müşteri tokenı personel uçlarında (`/users`, `/products`, `/stock`, `/orders`, `/customers`, `/dashboard`, `/reports`, `/categories`) 403 alır. Depo personeli yalnızca yönetici uçlarında 403 alır. Personel mağaza uçlarında (`/catalog`, `/me`) 403 alır.
 - Rol kısıtı olmayan korumalı uç yalnızca profil uçlarıdır (`/auth/me`, `/auth/me/password`). Yeni bir uç rol belirtmeden eklenirse test kırılır.
 - IDOR: müşteri başka müşterinin siparişini `/me/orders/{id}` ile göremez, iptal edemez ve listede bulamaz (404). Sorgular oturumdaki müşteriyle sınırlanır.
+- Müşteri kartına bağlanma: yöneticinin uygulamada açtığı bir kartın e-postasıyla kayıt olan kişi, davet kodu girmeden karta bağlanamaz ve kartın siparişlerini göremez (aşağıda A04). Hesaba bağlı bir kartın e-postasıyla yeni kayıt 409 döner; kart önceki sahibinden alınamaz (`tests/test_auth.py`, `tests/test_customers.py`).
 - Sonuç: **Uygun**.
 
 ### A02 – Kriptografik hatalar
@@ -46,7 +47,14 @@ Sonuç değerleri: **Uygun** (sorun bulunmadı), **Düzeltildi** (bu çalışmad
 
 - Sipariş tutarı sunucudaki fiyatlarla hesaplanır; sepet sunucuda yeniden doğrulanır. Stok güncellemeleri kilitlenir (kötümser kilit). Yeni kayıtlar her zaman müşteri rolüyle açılır.
 - **Düzeltildi:** Kayıt olurken ya da kullanıcı müşteri rolüne alınırken aynı e-postalı müşteri kartı hesaba otomatik bağlanıyordu. Olist'ten aktarılan kartların e-postaları tahmin edilebilir (`olist-00001@example.com`) olduğundan bu kartlar artık hiçbir hesaba bağlanmaz; bu e-postayla kayıt 409 döner (`tests/test_auth.py`, `tests/test_users.py`).
-- **Kalan risk:** E-posta doğrulaması olmadığı için yöneticinin uygulamada eklediği bir müşteri kartı, o e-postayla ilk kayıt olan kişiye bağlanır ve kişi kartın sipariş geçmişini görür. Gerçek kullanımda kayıt sonrası e-posta doğrulaması ya da bağlamanın yönetici onayıyla yapılması gerekir; bu proje kapsamında kabul edilmiştir.
+- **Düzeltildi:** Yöneticinin uygulamada eklediği müşteri kartı, aynı e-postayla ilk kayıt olan kişiye otomatik bağlanıyordu; kişi kartın sipariş geçmişini, adresini ve telefonunu görüyordu. E-posta gönderimi kapsam dışı olduğundan e-posta doğrulaması yerine **davet kodu** kullanılır:
+  - Yönetici müşteri detayında "Davet Kodu Oluştur" ile kod üretir (`POST /customers/{id}/invite`) ve müşteriye kendisi iletir.
+  - Kart varken kodsuz kayıt `INVITE_CODE_REQUIRED` (400) ile reddedilir; hesap açılmaz, kart bağlanmaz.
+  - Kod tek kullanımlıktır, 7 gün geçerlidir; yeni kod üretmek ve kartın e-postasını değiştirmek eski kodu geçersiz kılar. Yanlış, süresi geçmiş, kullanılmış ya da pasif karta ait kod `INVALID_INVITE_CODE` (400) döner.
+  - Kod yaklaşık 49 bit rastgeledir. Veritabanında düz hali değil, `SECRET_KEY` ile anahtarlanmış HMAC-SHA256 özeti saklanır (`app/core/invite_codes.py`).
+  - Testler: `tests/test_auth.py`, `tests/test_customers.py`.
+- Yönetici bir personel hesabını Müşteri rolüne aldığında aynı e-postalı kart bağlanır. Bu bağlamayı yönetici kendisi yaptığı için yönetici onayı sayılır. Kartı olmayan hesaplar yalnızca personel hesaplarıdır; kayıt olan her hesabın kartı vardır.
+- **Kalan risk:** Kayıt ucu, kartı olan bir e-postayı "davet kodu gerekli" yanıtıyla belli eder (e-posta adresinin sistemde olup olmadığı zaten `EMAIL_TAKEN` ile anlaşılabiliyordu). Kod tahmini kayıt ucunun IP başına deneme sınırı (A07), 7 günlük süre ve kodun büyüklüğüyle pratikte önlenir.
 - Sonuç: **Düzeltildi**; kalan risk yukarıda belgelendi.
 
 ### A05 – Güvenlik yanlış yapılandırması
@@ -70,10 +78,24 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 
 ### A07 – Kimlik doğrulama hataları
 
-- Şifre kuralı: en az 8 karakter, büyük harf, küçük harf ve rakam; en fazla 128 karakter. Aynı e-posta için 15 dakikada 5 hatalı denemeden sonra giriş geçici olarak engellenir (429). Token süresi 60 dakikadır; pasif hesaplar reddedilir.
-- Testler: bozuk, yanlış anahtarla imzalanmış, süresi dolmuş, `exp` alanı olmayan, `alg: none` ve var olmayan kullanıcıya ait tokenlar 401 alır.
-- Sınırlamalar (düzeltilmedi, düşük risk): deneme sayacı bellekte ve süreç başınadır, IP bazlı sınır yoktur; kayıtta e-postanın kullanımda olduğu bildirilir (kullanıcı deneyimi gereği); token önyüzde `localStorage`'da tutulur (XSS durumunda okunabilir, A03 ve CSP ile birlikte değerlendirilmelidir). Token iptali (çıkış sonrası geçersiz kılma) yoktur; kısa süreli token ile sınırlanır.
+- Şifre kuralı: en az 8 karakter, büyük harf, küçük harf ve rakam; en fazla 128 karakter. 15 dakika içinde aynı e-postaya 5 hatalı denemeden sonra o e-postayla giriş (her IP'den) engellenir (429). Token süresi 60 dakikadır; pasif hesaplar reddedilir.
+- **Düzeltildi:** Giriş sayacı bellekte ve yalnızca e-postaya göre tutuluyordu: uygulama yeniden başlayınca sıfırlanıyor, her uvicorn süreci kendi sayacını tutuyor ve aynı IP'den farklı e-postalar sınırsız denenebiliyordu. Hatalı denemeler artık `login_attempts` tablosunda e-posta ve IP ile saklanır (`app/services/login_throttle.py`). Aynı IP'den 15 dakikada 20 hatalı denemeden sonra o IP 15 dakika engellenir. Sayaçlar yeniden başlatmada korunur ve tüm süreçlerde ortaktır. Başarılı giriş yalnızca o e-postanın sayacını sıfırlar; saldırgan kendi hesabına girerek IP sayacını temizleyemez. Pencereden eski kayıtlar yeni deneme yazılırken silinir (`tests/test_auth.py`).
+- **Düzeltildi:** Kayıt ucunda hız sınırı yoktu; her kayıt bcrypt yüzünden yaklaşık 250 ms CPU harcadığından betikle binlerce hesap açılabilir, sunucu yorulabilirdi. Artık aynı IP'den 10 dakikada en fazla 5 kayıt denemesi yapılabilir (`REGISTER_RATE_LIMIT`, `REGISTER_RATE_WINDOW_MINUTES`). Başarısız denemeler de sayılır. Sınır aşılınca 429 `TOO_MANY_REQUESTS` ve `Retry-After` başlığı döner; giriş ucunun 429 yanıtı da bu başlığı taşır (`tests/test_auth.py`).
+- Gerçek istemci adresi: arka uç nginx'in (üretim) ya da Vite'ın (geliştirme) arkasındadır. nginx `X-Forwarded-For` başlığını istemcinin bağlantı adresiyle ezer, uvicorn adresi bu başlıktan alır (`FORWARDED_ALLOW_IPS`). İstemcinin kendi eklediği başlık dikkate alınmaz; böylece sınır sahte adreslerle aşılamaz.
+- **Düzeltildi:** Çıkış yapınca token geçersiz olmuyordu; çalınan bir token süresi bitene kadar (60 dakika) kullanılabiliyor, şifre değiştikten sonra da eski token'lar geçerli kalıyordu. Kullanıcı tablosuna `token_version` eklendi ve JWT'ye `ver` olarak yazılır; her istekte veritabanındaki sürümle karşılaştırılır (`app/core/deps.py`). "Çıkış Yap" sunucuya bildirilir (`POST /auth/logout`) ve sürümü artırır; şifre değişikliği de sürümü artırır ve yalnızca değişikliği yapan oturuma yeni token verir. Böylece eski token'lar (çalınmış kopyalar dahil) 401 alır. Çıkış kullanıcının tüm cihazlardaki oturumlarını kapatır. Bu sürümden önce verilen, `ver` taşımayan token'lar da reddedilir (`tests/test_auth.py`, `tests/test_security_access.py`).
+- Testler: bozuk, yanlış anahtarla imzalanmış, süresi dolmuş, `exp` ya da `ver` alanı olmayan, eski sürümlü, `alg: none` ve var olmayan kullanıcıya ait tokenlar 401 alır.
+- Sınırlamalar (düzeltilmedi, düşük risk): kayıt ucunun sayacı bellekte ve süreç başınadır (birden fazla uvicorn worker'ında sınır worker sayısıyla çarpılır); giriş sayacında kontrol ve yazma ayrı adımlar olduğundan eşzamanlı isteklerde sınır birkaç deneme aşılabilir; çok sayıda IP'ye dağıtılmış saldırı IP sınırına takılmaz (e-posta sınırı yine geçerlidir); kayıtta e-postanın kullanımda olduğu bildirilir (kullanıcı deneyimi gereği); token önyüzde `localStorage`'da tutulur (aşağıda).
 - Sonuç: **Uygun** (sınırlamalarla).
+
+#### Token'ın localStorage'da tutulması (A07 notu)
+
+- **Risk:** Erişim token'ı tarayıcıda `localStorage`'da tutulur. Sayfada çalışan herhangi bir betik onu okuyabilir; uygulamada bir XSS açığı olursa saldırgan token'ı çalıp kullanıcı adına istek yapabilir. HttpOnly çerez bu riski kaldırırdı ama CSRF korumasını gerektirir; bu proje kapsamında `Authorization` başlığıyla devam edildi.
+- **Alınan önlemler:**
+  - React tüm çıktıyı kaçışlar; önyüzde `dangerouslySetInnerHTML` ve `eval` kullanılmaz (A03). Bilinen bir XSS açığı yoktur.
+  - API yanıtları kısıtlayıcı bir `Content-Security-Policy` (`default-src 'none'`), `X-Content-Type-Options: nosniff` ve `X-Frame-Options: DENY` taşır; böylece bir API yanıtı tarayıcıda belge olarak açılsa bile betik çalıştıramaz.
+  - Excel dışa aktarımında formül enjeksiyonu engellenir (A03).
+  - Çalınan bir token'ın ömrü sınırlıdır: en fazla 60 dakika geçerlidir ve kullanıcı çıkış yaptığında ya da şifresini değiştirdiğinde hemen geçersizleşir (token sürümü).
+- **Kalan risk:** Önyüz sayfasının (nginx'in sunduğu `index.html`) kendi `Content-Security-Policy` başlığı yoktur; API'nin CSP'si sayfada çalışan betikleri kısıtlamaz. Önerilen politika: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'` (Ant Design satır içi stil kullandığından `style-src` için `'unsafe-inline'` gerekir). Gerçek tarayıcıda denenerek eklenmelidir.
 
 ### A08 – Yazılım ve veri bütünlüğü
 
@@ -83,8 +105,12 @@ Sürümler tam olarak sabitlenmiştir (`==` ve `package-lock.json`); değişikli
 
 ### A09 – Günlük ve izleme
 
-- Yalnızca beklenmeyen hatalar ve bağlantı havuzu doluluğu loglanır. Başarısız giriş, yetkisiz erişim (401/403) ve rol değişikliği gibi güvenlik olayları loglanmaz; merkezi izleme ve uyarı yoktur.
-- Sonuç: **Açık** – proje ölçeğinde (tek sunucu, demo) önceliklendirilmedi.
+- **Düzeltildi:** Yönetim işlemlerinin kim tarafından ne zaman yapıldığı yalnızca stok hareketleri ve sipariş geçmişi için izlenebiliyordu. Artık `audit_logs` tablosu (denetim günlüğü) şu olayları kaydeder: rol atama, kullanıcı ve müşteri durum değişikliği (pasife alma ve aktifleştirme), ürün satış fiyatı ya da maliyeti değişikliği, sipariş iptali (yönetici ya da müşteri) ve başarısız giriş.
+- Her kayıtta işlemi yapan kullanıcı, zaman, olay türü, ilgili kayıt (tür, kimlik ve o anki okunur adı: e-posta, SKU ya da sipariş kodu), eski ve yeni değer bulunur. Başarısız girişlerde işlemi yapan bilinmez; denenen e-posta, neden (yanlış şifre ya da kayıtlı olmayan e-posta) ve istemci IP'si tutulur.
+- Kayıt, işlemin kendi veritabanı işlemiyle birlikte yazılır: işlem geri alınırsa kayıt da oluşmaz, reddedilen işlemler (ör. kendi rolünü değiştirme) kayıt üretmez. Günlüğü değiştiren ya da silen bir uç nokta yoktur (`app/services/audit.py`).
+- Yalnızca yönetici "İşlem Geçmişi" sayfasında (`GET /audit-logs`) kayıtları tarih, kullanıcı ve olay türüne göre süzerek görür; depo personeli ve müşteri 403 alır (`tests/test_audit.py`, `tests/test_security_access.py`).
+- Sınırlamalar: yetkisiz erişim denemeleri (401/403) günlüğe yazılmaz; merkezi izleme ve uyarı (ör. çok sayıda başarısız giriş için bildirim) yoktur; günlük için saklama süresi tanımlı değildir, tablo zamanla büyür. Günlük uygulama veritabanındadır; veritabanı yöneticisi kayıtları değiştirebilir.
+- Sonuç: **Uygun (sınırlamalarla)**.
 
 ### A10 – SSRF
 

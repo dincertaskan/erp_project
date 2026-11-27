@@ -1,11 +1,11 @@
 # API Özeti
 
-Akıllı ERP arka ucunun uç noktalarının özeti. Ayrıntılı istek ve yanıt şemaları için çalışan uygulamada Swagger arayüzünü kullanın: http://localhost:8000/docs (OpenAPI belgesi: `/openapi.json`).
+Akıllı ERP arka ucunun uç noktalarının özeti. Ayrıntılı istek ve yanıt şemaları için çalışan uygulamada Swagger arayüzünü kullanın: http://localhost:8000/docs (OpenAPI belgesi: `/openapi.json`). Bu sayfalar `ENABLE_DOCS` ayarıyla açılıp kapatılır: geliştirmede varsayılan olarak açıktır, `docker-compose.prod.yml` ile kurulan üretim ortamında kapalıdır ve 404 döner.
 
 ## Genel kurallar
 
 - **Adres:** Uç noktalar kök dizindedir (ör. `GET /products`). Önyüz geliştirme sunucusu `/api` önekiyle gelen istekleri öneki kaldırarak arka uca iletir.
-- **Kimlik doğrulama:** `POST /auth/login` bir JWT döndürür (`access_token`, `token_type: "bearer"`, `user`). Korunan uçlarda `Authorization: Bearer <token>` başlığı gönderilir. Token süresi varsayılan olarak 60 dakikadır (`ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **Kimlik doğrulama:** `POST /auth/login` bir JWT döndürür (`access_token`, `token_type: "bearer"`, `user`). Korunan uçlarda `Authorization: Bearer <token>` başlığı gönderilir. Token süresi varsayılan olarak 60 dakikadır (`ACCESS_TOKEN_EXPIRE_MINUTES`). Token kullanıcının token sürümünü (`ver`) taşır; çıkış ve şifre değişikliği sürümü artırır ve o kullanıcının önceki tüm token'ları 401 `INVALID_TOKEN` alır.
 - **Roller:** `admin` (Yönetici), `warehouse` (Depo Personeli), `customer` (Müşteri). Aşağıdaki tablolarda "Personel" Yönetici ve Depo Personelini birlikte ifade eder.
 - **Sayfalama:** Sayfalı listeler `page` (varsayılan 1) ve `page_size` (varsayılan 20, en fazla 100) parametrelerini alır ve `{items, total, page, page_size}` biçiminde döner.
 - **Sıralama:** `sort` parametresi alan adını alır; azalan sıra için başına `-` eklenir (ör. `sort=-stock`).
@@ -40,11 +40,12 @@ Tüm hatalar aynı gövdeyle döner:
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri) | `EMAIL_TAKEN` (409) |
-| POST | `/auth/login` | Herkes | E-posta ve şifreyle giriş; JWT döndürür | `INVALID_CREDENTIALS` (401), `ACCOUNT_INACTIVE` (403), `TOO_MANY_REQUESTS` (429, 15 dakikada 5 hatalı deneme) |
+| POST | `/auth/register` | Herkes | Yeni müşteri hesabı oluşturur (rol her zaman Müşteri). Aynı e-postalı, hesabı olmayan bir müşteri kartı varsa yöneticinin ürettiği `invite_code` gerekir; doğru kodla hesap karta bağlanır | `EMAIL_TAKEN` (409), `INVITE_CODE_REQUIRED` (400), `INVALID_INVITE_CODE` (400, yanlış, süresi geçmiş ya da kullanılmış kod), `TOO_MANY_REQUESTS` (429, aynı IP'den 10 dakikada 5'ten fazla deneme; `Retry-After` başlığı ve `details.retry_after` saniye cinsinden bekleme süresini verir. Sınır `REGISTER_RATE_LIMIT` ve `REGISTER_RATE_WINDOW_MINUTES` ile ayarlanır) |
+| POST | `/auth/login` | Herkes | E-posta ve şifreyle giriş; JWT döndürür | `INVALID_CREDENTIALS` (401), `ACCOUNT_INACTIVE` (403), `TOO_MANY_REQUESTS` (429, 15 dakika içinde aynı e-postaya 5 ya da aynı IP'den 20 hatalı deneme; `Retry-After` başlığı bekleme süresini saniye olarak verir) |
 | GET | `/auth/me` | Giriş yapmış kullanıcı | Oturumdaki kullanıcının bilgileri | `INVALID_TOKEN` (401) |
 | PATCH | `/auth/me` | Giriş yapmış kullanıcı | Profil bilgilerini günceller | `NOT_A_CUSTOMER` (400, müşteriye özgü alanlar personel tarafından gönderilirse) |
-| POST | `/auth/me/password` | Giriş yapmış kullanıcı | Şifre değiştirir (204) | `INVALID_PASSWORD` (400) |
+| POST | `/auth/me/password` | Giriş yapmış kullanıcı | Şifre değiştirir; önceki tüm token'lar geçersizleşir. Bu oturumun devam etmesi için yeni token döndürür (`access_token`, `token_type`, `user`) | `INVALID_PASSWORD` (400) |
+| POST | `/auth/logout` | Giriş yapmış kullanıcı | Kullanıcının tüm cihazlardaki oturumlarını sonlandırır (204); önceki token'lar 401 alır | |
 
 ## Kullanıcılar
 
@@ -53,6 +54,7 @@ Tüm hatalar aynı gövdeyle döner:
 | GET | `/users` | Yönetici | Kullanıcı listesi (sayfalı; `search`, `role`, `is_active`) | |
 | PATCH | `/users/{user_id}/role` | Yönetici | Kullanıcıya rol atar | `SELF_CHANGE` (400), `LAST_ADMIN` (409) |
 | PATCH | `/users/{user_id}/status` | Yönetici | Hesabı aktif ya da pasif yapar | `SELF_CHANGE` (400), `LAST_ADMIN` (409) |
+| GET | `/audit-logs` | Yönetici | İşlem geçmişi (denetim günlüğü), en yeni önce (sayfalı; `from`, `to`, `actor_id`, `event_type` birden fazla verilebilir). Olaylar: `role_changed`, `user_status_changed`, `customer_status_changed`, `product_price_changed`, `order_cancelled`, `login_failed`. Her kayıtta `actor` (başarısız girişte boş), `entity_type`, `entity_id`, `entity_label`, `old_value`, `new_value`, `ip_address` | |
 
 ## Kategoriler
 
@@ -67,7 +69,7 @@ Tüm hatalar aynı gövdeyle döner:
 
 | Yöntem | Yol | Rol | Amaç | Önemli hatalar |
 |---|---|---|---|---|
-| GET | `/products` | Personel | Ürün listesi (sayfalı; `search`, `category_id`, `stock_status`, `is_active`, `sort`). Depo personeli yanıtında `cost_price` yoktur | `INVALID_SORT` (400) |
+| GET | `/products` | Personel | Ürün listesi (sayfalı; `search`, `category_id`, `stock_status`, `is_active`, `sort`). `stock_status`: `out_of_stock` (stok = 0), `critical` (0 < stok < minimum), `sufficient` (stok ≥ minimum). Depo personeli yanıtında `cost_price` yoktur | `INVALID_SORT` (400) |
 | POST | `/products` | Yönetici | Ürün ekler (başlangıç stoku yalnızca burada girilir) | `SKU_TAKEN` (409), `CATEGORY_NOT_FOUND`, `CATEGORY_INACTIVE` (400) |
 | GET | `/products/next-sku` | Yönetici | Seçilen kategori için SKU önerir | |
 | GET | `/products/{product_id}` | Personel | Ürün detayı | `NOT_FOUND` (404) |
@@ -81,8 +83,8 @@ Tüm hatalar aynı gövdeyle döner:
 |---|---|---|---|---|
 | POST | `/stock/movements` | Personel | Elle stok girişi ya da çıkışı; işlemi yapan oturumdan alınır | `INSUFFICIENT_STOCK` (409), `STOCK_CONFLICT` (409), `PRODUCT_INACTIVE` (400) |
 | GET | `/stock/movements` | Personel | Stok hareketleri (sayfalı; `from`, `to`, `product_id`, `type`, `user_id`, `order_code`) | |
-| GET | `/stock/critical` | Personel | Stoğu minimumun altındaki aktif ürünler, en kritik olan önce (sayfalı) | |
-| GET | `/stock/critical/count` | Personel | Kritik stoktaki ürün sayısı | |
+| GET | `/stock/critical` | Personel | Kritik stoktaki (0 < stok < minimum) aktif ürünler, en kritik olan önce (sayfalı). Stoğu 0 olanlar dahil değildir | |
+| GET | `/stock/critical/count` | Personel | Kritik stoktaki aktif ürün sayısı (`/stock/critical` ile aynı tanım) | |
 | GET | `/stock/summary` | Personel | Stok özeti (aktif ürün, kritik stok, bugünkü hareket) | |
 
 ## Siparişler
@@ -108,9 +110,10 @@ Durumlar: `pending` (Onay Bekliyor), `preparing` (Hazırlanıyor), `shipped` (Ka
 | GET | `/customers` | Yönetici | Müşteri listesi; sipariş sayısı, toplam harcama, son sipariş (sayfalı) | |
 | POST | `/customers` | Yönetici | Müşteri kaydı ekler | `EMAIL_TAKEN` (409) |
 | GET | `/customers/cities` | Yönetici | Şehir filtresi için kayıtlı şehirler | |
-| GET | `/customers/{customer_id}` | Yönetici | Müşteri detayı | `NOT_FOUND` (404) |
+| GET | `/customers/{customer_id}` | Yönetici | Müşteri detayı. Geçerli bir davet kodu varsa `invite_expires_at` son geçerlilik zamanını verir | `NOT_FOUND` (404) |
 | PUT | `/customers/{customer_id}` | Yönetici | Müşteriyi günceller | `EMAIL_TAKEN` (409), `EMAIL_LOCKED` (400, giriş hesabı olan müşterinin e-postası), `READ_ONLY` (400, Olist kaydı) |
 | PATCH | `/customers/{customer_id}/status` | Yönetici | Müşteriyi aktif ya da pasif yapar | |
+| POST | `/customers/{customer_id}/invite` | Yönetici | Kayıtta bu karta bağlanmak için tek kullanımlık, 7 gün geçerli davet kodu üretir (`code`, `expires_at`); önceki kod geçersizleşir. Kod yalnızca bu yanıtta döner | `HAS_ACCOUNT` (409), `CUSTOMER_INACTIVE` (400), `READ_ONLY` (400, Olist kaydı) |
 | GET | `/customers/{customer_id}/orders` | Yönetici | Müşterinin siparişleri (sayfalı; `status`, `from`, `to`) | |
 
 ## Dashboard

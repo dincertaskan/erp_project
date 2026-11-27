@@ -27,7 +27,7 @@ function Probe() {
       <p>süre doldu: {String(sessionExpired)}</p>
       <p>çıkış: {String(signedOut)}</p>
       <button onClick={() => void login('yonetici@example.com', 'Demo1234')}>giriş</button>
-      <button onClick={logout}>çıkış yap</button>
+      <button onClick={() => void logout()}>çıkış yap</button>
     </div>
   );
 }
@@ -87,6 +87,7 @@ describe('AuthProvider', () => {
   it('clears the token and every cart on logout', async () => {
     tokenStorage.set('abc');
     vi.spyOn(api, 'get').mockResolvedValue({ data: admin });
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: null });
     cartStore.add(9, { id: 7, sale_price: '1.00', available_qty: 1 } as CatalogProduct, 1);
     renderProvider();
     await screen.findByText('kullanıcı: Elif Yılmaz');
@@ -98,6 +99,37 @@ describe('AuthProvider', () => {
     expect(screen.getByText('süre doldu: false')).toBeInTheDocument();
     expect(tokenStorage.get()).toBeNull();
     expect(cartStore.get(9)).toEqual([]);
+    expect(post).toHaveBeenCalledWith('/auth/logout');
+  });
+
+  it('still signs out locally when the server cannot be reached', async () => {
+    tokenStorage.set('abc');
+    vi.spyOn(api, 'get').mockResolvedValue({ data: admin });
+    vi.spyOn(api, 'post').mockRejectedValue(new Error('ağ hatası'));
+    renderProvider();
+    await screen.findByText('kullanıcı: Elif Yılmaz');
+
+    fireEvent.click(screen.getByRole('button', { name: 'çıkış yap' }));
+
+    expect(await screen.findByText('kullanıcı: yok')).toBeInTheDocument();
+    expect(tokenStorage.get()).toBeNull();
+  });
+
+  it('reports a sign-out, not an expired session, when the token was already revoked', async () => {
+    tokenStorage.set('abc');
+    vi.spyOn(api, 'get').mockResolvedValue({ data: admin });
+    // İstemci katmanı 401'de süre doldu olayını yayar; çıkış bunu kullanıcının kendi çıkışı olarak sonlandırır.
+    vi.spyOn(api, 'post').mockImplementation(async () => {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      throw new Error('401');
+    });
+    renderProvider();
+    await screen.findByText('kullanıcı: Elif Yılmaz');
+
+    fireEvent.click(screen.getByRole('button', { name: 'çıkış yap' }));
+
+    expect(await screen.findByText('çıkış: true')).toBeInTheDocument();
+    expect(screen.getByText('süre doldu: false')).toBeInTheDocument();
   });
 
   it('signs the user out and flags the session as expired on the expiry event', async () => {

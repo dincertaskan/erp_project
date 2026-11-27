@@ -40,7 +40,16 @@ function signIn(role: UserRole | null) {
         } satisfies CurrentUser);
 }
 
-const ADMIN_PATHS = ['/dashboard', '/categories', '/orders/new', '/customers', '/customers/5', '/reports', '/users'];
+const ADMIN_PATHS = [
+  '/dashboard',
+  '/categories',
+  '/orders/new',
+  '/customers',
+  '/customers/5',
+  '/reports',
+  '/users',
+  '/audit-logs',
+];
 const STAFF_PATHS = [
   '/products',
   '/products/7',

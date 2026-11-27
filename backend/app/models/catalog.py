@@ -52,8 +52,3 @@ class Product(TimestampMixin, Base):
     # Her UPDATE "WHERE version = ?" ile yapılır ve sürümü artırır; araya başka bir yazma girdiyse
     # StaleDataError oluşur. İyimser kilit stratejisi bu davranışa dayanır.
     __mapper_args__ = {"version_id_col": version}
-
-    @property
-    def is_critical(self) -> bool:
-        """Kritik stok: stok, minimum stok seviyesinin altında."""
-        return self.stock < self.min_stock

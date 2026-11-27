@@ -111,6 +111,49 @@ describe('RegisterPage', () => {
     expect(screen.queryByRole('alert', { name: /zaten kayıtlı/ })).not.toBeInTheDocument();
   });
 
+  it('sends the invite code and shows its error under the invite code field', async () => {
+    const message = 'Davet kodu geçersiz ya da süresi dolmuş. Mağazadan yeni bir kod isteyin.';
+    const post = vi
+      .spyOn(api, 'post')
+      .mockRejectedValue(new ApiError(400, 'INVALID_INVITE_CODE', message, [{ field: 'invite_code', message }]));
+    renderRoutes(routes, '/register');
+
+    fillValidForm();
+    type('Davet kodu (isteğe bağlı)', ' abcde-fgh23 ');
+    fireEvent.click(screen.getByRole('button', { name: 'Hesap Oluştur' }));
+
+    const fieldError = await screen.findByText(message);
+    expect(fieldError.closest('.ant-form-item')).toHaveTextContent('Davet kodu');
+    expect(post).toHaveBeenCalledWith('/auth/register', expect.objectContaining({ invite_code: 'abcde-fgh23' }));
+  });
+
+  it('shows the missing invite code error under the empty invite code field', async () => {
+    const message =
+      'Bu e-posta adresine ait bir müşteri kaydı var. Hesabınızı bağlamak için mağazadan aldığınız davet kodunu girin.';
+    vi.spyOn(api, 'post').mockRejectedValue(
+      new ApiError(400, 'INVITE_CODE_REQUIRED', message, [{ field: 'invite_code', message }]),
+    );
+    renderRoutes(routes, '/register');
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Hesap Oluştur' }));
+
+    const fieldError = await screen.findByText(message);
+    expect(fieldError.closest('.ant-form-item')).toHaveTextContent('Davet kodu');
+  });
+
+  it('shows the rate limit message when there are too many registrations', async () => {
+    const message = 'Çok fazla deneme yapıldı, 10 dakika sonra tekrar deneyin.';
+    vi.spyOn(api, 'post').mockRejectedValue(new ApiError(429, 'TOO_MANY_REQUESTS', message, { retry_after: 600 }));
+    renderRoutes(routes, '/register');
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Hesap Oluştur' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByRole('button', { name: 'Hesap Oluştur' })).toBeEnabled();
+  });
+
   it('opens the login page with the e-mail filled in after registering', async () => {
     const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} });
     const { router } = renderRoutes(routes, '/register');
@@ -124,6 +167,7 @@ describe('RegisterPage', () => {
       email: 'Deniz@Example.com',
       password: 'Demo1234',
       phone: null,
+      invite_code: null,
     });
     expect(await screen.findByText('Hesabınız oluşturuldu')).toBeInTheDocument();
     expect(screen.getByLabelText('E-posta')).toHaveValue('deniz@example.com');

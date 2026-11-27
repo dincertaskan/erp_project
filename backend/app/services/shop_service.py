@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core import clock
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError
-from app.models import Category, Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, Product, User
+from app.models import AuditEvent, Category, Customer, Order, OrderItem, OrderStatus, OrderStatusHistory, Product, User
 from app.repositories.order_repository import OrderRepository
 from app.repositories.search import contains_pattern
 from app.schemas.common import PageParams
@@ -31,6 +31,7 @@ from app.schemas.shop import (
     StatusGroup,
     availability,
 )
+from app.services import audit
 from app.services.order_service import ensure_amounts_fit
 
 # Karar 11: pasif kategorideki ürünler katalogda görünmez.
@@ -317,6 +318,16 @@ class MyOrderService:
             raise NotFoundError("Sipariş bulunamadı.")
         if order.status != OrderStatus.PENDING:
             raise ConflictError("Siparişiniz onaylandığı için artık iptal edilemiyor.", code="CANNOT_CANCEL")
+        audit.record(
+            self.db,
+            AuditEvent.ORDER_CANCELLED,
+            actor=self.user,
+            entity_type="order",
+            entity_id=order.id,
+            entity_label=order.order_code,
+            old={"status": OrderStatus.PENDING.value},
+            new={"status": OrderStatus.CANCELLED.value},
+        )
         order.status = OrderStatus.CANCELLED
         order.cancelled_at = datetime.now(UTC)
         order.history.append(

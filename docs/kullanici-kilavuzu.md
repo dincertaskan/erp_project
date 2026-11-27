@@ -13,7 +13,7 @@ Demo hesapları için `README.md` dosyasındaki "Demo hesaplar" tablosuna bakın
 1. Uygulama adresini açın (yerelde http://localhost:5173). "Hesabınıza giriş yapın" ekranı gelir.
 2. "E-posta" ve "Şifre" alanlarını doldurup "Giriş Yap" butonuna basın.
 3. Rolünüze göre açılış sayfasına yönlendirilirsiniz: Müşteri mağazaya, Depo Personeli ve Yönetici yönetim paneline.
-4. Çıkmak için sağ üstteki kullanıcı menüsünden "Çıkış Yap" seçin.
+4. Çıkmak için sağ üstteki kullanıcı menüsünden "Çıkış Yap" seçin. Çıkış, hesabınızın açık olduğu tüm cihazlardaki oturumları kapatır.
 
 Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir ve kaç dakika sonra tekrar denenebileceği gösterilir. Oturum süresi dolduğunda "Oturumunuzun süresi doldu" uyarısıyla giriş ekranına dönülür.
 
@@ -22,7 +22,7 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 ### Profil ve şifre
 
 - Kullanıcı menüsünden "Profilim" ile "Kişisel Bilgiler" (ad soyad; müşteride ayrıca telefon, firma, şehir ve teslimat adresi) güncellenir ve "Kaydet" ile saklanır.
-- "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır.
+- "Şifre Değiştir" ekranında "Mevcut Şifre", "Yeni Şifre" ve "Yeni Şifre Tekrarı" girilip "Şifreyi Güncelle" butonuna basılır. Kullandığınız cihazda oturumunuz sürer; diğer cihazlardaki oturumlarınız kapatılır.
 
 ![Profil ekranı](images/42-profil.jpg)
 
@@ -33,11 +33,11 @@ Arka arkaya çok sayıda hatalı deneme yapılırsa giriş bir süre engellenir 
 ### Kayıt olma
 
 1. Giriş ekranında "Kayıt Ol" bağlantısına tıklayın.
-2. "Ad Soyad", "E-posta", isteğe bağlı "Telefon (isteğe bağlı)", "Şifre" ve "Şifre Tekrarı" alanlarını doldurun.
+2. "Ad Soyad", "E-posta", isteğe bağlı "Telefon (isteğe bağlı)", "Şifre" ve "Şifre Tekrarı" alanlarını doldurun. Mağaza sizin için daha önce müşteri kaydı açtıysa size iletilen kodu "Davet kodu (isteğe bağlı)" alanına girin; hesabınız bu kayda bağlanır ve önceki siparişlerinizi "Siparişlerim"de görürsünüz.
 3. "Demo sistem olduğunu biliyorum, gerçek kişisel veri girmeyeceğim." kutusunu işaretleyip "Hesap Oluştur" butonuna basın.
 4. "Hesabınız oluşturuldu" mesajıyla giriş ekranına dönülür; yeni hesapla giriş yapın.
 
-Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir.
+Kayıt formundan açılan hesaplar her zaman Müşteri rolündedir. E-postanıza ait bir müşteri kaydı varsa davet kodu girmeden kayıt olamazsınız; kodunuz yoksa ya da "Davet kodu geçersiz ya da süresi dolmuş." uyarısı alırsanız mağazadan yeni kod isteyin.
 
 ![Kayıt ekranı](images/02-kayit.jpg)
 
@@ -83,7 +83,7 @@ Sol menü: "Ürünler", "Stok" ("Stok İşlemleri", "Stok Hareketleri", "Kritik 
 2. Ürünü "Ürün adı veya SKU ile arayın" kutusuyla bulun; gerekirse "Kategori" ve "Stok durumu" ile süzün.
 3. Satırdaki "Giriş" ya da "Çıkış" butonuna basın. "Stok İşlemi" penceresi açılır.
 4. "İşlem Türü" ve "Miktar" alanlarını doldurun. "Açıklama" girişte isteğe bağlı, çıkışta zorunludur (ör. sayım farkı, fire).
-5. "Kaydet" ile işlemi tamamlayın. İşlem sonucunda ürün kritik stoka düşecekse pencerede "İşlem sonrası ürün kritik stoka düşecek." uyarısı görünür.
+5. "Kaydet" ile işlemi tamamlayın. İşlem sonucunda ürün kritik stoka düşecekse pencerede "İşlem sonrası ürün kritik stoka düşecek.", stok 0'a inecekse "İşlem sonrası ürün tükenecek." uyarısı görünür.
 
 Mevcut stoktan fazla çıkış yapılamaz; bu durumda "Yetersiz stok. Mevcut: ..." hatası gösterilir. Aynı işlem ürün detayındaki "Stok Girişi/Çıkışı" butonuyla da yapılabilir. Satırdaki "Geçmiş" bağlantısı ürünün hareket geçmişini açar.
 
@@ -99,9 +99,19 @@ Mevcut stoktan fazla çıkış yapılamaz; bu durumda "Yetersiz stok. Mevcut: ..
 
 ### Kritik stok
 
-1. "Kritik Stok" sayfası, stoğu minimum seviyenin altına düşen aktif ürünleri en kritik olan önce listeler.
+Sistem stok durumunu her ekranda aynı kuralla belirler:
+
+| Durum | Kural |
+|---|---|
+| Stokta Yok | Stok 0 |
+| Kritik | Stok 0'dan büyük ama minimum stok seviyesinin altında (0 < stok < minimum) |
+| Yeterli | Stok, minimum stok seviyesine eşit ya da üstünde |
+
+"Genel Bakış"taki "Kritik Stoktaki Ürün" kartı, menüdeki rozet, "Kritik Stok" sayfası ve "Ürünler" sayfasındaki "Kritik" filtresi aynı ürünleri sayar. Stokta olmayan ürünler kritik sayılmaz; bunları "Ürünler" sayfasında "Stok durumu" filtresinden "Stokta Yok" seçerek görün.
+
+1. "Kritik Stok" sayfası, kritik durumdaki aktif ürünleri en kritik olan önce listeler.
 2. "Eksik Miktar" ve "Son 30 Gün Satış" sütunları ne kadar giriş gerektiğine karar vermeye yardımcı olur.
-3. Satırdaki "Stok Girişi" butonuyla doğrudan giriş yapın. Liste boşsa "Tüm ürünlerin stoğu yeterli." mesajı görünür.
+3. Satırdaki "Stok Girişi" butonuyla doğrudan giriş yapın. Liste boşsa "Kritik stokta ürün yok." mesajı görünür.
 
 ![Kritik stok](images/23-depo-kritik-stok.jpg)
 
@@ -167,6 +177,14 @@ Onay sırasında bir kalemde bile stok yetmezse sipariş onaylanmaz ve hiçbir s
 
 "Müşteriler" sayfasında müşteriler sipariş sayısı, "Toplam Harcama" ve "Son Sipariş" bilgileriyle listelenir. "Yeni Müşteri" ile kayıt eklenir, "Düzenle" ile güncellenir. Giriş hesabı olan müşterinin e-postası değiştirilemez. Pasif müşteri adına sipariş oluşturulamaz.
 
+Giriş hesabı olmayan bir müşterinin, kendi e-postasıyla kayıt olup bu karta bağlanabilmesi için davet kodu gerekir:
+
+1. Müşteri detayında "Davet Kodu Oluştur" butonuna basın.
+2. Açılan pencerede kodu ("Kopyala" simgesiyle) alıp müşteriye iletin. Kod yalnızca bu pencerede gösterilir, tek kullanımlıktır ve 7 gün geçerlidir.
+3. Müşteri, kartta yazan e-postayla kayıt olurken kodu "Davet kodu" alanına girer. Kayıt tamamlanınca "Giriş Hesabı" alanı "Var" olur.
+
+Geçerli bir kod varken "Giriş Hesabı" alanında kodun son geçerlilik tarihi görünür. "Yeni Davet Kodu" ile yeni kod üretilirse eskisi geçersizleşir. Müşterinin e-postası değiştirilirse de kod geçersizleşir. Hesabı olan, pasif ya da Olist'ten aktarılan müşteriler için kod üretilemez.
+
 ![Müşteri listesi](images/38-yonetici-musteriler.jpg)
 
 ![Müşteri detayı](images/39-yonetici-musteri-detayi.jpg)
@@ -193,3 +211,13 @@ Yeni personel önce kayıt formundan hesap açar; ardından yönetici rol atar.
 Yönetici kendi rolünü değiştiremez ve kendi hesabını pasife alamaz. Sistemdeki son aktif yönetici değiştirilemez. Müşteri rolüne alınan kullanıcı için müşteri kaydı oluşturulur.
 
 ![Kullanıcılar](images/41-yonetici-kullanicilar.jpg)
+
+### İşlem geçmişi
+
+"Yönetim" menüsündeki "İşlem Geçmişi" sayfası, kritik işlemlerin kim tarafından ne zaman yapıldığını gösterir: rol değişikliği, kullanıcı ve müşteri durumu (pasife alma, aktifleştirme), ürün fiyatı ya da maliyeti değişikliği, sipariş iptali ve başarısız giriş denemeleri.
+
+1. Sayfa son 7 günün kayıtlarıyla açılır, en yeni kayıt en üsttedir.
+2. "Tarih" aralığı, "Olay" (birden fazla seçilebilir) ve "Kullanıcı" (işlemi yapan kişi, ada ya da e-postaya göre aranır) ile süzüp "Filtrele" butonuna basın.
+3. "Değişiklik" sütunu eski ve yeni değeri gösterir, ör. "Rol: Müşteri → Depo Personeli". "Kayıt" sütunundaki müşteri, ürün ve sipariş bağlantıları ilgili sayfayı açar.
+
+Başarısız girişlerde "Kullanıcı" sütunu "Bilinmiyor" olur; denenen e-posta "Kayıt", istemci adresi "IP" sütununda görünür. Bu sayfayı yalnızca yönetici görür.

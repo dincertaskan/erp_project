@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
           changeOrigin: true,
+          // Tarayıcının (ör. telefonun) adresi X-Forwarded-For ile iletilir; arka ucun IP bazlı kayıt sınırı
+          // aksi halde tüm istemcileri geliştirme sunucusunun adresinden gelmiş sayar.
+          xfwd: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },

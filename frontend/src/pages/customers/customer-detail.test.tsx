@@ -18,6 +18,7 @@ const can: CustomerDetail = {
   source: 'app',
   created_at: '2026-11-01T10:00:00Z',
   has_account: true,
+  invite_expires_at: null,
   order_count: 4,
   total_spent: '1500.00',
   last_order_at: '2026-11-20T10:00:00Z',
@@ -146,6 +147,57 @@ describe('CustomerDetailPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
 
     expect(await screen.findByText('Demir A.Ş.')).toBeInTheDocument();
+  });
+
+  it('creates an invite code for a card without an account and shows it once', async () => {
+    mockGet({ ...can, has_account: false }, []);
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { code: 'ABCDE-FGH23', expires_at: '2026-12-04T10:00:00Z' } });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Davet Kodu Oluştur' }));
+
+    await waitFor(() => expect(post).toHaveBeenCalledWith('/customers/3/invite'));
+    const dialog = (await screen.findByRole('dialog')) as HTMLElement;
+    expect(within(dialog).getByText('ABCDE-FGH23')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Kod tek kullanımlıktır/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tamam' }));
+
+    expect(await screen.findByText(/davet kodu .* tarihine kadar geçerli/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yeni Davet Kodu' })).toBeInTheDocument();
+  });
+
+  it('asks before replacing a valid invite code', async () => {
+    mockGet({ ...can, has_account: false, invite_expires_at: '2026-12-04T10:00:00Z' }, []);
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { code: 'XYZWV-23456', expires_at: '2026-12-05T10:00:00Z' } });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Yeni Davet Kodu' }));
+    const popup = (await screen.findByText('Yeni davet kodu oluşturulsun mu?')).closest('.ant-popover') as HTMLElement;
+    expect(within(popup).getByText('Müşteriye daha önce iletilen kod geçersiz olur.')).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+    fireEvent.click(within(popup).getByRole('button', { name: 'Oluştur' }));
+
+    expect(await screen.findByText('XYZWV-23456')).toBeInTheDocument();
+  });
+
+  it('offers no invite code for cards with an account, inactive or Olist cards', async () => {
+    for (const customer of [
+      can,
+      { ...can, has_account: false, is_active: false },
+      { ...can, has_account: false, source: 'olist' as const },
+    ]) {
+      mockGet(customer, []);
+      const { unmount } = renderPage();
+
+      expect(await screen.findByText('musteri@example.com')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Davet Kodu/ })).not.toBeInTheDocument();
+      unmount();
+      vi.restoreAllMocks();
+    }
   });
 
   it('shows the empty order history', async () => {

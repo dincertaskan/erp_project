@@ -26,6 +26,13 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       STOCK_STRATEGY: ${STOCK_STRATEGY:-pessimistic}
+      # Swagger, ReDoc ve OpenAPI şeması üretimde kapalıdır (404).
+      ENABLE_DOCS: "false"
+      # Arka uç yalnızca nginx'ten erişilebilir; uvicorn gerçek istemci adresini nginx'in X-Forwarded-For
+      # başlığından alır (IP bazlı kayıt sınırı için gerekli).
+      FORWARDED_ALLOW_IPS: "*"
+      REGISTER_RATE_LIMIT: ${REGISTER_RATE_LIMIT:-5}
+      REGISTER_RATE_WINDOW_MINUTES: ${REGISTER_RATE_WINDOW_MINUTES:-10}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}

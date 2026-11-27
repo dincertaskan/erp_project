@@ -17,9 +17,24 @@ from tests.conftest import auth_headers
 
 PUBLIC_ROUTES = {("GET", "/health"), ("POST", "/auth/register"), ("POST", "/auth/login")}
 # Giriş yapmış her kullanıcının erişebildiği uçlar (rol kısıtı yok)
-ANY_ROLE_ROUTES = {("GET", "/auth/me"), ("PATCH", "/auth/me"), ("POST", "/auth/me/password")}
-STAFF_PREFIXES = ("/users", "/products", "/stock", "/orders", "/customers", "/dashboard", "/reports", "/categories")
-ADMIN_ONLY_PREFIXES = ("/users", "/customers", "/dashboard", "/reports")
+ANY_ROLE_ROUTES = {
+    ("GET", "/auth/me"),
+    ("PATCH", "/auth/me"),
+    ("POST", "/auth/me/password"),
+    ("POST", "/auth/logout"),
+}
+STAFF_PREFIXES = (
+    "/users",
+    "/products",
+    "/stock",
+    "/orders",
+    "/customers",
+    "/dashboard",
+    "/reports",
+    "/categories",
+    "/audit-logs",
+)
+ADMIN_ONLY_PREFIXES = ("/users", "/customers", "/dashboard", "/reports", "/audit-logs")
 
 
 def _allowed_roles(route: APIRoute) -> frozenset[UserRole] | None:
@@ -116,7 +131,7 @@ def test_staff_is_forbidden_on_shop_routes(client, admin, warehouse, method, pat
 
 def _token(**overrides):
     now = datetime.now(UTC)
-    payload = {"sub": "1", "role": "admin", "iat": now, "exp": now + timedelta(minutes=5), **overrides}
+    payload = {"sub": "1", "role": "admin", "ver": 0, "iat": now, "exp": now + timedelta(minutes=5), **overrides}
     payload = {k: v for k, v in payload.items() if v is not None}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -130,10 +145,15 @@ def _forged_tokens(user_id: int) -> dict[str, str]:
         "no_exp": _token(sub=sub, exp=None),
         "alg_none": jwt.encode({"sub": sub}, key=None, algorithm="none"),
         "unknown_user": _token(sub="999999999"),
+        # Bu özellikten önce verilen token'larda sürüm yoktur.
+        "no_version": _token(sub=sub, ver=None),
+        "old_version": _token(sub=sub, ver=-1),
     }
 
 
-@pytest.mark.parametrize("kind", ["garbage", "wrong_secret", "expired", "no_exp", "alg_none", "unknown_user"])
+@pytest.mark.parametrize(
+    "kind", ["garbage", "wrong_secret", "expired", "no_exp", "alg_none", "unknown_user", "no_version", "old_version"]
+)
 def test_invalid_tokens_are_rejected(client, admin, kind):
     token = _forged_tokens(admin.id)[kind]
 
