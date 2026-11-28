@@ -51,18 +51,88 @@ PRODUCTS = [
 
 # (order_code, days_ago, status, payment_method, [(sku, qty), ...], note)
 SAMPLE_ORDERS = [
-    ("SIP-DEMO-0001", 56, OrderStatus.COMPLETED, PaymentMethod.CREDIT_CARD, [("ELK-0003", 2), ("OFS-0002", 5)], "Ofis başlangıç siparişi"),
-    ("SIP-DEMO-0002", 49, OrderStatus.COMPLETED, PaymentMethod.BANK_TRANSFER, [("ELK-0004", 1), ("OFS-0001", 1)], "Yönetici masası kurulumu"),
-    ("SIP-DEMO-0003", 42, OrderStatus.COMPLETED, PaymentMethod.CREDIT_CARD, [("ELK-0001", 4), ("YDK-0001", 2)], "Ekip donanım yenileme"),
-    ("SIP-DEMO-0004", 35, OrderStatus.CANCELLED, PaymentMethod.CASH_ON_DELIVERY, [("ELK-0002", 1)], "Müşteri talebiyle iptal edildi"),
-    ("SIP-DEMO-0005", 28, OrderStatus.COMPLETED, PaymentMethod.BANK_TRANSFER, [("OFS-0001", 2), ("OFS-0002", 10)], "Aylık ofis tedariki"),
-    ("SIP-DEMO-0006", 21, OrderStatus.COMPLETED, PaymentMethod.CREDIT_CARD, [("ELK-0004", 2), ("ELK-0003", 2)], "Yazılım ekibi monitör ve klavye"),
-    ("SIP-DEMO-0007", 15, OrderStatus.COMPLETED, PaymentMethod.CREDIT_CARD, [("ELK-0002", 1), ("YDK-0001", 3)], "Hızlı teslimat"),
-    ("SIP-DEMO-0008", 10, OrderStatus.SHIPPED, PaymentMethod.BANK_TRANSFER, [("OFS-0002", 8), ("ELK-0001", 2)], "Kargo şubesine teslim edildi"),
+    (
+        "SIP-DEMO-0001",
+        56,
+        OrderStatus.COMPLETED,
+        PaymentMethod.CREDIT_CARD,
+        [("ELK-0003", 2), ("OFS-0002", 5)],
+        "Ofis başlangıç siparişi",
+    ),
+    (
+        "SIP-DEMO-0002",
+        49,
+        OrderStatus.COMPLETED,
+        PaymentMethod.BANK_TRANSFER,
+        [("ELK-0004", 1), ("OFS-0001", 1)],
+        "Yönetici masası kurulumu",
+    ),
+    (
+        "SIP-DEMO-0003",
+        42,
+        OrderStatus.COMPLETED,
+        PaymentMethod.CREDIT_CARD,
+        [("ELK-0001", 4), ("YDK-0001", 2)],
+        "Ekip donanım yenileme",
+    ),
+    (
+        "SIP-DEMO-0004",
+        35,
+        OrderStatus.CANCELLED,
+        PaymentMethod.CASH_ON_DELIVERY,
+        [("ELK-0002", 1)],
+        "Müşteri talebiyle iptal edildi",
+    ),
+    (
+        "SIP-DEMO-0005",
+        28,
+        OrderStatus.COMPLETED,
+        PaymentMethod.BANK_TRANSFER,
+        [("OFS-0001", 2), ("OFS-0002", 10)],
+        "Aylık ofis tedariki",
+    ),
+    (
+        "SIP-DEMO-0006",
+        21,
+        OrderStatus.COMPLETED,
+        PaymentMethod.CREDIT_CARD,
+        [("ELK-0004", 2), ("ELK-0003", 2)],
+        "Yazılım ekibi monitör ve klavye",
+    ),
+    (
+        "SIP-DEMO-0007",
+        15,
+        OrderStatus.COMPLETED,
+        PaymentMethod.CREDIT_CARD,
+        [("ELK-0002", 1), ("YDK-0001", 3)],
+        "Hızlı teslimat",
+    ),
+    (
+        "SIP-DEMO-0008",
+        10,
+        OrderStatus.SHIPPED,
+        PaymentMethod.BANK_TRANSFER,
+        [("OFS-0002", 8), ("ELK-0001", 2)],
+        "Kargo şubesine teslim edildi",
+    ),
     ("SIP-DEMO-0009", 6, OrderStatus.SHIPPED, PaymentMethod.CREDIT_CARD, [("ELK-0003", 1), ("OFS-0001", 1)], "Yolda"),
-    ("SIP-DEMO-0010", 3, OrderStatus.PREPARING, PaymentMethod.CREDIT_CARD, [("ELK-0004", 1), ("OFS-0002", 3)], "Depo paketleme aşamasında"),
+    (
+        "SIP-DEMO-0010",
+        3,
+        OrderStatus.PREPARING,
+        PaymentMethod.CREDIT_CARD,
+        [("ELK-0004", 1), ("OFS-0002", 3)],
+        "Depo paketleme aşamasında",
+    ),
     ("SIP-DEMO-0011", 2, OrderStatus.PREPARING, PaymentMethod.BANK_TRANSFER, [("ELK-0003", 2)], "Kargoya hazır"),
-    ("SIP-DEMO-0012", 1, OrderStatus.PENDING, PaymentMethod.CREDIT_CARD, [("OFS-0002", 4), ("ELK-0001", 1)], "Onay bekleyen yeni sipariş"),
+    (
+        "SIP-DEMO-0012",
+        1,
+        OrderStatus.PENDING,
+        PaymentMethod.CREDIT_CARD,
+        [("OFS-0002", 4), ("ELK-0001", 1)],
+        "Onay bekleyen yeni sipariş",
+    ),
 ]
 
 
@@ -131,7 +201,11 @@ def seed_orders(db: Session, users: dict[str, User]) -> int:
             continue
 
         created_at = now - timedelta(days=days_ago)
-        approved_at = created_at + timedelta(hours=3) if status in {OrderStatus.PREPARING, OrderStatus.SHIPPED, OrderStatus.COMPLETED} else None
+        approved_at = (
+            created_at + timedelta(hours=3)
+            if status in {OrderStatus.PREPARING, OrderStatus.SHIPPED, OrderStatus.COMPLETED}
+            else None
+        )
         shipped_at = created_at + timedelta(days=1) if status in {OrderStatus.SHIPPED, OrderStatus.COMPLETED} else None
         completed_at = created_at + timedelta(days=3) if status == OrderStatus.COMPLETED else None
         cancelled_at = created_at + timedelta(hours=2) if status == OrderStatus.CANCELLED else None
