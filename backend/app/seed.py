@@ -10,7 +10,7 @@ ortam değişkeninden okunur (bkz. README, "Demo hesaplar").
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import delete, or_, select
@@ -193,7 +193,7 @@ def seed_orders(db: Session, users: dict[str, User]) -> int:
         return 0
 
     products_by_sku = {p.sku: p for p in db.scalars(select(Product))}
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     created_count = 0
 
     for order_code, days_ago, status, payment_method, items_spec, note in SAMPLE_ORDERS:
